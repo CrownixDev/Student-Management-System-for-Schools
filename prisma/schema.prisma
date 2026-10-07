@@ -218,6 +218,7 @@ model Enrollment {
   studentId      String
   classId        String
   academicYearId String
+  classIndex     Int
   status         EnrollmentStatus @default(active)
 
   joinedOn DateTime  @default(now())

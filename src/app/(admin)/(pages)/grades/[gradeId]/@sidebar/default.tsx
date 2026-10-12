@@ -1,0 +1,87 @@
+import { Badge } from "@/components/shadcn/badge";
+import { Button, buttonVariants } from "@/components/shadcn/button";
+import { Separator } from "@/components/shadcn/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/shadcn/sidebar";
+import { TypographyH1, TypographyH2, TypographyH3 } from "@/components/ui/typography";
+import { academicYearsRepository } from "@/features/academic-years";
+import { classRepository } from "@/features/class";
+import { gradesRepository } from "@/features/grades";
+import { idCache } from "@/lib/nuqs/id";
+import { ArrowLeftIcon, HomeIcon, PlusIcon } from "lucide-react";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+
+export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
+  const { yearId } = await idCache.parse(searchParams);
+  const { gradeId } = await params;
+
+  const yearData = await academicYearsRepository.getListItemById(yearId ?? "");
+  const gradeData = await gradesRepository.getListItemById(gradeId ?? "");
+
+  if (!yearId || !gradeId || !yearData || !gradeData) {
+    redirect("/");
+  }
+
+  const classList = await classRepository.getList(yearId, gradeId);
+  return (
+    <Sidebar>
+      <SidebarHeader>
+        <Link href={`/grades?yearId=${yearId}`} className={buttonVariants({ variant: "outline", className: "w-fit" })}>
+          <ArrowLeftIcon />
+          Back to grades
+        </Link>
+        <div className="flex w-full items-center gap-2">
+          <TypographyH1>{gradeData.name}</TypographyH1>
+          <TypographyH3>({yearData.name})</TypographyH3>
+        </div>
+        <Separator />
+        <TypographyH2>All Classes</TypographyH2>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup className="flex-1">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {classList.map((classItem) => (
+                <SidebarMenuItem key={classItem.id}>
+                  <SidebarMenuButton
+                    render={<Link href={`/grades/${gradeId}/classes/${classItem.id}?yearId=${yearId}`} />}
+                  >
+                    <span className="truncate">{classItem.name}</span>
+                    <Badge variant="outline" className="ml-auto h-5 px-1.5 text-[11px]">
+                      {30}
+                    </Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              {classList.length === 0 && (
+                <li className="px-2 py-2 text-xs text-muted-foreground">No classes in this grade yet.</li>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+          <Button className={"w-full"} variant={"outline"}>
+            <PlusIcon className="size-4" />
+            Add a new class
+          </Button>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <Link href={"/"} className={buttonVariants({ variant: "outline" })}>
+          <HomeIcon />
+          Go Home
+        </Link>
+        <Separator />
+        <p className="text-xs text-sidebar-foreground/60 text-center">A Project by CROWNIX</p>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

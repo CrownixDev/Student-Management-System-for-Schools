@@ -1,6 +1,6 @@
 import { TooltipProvider } from "@/components/shadcn/tooltip";
 import { ToastContainer, Bounce } from "react-toastify";
-
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
@@ -17,7 +17,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         theme="colored"
         transition={Bounce}
       />
-      {children}
+      <NuqsAdapter>{children}</NuqsAdapter>
     </TooltipProvider>
   );
 }

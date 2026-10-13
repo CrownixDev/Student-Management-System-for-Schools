@@ -63,14 +63,12 @@ model AcademicYear {
 
 // School Grade
 model GradeLevel {
-  id      String  @id @default(uuid())
-  number  Int     @unique // 1..13
-  name    String // "Grade 12"
-  batchId String?
+  id     String @id @default(uuid())
+  number Int    @unique // 1..13
+  name   String // "Grade 12"
 
   classes Class[]
   exams   Exam[]
-  batch   Batch?  @relation(fields: [batchId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -88,6 +86,7 @@ model Medium {
   updatedAt DateTime @updatedAt
 }
 
+// Currently stream does not provide any real functionalities like grouping 
 model Stream {
   id   String @id @default(uuid())
   name String @unique // Technology
@@ -138,7 +137,7 @@ model Batch {
   id   String @id @default(uuid())
   name String @unique // "2026"
 
-  grades GradeLevel[]
+  classes Class[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -152,12 +151,14 @@ model Class {
   name            String // "12 T2"
   defaultMediumId String?
   classTeacherId  String?
+  batchId         String?
 
   academicYear  AcademicYear @relation(fields: [academicYearId], references: [id])
   gradeLevel    GradeLevel   @relation(fields: [gradeLevelId], references: [id])
   stream        Stream?      @relation(fields: [streamId], references: [id])
   defaultMedium Medium?      @relation(fields: [defaultMediumId], references: [id])
   classTeacher  Teacher?     @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+  batch         Batch?       @relation(fields: [batchId], references: [id])
 
   classSubjects ClassSubject[]
   enrollments   Enrollment[]

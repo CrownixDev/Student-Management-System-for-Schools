@@ -34,6 +34,12 @@ const studentCohort = (year: string, grade: number) => {
   if (year === "2026" && grade === 13) return "2026";
   return `${year}-grade-${grade}`;
 };
+const classBatchId = (year: string, grade: number) => {
+  const cohort = studentCohort(year, grade);
+  return cohort === "2025" || cohort === "2026"
+    ? `batch-${cohort}-al`
+    : null;
+};
 
 export const academicYears = academicYearNames.map((year) => ({
   id: yearId(year),
@@ -53,13 +59,11 @@ export const gradeLevels = [
     id: gradeId(12),
     number: 12,
     name: "Grade 12",
-    batchId: "batch-2025-al",
   },
   {
     id: gradeId(13),
     number: 13,
     name: "Grade 13",
-    batchId: "batch-2026-al",
   },
 ];
 
@@ -130,6 +134,7 @@ export const classes = classContexts.map((context) => ({
   streamId: "stream-technology",
   name: `${context.grade} ${context.className}`,
   defaultMediumId: "medium-sinhala",
+  batchId: classBatchId(context.year, context.grade),
   classTeacherId: id(
     "class-teacher",
     context.year,

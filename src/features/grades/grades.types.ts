@@ -10,16 +10,14 @@ export type IGradeListItem = GradeLevelGetPayload<{
   select: typeof gradeListSelect;
 }>;
 
+export interface IGradeListItemForYear extends IGradeListItem {
+  classCount: number;
+}
+
 export const gradesSelect = {
   id: true,
   number: true,
   name: true,
-  batch: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
   classes: {
     select: {
       id: true,

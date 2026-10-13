@@ -8,10 +8,10 @@ export default async function page() {
   const batchList = await batchRepository.getList();
 
   return (
-    <ButtonShell backButton={<BackButton href="/nav/student"/>}>
+    <ButtonShell backButton={<BackButton href="/nav/student" />}>
       {batchList.map((batch) => {
         return (
-          <NavButton key={batch.name} href={`/batches/${batch.id}` as Route}>
+          <NavButton key={batch.name} href={`/grades?batchId=${batch.id}` as Route}>
             {batch.name}
           </NavButton>
         );

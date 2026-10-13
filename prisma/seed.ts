@@ -32,8 +32,19 @@ function getId(ids: Map<string, string>, sourceId: string, model: string) {
   return value;
 }
 
+function logStageStart(stage: string, count: number) {
+  console.log(`Seeding ${stage} (${count} records)...`);
+}
+
+function logStageComplete(stage: string, count: number) {
+  console.log(`Finished ${stage} (${count} records).`);
+}
+
 async function seed() {
+  console.log("Starting mock data seed...");
+
   const yearIds = new Map<string, string>();
+  logStageStart("academic years", academicYears.length);
   for (const year of academicYears) {
     const saved = await prisma.academicYear.upsert({
       where: { name: year.name },
@@ -46,8 +57,10 @@ async function seed() {
     });
     yearIds.set(year.id, saved.id);
   }
+  logStageComplete("academic years", academicYears.length);
 
   const batchIds = new Map<string, string>();
+  logStageStart("batches", batches.length);
   for (const batch of batches) {
     const saved = await prisma.batch.upsert({
       where: { name: batch.name },
@@ -56,19 +69,22 @@ async function seed() {
     });
     batchIds.set(batch.id, saved.id);
   }
+  logStageComplete("batches", batches.length);
 
   const gradeIds = new Map<string, string>();
+  logStageStart("grades", gradeLevels.length);
   for (const grade of gradeLevels) {
-    const batchId = getId(batchIds, grade.batchId, "batch");
     const saved = await prisma.gradeLevel.upsert({
       where: { number: grade.number },
-      create: { ...grade, batchId },
-      update: { name: grade.name, batchId },
+      create: grade,
+      update: { name: grade.name },
     });
     gradeIds.set(grade.id, saved.id);
   }
+  logStageComplete("grades", gradeLevels.length);
 
   const mediumIds = new Map<string, string>();
+  logStageStart("mediums", mediums.length);
   for (const medium of mediums) {
     const saved = await prisma.medium.upsert({
       where: { name: medium.name },
@@ -77,8 +93,10 @@ async function seed() {
     });
     mediumIds.set(medium.id, saved.id);
   }
+  logStageComplete("mediums", mediums.length);
 
   const streamIds = new Map<string, string>();
+  logStageStart("streams", streams.length);
   for (const stream of streams) {
     const saved = await prisma.stream.upsert({
       where: { name: stream.name },
@@ -87,9 +105,11 @@ async function seed() {
     });
     streamIds.set(stream.id, saved.id);
   }
+  logStageComplete("streams", streams.length);
 
   const subjectIds = new Map<string, string>();
   const subjectStreams = Array.from(streamIds.values(), (id) => ({ id }));
+  logStageStart("subjects", subjects.length);
   for (const subject of subjects) {
     const saved = await prisma.subject.upsert({
       where: { code: subject.code },
@@ -102,8 +122,10 @@ async function seed() {
     });
     subjectIds.set(subject.id, saved.id);
   }
+  logStageComplete("subjects", subjects.length);
 
   const teacherIds = new Map<string, string>();
+  logStageStart("teachers", teachers.length);
   for (const teacher of teachers) {
     const saved = await prisma.teacher.upsert({
       where: { id: teacher.id },
@@ -116,8 +138,10 @@ async function seed() {
     });
     teacherIds.set(teacher.id, saved.id);
   }
+  logStageComplete("teachers", teachers.length);
 
   const classIds = new Map<string, string>();
+  logStageStart("classes", classes.length);
   for (const classroom of classes) {
     const academicYearId = getId(yearIds, classroom.academicYearId, "academic year");
     const gradeLevelId = getId(gradeIds, classroom.gradeLevelId, "grade");
@@ -129,6 +153,9 @@ async function seed() {
       : null;
     const classTeacherId = classroom.classTeacherId
       ? getId(teacherIds, classroom.classTeacherId, "teacher")
+      : null;
+    const batchId = classroom.batchId
+      ? getId(batchIds, classroom.batchId, "batch")
       : null;
     const saved = await prisma.class.upsert({
       where: {
@@ -145,12 +172,15 @@ async function seed() {
         streamId,
         defaultMediumId,
         classTeacherId,
+        batchId,
       },
-      update: { streamId, defaultMediumId, classTeacherId },
+      update: { streamId, defaultMediumId, classTeacherId, batchId },
     });
     classIds.set(classroom.id, saved.id);
   }
+  logStageComplete("classes", classes.length);
 
+  logStageStart("class subjects", classSubjects.length);
   for (const assignment of classSubjects) {
     const classId = getId(classIds, assignment.classId, "class");
     const subjectId = getId(subjectIds, assignment.subjectId, "subject");
@@ -164,8 +194,10 @@ async function seed() {
       update: { mediumId, teacherId },
     });
   }
+  logStageComplete("class subjects", classSubjects.length);
 
   const studentIds = new Map<string, string>();
+  logStageStart("students", students.length);
   for (const student of students) {
     const saved = await prisma.student.upsert({
       where: { admissionNo: student.admissionNo },
@@ -183,8 +215,10 @@ async function seed() {
     });
     studentIds.set(student.id, saved.id);
   }
+  logStageComplete("students", students.length);
 
   const enrollmentIds = new Map<string, string>();
+  logStageStart("enrollments", enrollments.length);
   for (const enrollment of enrollments) {
     const studentId = getId(studentIds, enrollment.studentId, "student");
     const classId = getId(classIds, enrollment.classId, "class");
@@ -201,7 +235,9 @@ async function seed() {
     });
     enrollmentIds.set(enrollment.id, saved.id);
   }
+  logStageComplete("enrollments", enrollments.length);
 
+  logStageStart("enrollment subjects", enrollmentSubjects.length);
   for (const enrollmentSubject of enrollmentSubjects) {
     const enrollmentId = getId(
       enrollmentIds,
@@ -218,8 +254,10 @@ async function seed() {
       update: { mediumId },
     });
   }
+  logStageComplete("enrollment subjects", enrollmentSubjects.length);
 
   const examIds = new Map<string, string>();
+  logStageStart("exams", exams.length);
   for (const exam of exams) {
     const academicYearId = getId(yearIds, exam.academicYearId, "academic year");
     const gradeLevelId = getId(gradeIds, exam.gradeLevelId, "grade");
@@ -236,7 +274,9 @@ async function seed() {
     });
     examIds.set(exam.id, saved.id);
   }
+  logStageComplete("exams", exams.length);
 
+  logStageStart("exam subjects", examSubjects.length);
   for (const examSubject of examSubjects) {
     const examId = getId(examIds, examSubject.examId, "exam");
     const subjectId = getId(subjectIds, examSubject.subjectId, "subject");
@@ -249,8 +289,10 @@ async function seed() {
       },
     });
   }
+  logStageComplete("exam subjects", examSubjects.length);
 
-  for (const mark of marks) {
+  logStageStart("marks", marks.length);
+  for (const [index, mark] of marks.entries()) {
     const examId = getId(examIds, mark.examId, "exam");
     const enrollmentId = getId(enrollmentIds, mark.enrollmentId, "enrollment");
     const subjectId = getId(subjectIds, mark.subjectId, "subject");
@@ -259,7 +301,11 @@ async function seed() {
       create: { ...mark, examId, enrollmentId, subjectId },
       update: { marks: mark.marks, status: mark.status },
     });
+    if ((index + 1) % 100 === 0) {
+      console.log(`  Marks progress: ${index + 1}/${marks.length}`);
+    }
   }
+  logStageComplete("marks", marks.length);
 
   console.log(
     `Seeded mock data: ${academicYears.length} academic years, ${batches.length} batches, ` +
@@ -267,6 +313,7 @@ async function seed() {
       `${enrollments.length} enrollments, ${exams.length} exams, ${marks.length} marks.`,
   );
   console.log("GradeBand and User records were not changed.");
+  console.log("Mock data seed completed successfully.");
 }
 
 seed()

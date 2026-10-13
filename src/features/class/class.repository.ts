@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { classListSelect, IClassListItem } from "./class.types";
 
 export class ClassRepository {
-  async getList(yearId: string, gradeId: string): Promise<IClassListItem[]> {
+  async getList(yearId: string, gradeId: string) {
     return await prisma.class.findMany({
       where: { academicYearId: yearId, gradeLevelId: gradeId },
-      select: classListSelect,
+      select: {
+        id: true,
+        name: true,
+        enrollments: {
+          where: { academicYearId: yearId },
+          select: { id: true },
+        },
+      },
     });
   }
 }

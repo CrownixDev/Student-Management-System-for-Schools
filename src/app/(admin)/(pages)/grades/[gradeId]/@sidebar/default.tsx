@@ -13,32 +13,47 @@ import {
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
 import { TypographyH1, TypographyH2, TypographyH3 } from "@/components/ui/typography";
-import { academicYearsRepository } from "@/features/academic-years";
-import { classRepository } from "@/features/class";
-import { gradesRepository } from "@/features/grades";
+import { academicYearsService, IAcademicYearListItem } from "@/features/academic-years";
+import { classService } from "@/features/class";
+import { gradesService, IGradeListItem } from "@/features/grades";
 import { idCache } from "@/lib/nuqs/id";
 import { ArrowLeftIcon, HomeIcon, PlusIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { batchService, IBatchListItem } from "@/features/batch";
 
 export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
-  const { yearId } = await idCache.parse(searchParams);
+  const { yearId, batchId } = await idCache.parse(searchParams);
   const { gradeId } = await params;
 
-  const yearData = await academicYearsRepository.getListItemById(yearId ?? "");
-  const gradeData = await gradesRepository.getListItemById(gradeId ?? "");
+  let yearData: IAcademicYearListItem | null = null;
+  let gradeData: IGradeListItem | null = null;
+  let batchData: IBatchListItem | null = null;
 
-  if (!yearId || !gradeId || !yearData || !gradeData) {
+  try {
+    if (yearId) yearData = await academicYearsService.getListItemById(yearId);
+    if (gradeId) gradeData = await gradesService.getListItemById(gradeId);
+    if (batchId) batchData = await batchService.getListItemById(batchId);
+  } catch {
     redirect("/");
   }
 
-  const classList = await classRepository.getList(yearId, gradeId);
+  const isValidBatchId = batchId && batchId !== "null";
+
+  if (!yearId || !gradeId || !yearData || !gradeData || (isValidBatchId && !batchData)) {
+    redirect("/");
+  }
+
+  const classList = await classService.getList(yearId, gradeId);
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href={`/grades?yearId=${yearId}`} className={buttonVariants({ variant: "outline", className: "w-fit" })}>
+        <Link
+          href={`/grades?${batchData ? "batchId=" + batchId : "yearId=" + yearId}`}
+          className={buttonVariants({ variant: "outline", className: "w-fit" })}
+        >
           <ArrowLeftIcon />
-          Back to grades
+          Back to {batchData ? "batch" : "year"}
         </Link>
         <div className="flex w-full items-center gap-2">
           <TypographyH1>{gradeData.name}</TypographyH1>
@@ -54,11 +69,15 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
               {classList.map((classItem) => (
                 <SidebarMenuItem key={classItem.id}>
                   <SidebarMenuButton
-                    render={<Link href={`/grades/${gradeId}/classes/${classItem.id}?yearId=${yearId}`} />}
+                    render={
+                      <Link
+                        href={`/grades/${gradeId}/classes/${classItem.id}?yearId=${yearId}${batchData ? "&batchId=" + batchId : ""}`}
+                      />
+                    }
                   >
                     <span className="truncate">{classItem.name}</span>
                     <Badge variant="outline" className="ml-auto h-5 px-1.5 text-[11px]">
-                      {30}
+                      {classItem.studentCount}
                     </Badge>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { IStudent, IStudentsListItem, studentListSelect, studentSelect } from "./students.types";
+import { IStudentsListItem, studentListSelect, studentSelect } from "./students.types";
 
 export class StudentsRepository {
   async getList(yearId: string, gradeId: string, classId: string): Promise<IStudentsListItem[]> {
@@ -22,7 +22,7 @@ export class StudentsRepository {
     });
   }
 
-  async getById(studentId: string, yearId: string, gradeId: string, classId: string): Promise<IStudent | null> {
+  async getById(studentId: string, yearId: string, gradeId: string, classId: string) {
     return await prisma.student.findUnique({
       where: {
         id: studentId,
@@ -33,7 +33,16 @@ export class StudentsRepository {
           },
         },
       },
-      select: studentSelect,
+      select: {
+        ...studentSelect,
+        enrollments: {
+          ...studentSelect.enrollments,
+          where: {
+            academicYearId: yearId,
+            class: { id: classId, gradeLevelId: gradeId },
+          },
+        },
+      },
     });
   }
 }

@@ -10,7 +10,7 @@ export default function page() {
         <NavButton href={APP_URLS.simpleNav.student.root} icon={GraduationCapIcon}>
           Students
         </NavButton>
-        <NavButton href={APP_URLS.simpleNav.exams} icon={NotebookPenIcon}>
+        <NavButton href={APP_URLS.simpleNav.exams.root} icon={NotebookPenIcon}>
           Exams
         </NavButton>
         <NavButton href={APP_URLS.simpleNav.setup.root} icon={ServerCogIcon}>

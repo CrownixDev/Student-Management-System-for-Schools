@@ -37,8 +37,8 @@ export default function StudentDetails({
             )}
           </div>
         </div>
-        <Badge variant={student.enrollments[0].status === "active" ? "success" : "outline"}>
-          {student.enrollments[0].status}
+        <Badge variant={student.enrollment.status === "active" ? "success" : "outline"}>
+          {student.enrollment.status}
         </Badge>
       </section>
 

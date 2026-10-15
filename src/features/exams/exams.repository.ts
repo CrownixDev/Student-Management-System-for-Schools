@@ -9,6 +9,13 @@ export class ExamRepository {
     });
   }
 
+  async getListItemById(examId: string): Promise<IExamListItem | null> {
+    return await prisma.exam.findUnique({
+      where: { id: examId },
+      select: examListSelect,
+    });
+  }
+
   async getByEnrollmentId(enrollmentId: string) {
     return await prisma.exam.findMany({
       where: { marks: { some: { enrollmentId } } },

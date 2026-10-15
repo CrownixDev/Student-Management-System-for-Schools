@@ -1,13 +1,32 @@
 import { ApiError } from "@/lib/ApiError";
 import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { ExamRepository } from "./exams.repository";
-import { IExamByEnrollmentId } from "./exams.types";
+import {
+  IExamByEnrollmentId,
+  IExamListItem,
+  IExamTopResults,
+  TopResultStudent,
+  TopResultStudentWithClass,
+} from "./exams.types";
+import { GradesRepository } from "../grades/grades.repository";
+import { MarkStatus } from "@/generated/prisma/enums";
 
 export class ExamService {
   constructor(
     private repository: ExamRepository,
     private enrollmentRepository: EnrollmentRepository,
+    private gradesRepository: GradesRepository,
   ) {}
+
+  async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
+    return await this.repository.getList(yearId, gradeId);
+  }
+
+  async getListItemById(examId: string): Promise<IExamListItem> {
+    const exam = await this.repository.getListItemById(examId);
+    if (!exam) throw new ApiError(404, "Exam not found");
+    return exam;
+  }
 
   async getDataByEnrollmentId(enrollmentId: string): Promise<IExamByEnrollmentId[]> {
     const enrollment = await this.enrollmentRepository.getById(enrollmentId);
@@ -39,5 +58,116 @@ export class ExamService {
         };
       }),
     }));
+  }
+
+  async getTopResults(yearId: string, gradeId: string, examId: string): Promise<IExamTopResults> {
+    const exam = await this.getListItemById(examId);
+    if (exam.academicYear.id !== yearId || exam.gradeLevel.id !== gradeId) {
+      throw new ApiError(404, "Exam not found");
+    }
+
+    const grade = await this.gradesRepository.getAllStudentsWithResults(yearId, gradeId, examId);
+
+    if (!grade) {
+      throw new ApiError(404, "Grade not found");
+    }
+
+    const rank = <T extends TopResultStudent>(students: Iterable<T>): T[] =>
+      Array.from(students).sort(
+        (a, b) => b.fullMarks - a.fullMarks || a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
+      );
+
+    const byGrade = new Map<string, TopResultStudentWithClass>();
+    const subjectResults = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        students: Map<
+          string,
+          TopResultStudentWithClass & {
+            medium: string | null;
+            status: MarkStatus | null;
+          }
+        >;
+      }
+    >();
+
+    const byClass = grade.classes.map((classItem) => {
+      const students = new Map<string, TopResultStudent>();
+
+      for (const enrollment of classItem.enrollments) {
+        const studentInfo = {
+          id: enrollment.student.id,
+          fullName: enrollment.student.fullName,
+          admissionNo: enrollment.student.admissionNo,
+        };
+        const studentClass = { id: classItem.id, name: classItem.name };
+        const classStudent = students.get(enrollment.student.id) ?? { ...studentInfo, fullMarks: 0 };
+        students.set(enrollment.student.id, classStudent);
+
+        const gradeStudent = byGrade.get(enrollment.student.id) ?? {
+          ...studentInfo,
+          fullMarks: 0,
+          class: studentClass,
+        };
+        byGrade.set(enrollment.student.id, gradeStudent);
+
+        for (const { subject, medium } of enrollment.subjects) {
+          if (subject.ignoreRanking) continue;
+
+          const mark = enrollment.marks.find((result) => result.subject.id === subject.id);
+          const subjectResult = subjectResults.get(subject.id) ?? {
+            id: subject.id,
+            name: subject.name,
+            students: new Map<
+              string,
+              TopResultStudentWithClass & {
+                medium: string | null;
+                status: MarkStatus | null;
+              }
+            >(),
+          };
+          subjectResult.students.set(enrollment.student.id, {
+            ...studentInfo,
+            fullMarks: 0,
+            class: studentClass,
+            medium: medium?.name ?? null,
+            status: mark?.status ?? null,
+          });
+          subjectResults.set(subject.id, subjectResult);
+        }
+
+        for (const mark of enrollment.marks) {
+          if (mark.subject.ignoreRanking) continue;
+
+          const subjectResult = subjectResults.get(mark.subject.id);
+          const subjectStudent = subjectResult?.students.get(enrollment.student.id);
+          const earnedMarks = mark.status === "absent" ? 0 : (mark.marks ?? 0);
+
+          if (subjectStudent) {
+            subjectStudent.fullMarks += earnedMarks;
+          }
+
+          classStudent.fullMarks += earnedMarks;
+          gradeStudent.fullMarks += earnedMarks;
+        }
+      }
+
+      return {
+        id: classItem.id,
+        name: classItem.name,
+        topResult: rank(students.values()),
+      };
+    });
+
+    return {
+      byGrade: rank(byGrade.values()),
+      byClass,
+      bySubject: Array.from(subjectResults.values()).map(({ students, ...subject }) => ({
+        ...subject,
+        topResult: rank(students.values()),
+      })),
+    };
   }
 }

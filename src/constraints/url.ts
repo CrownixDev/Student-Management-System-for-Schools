@@ -12,8 +12,10 @@ export const APP_URLS = {
       root: "/nav/student",
       year: "/nav/student/year",
       batch: "/nav/student/batch",
-    },
-    exams: "/exams" as Route,
+    } as Record<string, Route>,
+    exams: {
+      root: "/nav/exams",
+    } as Record<string, Route>,
     setup: {
       root: "/nav/setup",
       teacher: "/teachers",

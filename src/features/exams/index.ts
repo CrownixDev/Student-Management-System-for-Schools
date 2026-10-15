@@ -1,8 +1,9 @@
 import { enrollmentRepository } from "../enrollment";
+import { gradesRepository } from "../grades";
 import { ExamRepository } from "./exams.repository";
 import { ExamService } from "./exams.service";
 
 export const examRepository = new ExamRepository();
-export const examService = new ExamService(examRepository, enrollmentRepository);
+export const examService = new ExamService(examRepository, enrollmentRepository, gradesRepository);
 
 export * from "./exams.types";

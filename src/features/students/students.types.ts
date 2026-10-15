@@ -1,3 +1,4 @@
+import { Enrollment, Exam, Mark, Student, Subject } from "@/generated/prisma/client";
 import { StudentGetPayload, StudentSelect } from "@/generated/prisma/models";
 
 export const studentListSelect = {
@@ -53,6 +54,31 @@ export const studentSelect = {
   },
 } satisfies StudentSelect;
 
-export type IStudent = StudentGetPayload<{
-  select: typeof studentSelect;
-}>;
+export type IStudent = {
+  id: Student["id"];
+  admissionNo: Student["admissionNo"];
+  fullName: Student["fullName"];
+  dob: Student["dob"];
+  gender: Student["gender"];
+  nic: Student["nic"];
+  phone: Student["phone"];
+  address: Student["address"];
+  guardianName: Student["guardianName"];
+  guardianPhone: Student["guardianPhone"];
+  enrollment: {
+    id: Enrollment["id"];
+    status: Enrollment["status"];
+    classIndex: Enrollment["classIndex"];
+    exams: {
+      name: Exam["name"];
+      subjects: {
+        id: Subject["id"];
+        name: Subject["name"];
+        result: {
+          marks: Mark["marks"];
+          status: Mark["status"];
+        };
+      }[];
+    }[];
+  };
+};

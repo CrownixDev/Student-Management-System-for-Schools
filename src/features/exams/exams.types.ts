@@ -1,10 +1,12 @@
-import { Mark, Subject } from "@/generated/prisma/client";
-import { SubjectCategory } from "@/generated/prisma/enums";
+import { Class, Mark, Medium, Student, Subject } from "@/generated/prisma/client";
+import { MarkStatus, SubjectCategory } from "@/generated/prisma/enums";
 import { ExamGetPayload, ExamSelect } from "@/generated/prisma/models";
 
 export const examListSelect = {
   id: true,
   name: true,
+  academicYear: { select: { id: true, name: true } },
+  gradeLevel: { select: { id: true, name: true } },
 } satisfies ExamSelect;
 
 export type IExamListItem = ExamGetPayload<{
@@ -52,4 +54,36 @@ export interface IExamByEnrollmentId {
       status: Mark["status"] | null;
     };
   }[];
+}
+
+export interface TopResultStudent {
+  id: Student["id"];
+  fullName: Student["fullName"];
+  admissionNo: Student["admissionNo"];
+  fullMarks: number;
+}
+
+export type TopResultStudentWithClass = TopResultStudent & {
+  class: Pick<Class, "id" | "name">;
+};
+
+interface TopResultClass {
+  id: Class["id"];
+  name: Class["name"];
+  topResult: TopResultStudent[];
+}
+
+interface TopResultSubject {
+  id: Subject["id"];
+  name: Subject["name"];
+  topResult: (TopResultStudentWithClass & {
+    medium: Medium["name"] | null;
+    status: MarkStatus | null;
+  })[];
+}
+
+export interface IExamTopResults {
+  byGrade: TopResultStudentWithClass[];
+  byClass: TopResultClass[];
+  bySubject: TopResultSubject[];
 }

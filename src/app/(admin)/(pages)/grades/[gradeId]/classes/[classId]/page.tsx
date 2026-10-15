@@ -2,7 +2,7 @@ import EmptyState from "@/components/admin/empty-state";
 import ClassSidebar from "@/components/classes/class-sidebar";
 import StudentDetails from "@/components/classes/student-details";
 import { examService } from "@/features/exams";
-import { studentsRepository, studentsService } from "@/features/students";
+import { studentsService } from "@/features/students";
 import { subjectRepository } from "@/features/subjects";
 import { idCache } from "@/lib/nuqs/id";
 import { TriangleAlertIcon, UsersRoundIcon } from "lucide-react";
@@ -27,10 +27,10 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
   const studentList = await studentsService.getSortedList(yearId, gradeId, classId);
 
   if (studentId) {
-    const student = await studentsRepository.getById(studentId, yearId, gradeId, classId);
+    const student = await studentsService.getById(studentId, yearId, gradeId, classId);
     if (student) {
-      const examData = await examService.getDataByEnrollmentId(student.enrollments[0].id);
-      const subjectList = await subjectRepository.getListByEnrollmentId(student.enrollments[0].id);
+      const examData = await examService.getDataByEnrollmentId(student.enrollment.id);
+      const subjectList = await subjectRepository.getListByEnrollmentId(student.enrollment.id);
       {
         studentDetails = <StudentDetails student={student} examData={examData} subjectList={subjectList} />;
       }

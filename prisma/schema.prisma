@@ -99,10 +99,11 @@ model Stream {
 }
 
 model Subject {
-  id       String          @id @default(uuid())
-  name     String
-  code     String?         @unique
-  category SubjectCategory @default(other)
+  id            String          @id @default(uuid())
+  name          String
+  code          String?         @unique
+  category      SubjectCategory @default(other)
+  ignoreRanking Boolean         @default(false)
 
   streams            Stream[]
   classSubjects      ClassSubject[]

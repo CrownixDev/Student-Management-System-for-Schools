@@ -3,6 +3,7 @@ import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { ExamRepository } from "./exams.repository";
 import {
   IExamByEnrollmentId,
+  IExamClassData,
   IExamListItem,
   IExamTopResults,
   TopResultStudent,
@@ -10,12 +11,14 @@ import {
 } from "./exams.types";
 import { GradesRepository } from "../grades/grades.repository";
 import { MarkStatus } from "@/generated/prisma/enums";
+import { ClassRepository } from "../class/class.repository";
 
 export class ExamService {
   constructor(
     private repository: ExamRepository,
     private enrollmentRepository: EnrollmentRepository,
     private gradesRepository: GradesRepository,
+    private classRepository: ClassRepository,
   ) {}
 
   async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
@@ -167,6 +170,35 @@ export class ExamService {
       bySubject: Array.from(subjectResults.values()).map(({ students, ...subject }) => ({
         ...subject,
         topResult: rank(students.values()),
+      })),
+    };
+  }
+
+  async getExamDataForClass(yearId: string, gradeId: string, classId: string, examId: string): Promise<IExamClassData> {
+    const classData = await this.classRepository.getStudentsWithExamData(yearId, gradeId, classId, examId);
+
+    if (!classData) throw new ApiError(404, "Class not found");
+
+    return {
+      id: classData.id,
+      name: classData.name,
+      gradeLevel: classData.gradeLevel,
+      academicYear: classData.academicYear,
+      students: classData.enrollments.map((enrollment) => ({
+        id: enrollment.student.id,
+        admissionNo: enrollment.student.admissionNo,
+        enrollmentId: enrollment.id,
+        fullName: enrollment.student.fullName,
+        classIndex: enrollment.classIndex,
+        subjects: enrollment.marks.map((mark) => ({
+          id: mark.subject.id,
+          name: mark.subject.name,
+          code: mark.subject.code,
+          result: {
+            marks: mark.marks,
+            status: mark.status,
+          },
+        })),
       })),
     };
   }

@@ -1,4 +1,4 @@
-import EmptyState from "@/components/admin/empty-state";
+import EmptyState from "@/components/ui/empty-state";
 import ClassSidebar from "@/components/classes/class-sidebar";
 import StudentDetails from "@/components/classes/student-details";
 import { examService } from "@/features/exams";

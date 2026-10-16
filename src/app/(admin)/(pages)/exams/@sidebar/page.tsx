@@ -8,9 +8,9 @@ import { academicYearsService, IAcademicYearListItem } from "@/features/academic
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { classService, IClassList } from "@/features/class";
 import { examService, IExamListItem } from "@/features/exams";
-import SidebarGradeContent from "@/components/exams/sidebar-grade-content";
-import SidebarClassContent from "@/components/exams/sidebar-class-content";
-import SidebarExamContent from "@/components/exams/sidebar-exam-content";
+import SidebarGradeContent from "@/components/exams/sidebar/sidebar-grade-content";
+import SidebarClassContent from "@/components/exams/sidebar/sidebar-class-content";
+import SidebarExamContent from "@/components/exams/sidebar/sidebar-exam-content";
 import Link from "next/link";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
@@ -72,7 +72,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
   };
 
   return (
-    <Sidebar collapsible="offcanvas" className="sticky top-0 h-screen">
+    <Sidebar collapsible="offcanvas">
       {renderSidebarContent()}
       <SidebarFooter>
         <Link href={"/"} className={buttonVariants({ variant: "outline" })}>

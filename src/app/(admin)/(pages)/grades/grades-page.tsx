@@ -1,4 +1,4 @@
-import EmptyState from "@/components/admin/empty-state";
+import EmptyState from "@/components/ui/empty-state";
 import { MousePointerClickIcon } from "lucide-react";
 
 export default async function GradesPage() {

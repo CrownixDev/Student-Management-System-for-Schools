@@ -1,4 +1,4 @@
-import { Class, Mark, Medium, Student, Subject } from "@/generated/prisma/client";
+import { AcademicYear, Class, Enrollment, GradeLevel, Mark, Medium, Student, Subject } from "@/generated/prisma/client";
 import { MarkStatus, SubjectCategory } from "@/generated/prisma/enums";
 import { ExamGetPayload, ExamSelect } from "@/generated/prisma/models";
 
@@ -86,4 +86,27 @@ export interface IExamTopResults {
   byGrade: TopResultStudentWithClass[];
   byClass: TopResultClass[];
   bySubject: TopResultSubject[];
+}
+
+export interface IExamClassData {
+  id: Class["id"];
+  name: Class["name"];
+  gradeLevel: { id: GradeLevel["id"]; name: GradeLevel["name"] };
+  academicYear: { id: AcademicYear["id"]; name: AcademicYear["name"] };
+  students: {
+    id: Student["id"];
+    enrollmentId: Enrollment["id"];
+    fullName: Student["fullName"];
+    admissionNo: Student["admissionNo"];
+    classIndex: Enrollment["classIndex"];
+    subjects: {
+      id: Subject["id"];
+      name: Subject["name"];
+      code: Subject["code"];
+      result: {
+        marks: Mark["marks"];
+        status: Mark["status"];
+      };
+    }[];
+  }[];
 }

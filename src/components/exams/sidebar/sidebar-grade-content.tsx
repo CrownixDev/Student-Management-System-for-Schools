@@ -10,7 +10,7 @@ import { Separator } from "@/components/shadcn/separator";
 import { TypographyH1, TypographyH2 } from "@/components/ui/typography";
 import { ArrowLeftIcon, GraduationCapIcon } from "lucide-react";
 import { IGradeListItemForYear } from "@/features/grades";
-import EmptyState from "@/components/admin/empty-state";
+import EmptyState from "@/components/ui/empty-state";
 import SidebarGradeButton from "./sidebar-grade-button";
 import Link from "next/link";
 import { IAcademicYearListItem } from "@/features/academic-years";

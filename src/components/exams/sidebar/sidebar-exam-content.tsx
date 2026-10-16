@@ -9,7 +9,7 @@ import { Button, buttonVariants } from "@/components/shadcn/button";
 import { Separator } from "@/components/shadcn/separator";
 import { TypographyH1, TypographyH2, TypographyP } from "@/components/ui/typography";
 import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
-import EmptyState from "@/components/admin/empty-state";
+import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
 import { IAcademicYearListItem } from "@/features/academic-years";
 import { IExamListItem } from "@/features/exams";

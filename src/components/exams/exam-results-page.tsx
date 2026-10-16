@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/ta
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
 import { IExamListItem, IExamTopResults } from "@/features/exams";
 import { ClipboardListIcon } from "lucide-react";
-import EmptyState from "@/components/admin/empty-state";
+import EmptyState from "@/components/ui/empty-state";
 import StudentDetailsViewButton from "./student-details-view-button";
 
 function ResultsEmptyState({

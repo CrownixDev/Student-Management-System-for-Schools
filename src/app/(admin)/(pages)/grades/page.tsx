@@ -24,7 +24,7 @@ export default async function page({ searchParams }: PageProps<"/grades">) {
     redirect("/nav/student");
   }
 
-  if (!yearData && !batchData && !gradelist) {
+  if ((!yearData && !batchData) || !gradelist) {
     redirect("/nav/student");
   }
 

@@ -96,7 +96,7 @@ export default function GradesSidebar({
                   <EmptyTitle>No grades found</EmptyTitle>
                   <EmptyContent>
                     You don&apos;t have any grades yet. Start by adding a new grade.
-                    <Button className={"w-full"} variant={"outline"} render={<Link href={"/nav/setup"} />}>
+                    <Button className={"w-full"} variant={"outline"} render={<Link href={"/setup"} />}>
                       <ArrowLeftIcon className="size-4" />
                       Take me to add a new grade
                     </Button>
@@ -145,7 +145,7 @@ export default function GradesSidebar({
                 <EmptyTitle>No grades found for this batch</EmptyTitle>
                 <EmptyContent>
                   Add a new grade to this batch to get started.
-                  <Button className={"w-full"} variant={"outline"} render={<Link href={"/nav/setup"} />}>
+                  <Button className={"w-full"} variant={"outline"} render={<Link href={"/setup"} />}>
                     <ArrowLeftIcon className="size-4" />
                     Take me to add a new grade
                   </Button>

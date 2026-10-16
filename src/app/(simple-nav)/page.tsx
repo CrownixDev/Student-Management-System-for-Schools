@@ -1,7 +1,7 @@
 import { APP_URLS } from "@/constraints/url";
-import { GraduationCapIcon, NotebookPenIcon, ServerCogIcon, SettingsIcon } from "lucide-react";
-import NavButton from "../../components/simple-nav/nav-button";
-import ButtonShell from "../../components/simple-nav/button-shell";
+import { GraduationCapIcon, NotebookPenIcon, Wrench } from "lucide-react";
+import NavButton from "@/components/simple-nav/nav-button";
+import ButtonShell from "@/components/simple-nav/button-shell";
 
 export default function page() {
   return (
@@ -13,11 +13,8 @@ export default function page() {
         <NavButton href={APP_URLS.simpleNav.exams.root} icon={NotebookPenIcon}>
           Exams
         </NavButton>
-        <NavButton href={APP_URLS.simpleNav.setup.root} icon={ServerCogIcon}>
+        <NavButton href={APP_URLS.simpleNav.setup} icon={Wrench}>
           Setup
-        </NavButton>
-        <NavButton href={APP_URLS.simpleNav.settings} icon={SettingsIcon}>
-          Settings
         </NavButton>
       </ButtonShell>
     </>

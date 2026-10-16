@@ -1,6 +1,6 @@
 "use client";
 
-import EmptyState from "@/components/admin/empty-state";
+import EmptyState from "@/components/ui/empty-state";
 import { BookOpenCheckIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import SubjectDialog from "@/components/dialog/subject-dialog";

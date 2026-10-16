@@ -8,15 +8,11 @@ import { streamRepository } from "@/features/streams";
 async function SubjectPage({ subjectId }: { subjectId: string }) {
   const subject = await subjectRepository.getById(subjectId);
   const streams = await streamRepository.getList();
-
-  if (!subject) {
-    redirect("/");
-  }
-
+  if (!subject) redirect("/setup/subjects");
   return <SubjectDetails subject={subject} streamsList={streams} />;
 }
 
-export default async function page({ params }: PageProps<"/subjects/[subjectId]">) {
+export default async function page({ params }: PageProps<"/setup/subjects/[subjectId]">) {
   const { subjectId } = await params;
 
   return (

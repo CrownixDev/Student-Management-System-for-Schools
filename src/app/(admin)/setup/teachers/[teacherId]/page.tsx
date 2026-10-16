@@ -6,11 +6,11 @@ import PageLoading from "@/components/ui/page-loading";
 
 async function Teacher({ teacherId }: { teacherId: string }) {
   const teacher = await teachersRepository.getById(teacherId);
-  if (!teacher) redirect("/teachers");
+  if (!teacher) redirect("/setup/teachers");
   return <TeacherDetails teacher={teacher} />;
 }
 
-export default async function page({ params }: PageProps<"/teachers/[teacherId]">) {
+export default async function page({ params }: PageProps<"/setup/teachers/[teacherId]">) {
   const { teacherId } = await params;
 
   return (

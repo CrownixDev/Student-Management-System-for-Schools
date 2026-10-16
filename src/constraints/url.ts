@@ -16,13 +16,6 @@ export const APP_URLS = {
     exams: {
       root: "/nav/exams",
     } as Record<string, Route>,
-    setup: {
-      root: "/nav/setup",
-      teacher: "/teachers",
-      subjects: "/subjects",
-      streams: "/streams",
-      grades: "/grades",
-    } as Record<string, Route>,
-    settings: "nav/settings",
+    setup: "/setup" as Route,
   },
 };

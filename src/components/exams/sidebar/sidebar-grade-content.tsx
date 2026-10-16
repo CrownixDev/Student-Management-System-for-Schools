@@ -52,7 +52,7 @@ export default function SidebarGradeContent({
                 title="No grades found"
                 description="You don't have any grades yet. Start by adding a new grade."
                 action={
-                  <Button className={"w-full"} variant={"outline"} render={<Link href={"/nav/setup"} />}>
+                  <Button className={"w-full"} variant={"outline"} render={<Link href={"/setup"} />}>
                     <ArrowLeftIcon className="size-4" />
                     Take me to add a new grade
                   </Button>

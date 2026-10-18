@@ -1,3 +1,4 @@
+import { RESULT_LIMIT } from "@/constraints";
 import { createSearchParamsCache, parseAsInteger, parseAsNumberLiteral, parseAsString } from "nuqs/server";
 
 export const filterParsers = {
@@ -9,7 +10,7 @@ export const filterParsers = {
     },
   }),
   page: parseAsInteger.withDefault(1).withOptions({ shallow: false }),
-  limit: parseAsNumberLiteral([25, 50, 100]).withDefault(25).withOptions({ shallow: false }),
+  limit: parseAsNumberLiteral([25, 50, 100]).withDefault(RESULT_LIMIT).withOptions({ shallow: false }),
 };
 
 export const filterCache = createSearchParamsCache(filterParsers);

@@ -69,8 +69,7 @@ export default function SidebarExamContent({
                     Take me to add a new exam
                   </Button>
                 }
-                border={false}
-              />
+                noBorder              />
             </SidebarGroupContent>
           )}
         </SidebarGroup>

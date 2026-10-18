@@ -1,4 +1,6 @@
+import { Class, Medium, Subject } from "@/generated/prisma/client";
 import { TeacherGetPayload, TeacherSelect } from "@/generated/prisma/models";
+import { StrictOmit } from "@/lib/utils";
 
 export const teacherListSelect = {
   id: true,
@@ -9,6 +11,11 @@ export const teacherListSelect = {
 export type ITeacherListItem = TeacherGetPayload<{
   select: typeof teacherListSelect;
 }>;
+
+export type ITeacherList = {
+  list: ITeacherListItem[];
+  count: number;
+};
 
 export const teacherSelect = {
   id: true,
@@ -31,6 +38,15 @@ export const teacherSelect = {
   },
 } satisfies TeacherSelect;
 
-export type ITeacher = TeacherGetPayload<{
-  select: typeof teacherSelect;
-}>;
+export type ITeacher = StrictOmit<
+  TeacherGetPayload<{
+    select: typeof teacherSelect;
+  }>,
+  "classSubjects"
+> & {
+  subjects: {
+    name: Subject["name"];
+    medium: Medium["name"] | null;
+    class: Class["name"];
+  }[];
+};

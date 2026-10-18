@@ -57,8 +57,7 @@ export default function SidebarGradeContent({
                     Take me to add a new grade
                   </Button>
                 }
-                border={false}
-              />
+                noBorder              />
             </SidebarGroupContent>
           )}
         </SidebarGroup>

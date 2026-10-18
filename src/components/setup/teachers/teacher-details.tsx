@@ -13,7 +13,7 @@ export default function TeacherDetails({ teacher }: { teacher: ITeacher }) {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-5xl space-y-8 px-16 py-8">
+      <div className="overflow-y-auto mx-auto w-full max-w-5xl space-y-8 px-16 py-8">
         <div className="flex items-start justify-between gap-5">
           <div className="flex items-center gap-4">
             <div>
@@ -36,7 +36,7 @@ export default function TeacherDetails({ teacher }: { teacher: ITeacher }) {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Subject assignments</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">{teacher.classSubjects.length}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">{teacher.subjects.length}</p>
           </div>
         </div>
         <section className="space-y-3">
@@ -69,21 +69,23 @@ export default function TeacherDetails({ teacher }: { teacher: ITeacher }) {
           <div>
             <TypographyH2>Subject assignments</TypographyH2>
           </div>
-          {teacher.classSubjects.length ? (
+          {teacher.subjects.length ? (
             <div className="divide-y divide-border border-y border-border">
-              {teacher.classSubjects.map((assignment) => (
-                <div key={assignment.medium?.name + assignment.subject.name} className="flex gap-3">
+              {teacher.subjects.map((subject) => (
+                <div key={subject?.medium + subject.name} className="flex gap-3">
                   <DotIcon />
                   <div className="flex gap-5">
                     <p className="text-muted-foreground">
-                      <span className="text-black">Class:</span> {assignment.class.name}
+                      <span className="text-black">Class:</span> {subject.class}
                     </p>
                     <p className="text-muted-foreground">
-                      <span className="text-black">Subject:</span> {assignment.subject.name}
+                      <span className="text-black">Subject:</span> {subject.name}
                     </p>
-                    <p className="text-muted-foreground">
-                      <span className="text-black">Medium:</span> {assignment.medium?.name}
-                    </p>
+                    {subject.medium && (
+                      <p className="text-muted-foreground">
+                        <span className="text-black">Medium:</span> {subject.medium}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

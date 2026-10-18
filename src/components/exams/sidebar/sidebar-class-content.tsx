@@ -65,7 +65,7 @@ export default function SidebarClassContent({
                     Take me to add a new class
                   </Button>
                 }
-                border={false}
+                noBorder
               />
             </SidebarGroupContent>
           )}

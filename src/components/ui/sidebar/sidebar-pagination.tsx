@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { ComponentProps, useId } from "react";
 import { Field, FieldLabel } from "@/components/shadcn/field";
 import {
   Pagination,
@@ -13,8 +13,13 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { filterParsers } from "@/lib/nuqs/filter";
 import { useQueryStates } from "nuqs";
+import { cn } from "cn";
 
-export default function SidebarPagination({ itemCount }: { itemCount: number }) {
+interface Props extends ComponentProps<"div"> {
+  itemCount: number;
+}
+
+export default function SidebarPagination({ itemCount, className, ...props }: Props) {
   const [{ page, limit }, setParsers] = useQueryStates(filterParsers);
   const selectId = useId();
   const pageCount = Math.max(1, Math.ceil(itemCount / limit));
@@ -22,7 +27,7 @@ export default function SidebarPagination({ itemCount }: { itemCount: number }) 
   const isNextDisabled = page >= pageCount;
 
   return (
-    <div className="flex min-w-0 flex-col gap-2 bg-background">
+    <div className={cn("flex min-w-0 flex-col gap-2 bg-background p-2", className)} {...props}>
       <Pagination className="w-full">
         <PaginationContent className="w-full min-w-0 justify-between">
           <PaginationItem>

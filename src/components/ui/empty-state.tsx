@@ -7,19 +7,19 @@ export default function EmptyState({
   title,
   description,
   action,
-  border = true,
+  noBorder = false,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   action?: React.ReactNode;
-  border?: boolean;
+  noBorder?: boolean;
 }) {
   const Icon = icon;
   return (
     <div className="flex w-full h-full items-center justify-center">
       <div>
-        <Empty className={cn("w-sm", border ? "border border-muted-foreground" : undefined)}>
+        <Empty className={cn("max-w-sm", noBorder ? undefined : "border border-muted-foreground")}>
           <EmptyHeader>
             {Icon && (
               <EmptyMedia variant="icon">

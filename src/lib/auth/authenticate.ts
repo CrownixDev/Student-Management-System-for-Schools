@@ -8,7 +8,7 @@ import { clearAuthCookies, setAuthCookies } from "./cookies";
 import { verifyAccessToken } from "./jwt";
 import { authService } from "@/features/auth";
 import { UserRole } from "@/generated/prisma/enums";
-import { APP_URLS } from "@/constraints/url";
+import { APP_URLS } from "@/constraints";
 
 export type AuthPayload = {
   username: string;

@@ -1,4 +1,4 @@
-import { APP_URLS } from "@/constraints/url";
+import { APP_URLS } from "@/constraints";
 import { GraduationCapIcon, NotebookPenIcon, Wrench } from "lucide-react";
 import NavButton from "@/components/simple-nav/nav-button";
 import ButtonShell from "@/components/simple-nav/button-shell";

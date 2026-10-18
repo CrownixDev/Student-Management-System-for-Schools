@@ -10,6 +10,11 @@ export type ISubjectListItem = SubjectGetPayload<{
   select: typeof subjectListSelect;
 }>;
 
+export interface ISubjectList {
+  list: ISubjectListItem[];
+  count: number;
+}
+
 export const subjectSelect = {
   id: true,
   name: true,

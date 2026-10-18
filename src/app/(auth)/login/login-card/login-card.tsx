@@ -10,7 +10,7 @@ import { registerAction } from "@/actions/auth/register.action";
 import { loginAction } from "@/actions/auth/login.actions";
 import { toast } from "react-toastify";
 import { redirect } from "next/navigation";
-import { APP_URLS } from "@/constraints/url";
+import { APP_URLS } from "@/constraints";
 import PasswordInput from "./password-input";
 import zod from "zod";
 

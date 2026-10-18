@@ -1,8 +1,12 @@
+"use client";
+
+import { Separator } from "@/components/shadcn/separator";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
@@ -10,6 +14,7 @@ import {
   SidebarProvider,
 } from "@/components/shadcn/sidebar";
 import SidebarFooter from "@/components/ui/sidebar/sidebar-footer";
+import { TypographyH1 } from "@/components/ui/typography";
 import {
   BackpackIcon,
   CalendarsIcon,
@@ -27,20 +32,23 @@ import {
 } from "lucide-react";
 import { Route } from "next";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-export default function layout({ children }: LayoutProps<"/">) {
+export default function SetupLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   const sidebarItems = [
-    { name: "Years", icon: CalendarsIcon, link: "/setup/teachers" },
-    { name: "Grades", icon: GraduationCapIcon, link: "/setup/teachers" },
-    { name: "Classes", icon: BackpackIcon, link: "/setup/teachers" },
-    { name: "Students", icon: CircleUserIcon, link: "/setup/teachers" },
+    { name: "Years", icon: CalendarsIcon, link: "/setup/years" },
+    { name: "Grades", icon: GraduationCapIcon, link: "/setup/grades" },
+    { name: "Classes", icon: BackpackIcon, link: "/setup/classes" },
+    { name: "Students", icon: CircleUserIcon, link: "/setup/students" },
     { name: "Subjects", icon: LibraryBigIcon, link: "/setup/subjects" },
-    { name: "Exams", icon: NotebookPenIcon, link: "/setup/subjects" },
-    { name: "Streams", icon: WaypointsIcon, link: "/setup/teachers" },
-    { name: "Batch", icon: LinkIcon, link: "/setup/teachers" },
+    { name: "Exams", icon: NotebookPenIcon, link: "/setup/exams" },
+    { name: "Streams", icon: WaypointsIcon, link: "/setup/streams" },
+    { name: "Batch", icon: LinkIcon, link: "/setup/batch" },
     { name: "Teachers", icon: UsersIcon, link: "/setup/teachers" },
-    { name: "Medium", icon: Languages, link: "/setup/teachers" },
-    { name: "Users", icon: KeyRoundIcon, link: "/setup/teachers" },
+    { name: "Medium", icon: Languages, link: "/setup/medium" },
+    { name: "Users", icon: KeyRoundIcon, link: "/setup/users" },
     { name: "Settings", icon: SettingsIcon, link: "/setup/settings" },
   ] as {
     name: string;
@@ -50,16 +58,21 @@ export default function layout({ children }: LayoutProps<"/">) {
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="none" className="w-[14rem] h-screen border-r border-sidebar-border">
+        <SidebarHeader>
+          <TypographyH1>Setup</TypographyH1>
+          <Separator />
+        </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
                 {sidebarItems.map((item) => {
                   const Icon = item.icon;
+                  const isActive = pathname.startsWith(item.link);
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton render={<Link href={item.link} />}>
+                      <SidebarMenuButton isActive={isActive} render={<Link href={item.link} />}>
                         <Icon />
                         <span>{item.name}</span>
                       </SidebarMenuButton>

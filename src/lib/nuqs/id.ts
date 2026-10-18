@@ -7,6 +7,8 @@ export const idParsers = {
   classId: parseAsString.withOptions({ shallow: false }),
   studentId: parseAsString.withOptions({ shallow: false }),
   examId: parseAsString.withOptions({ shallow: false }),
+  teacherId: parseAsString.withOptions({ shallow: false }),
+  subjectId: parseAsString.withOptions({ shallow: false }),
 };
 
 export const idCache = createSearchParamsCache(idParsers);

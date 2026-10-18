@@ -1,8 +1,8 @@
-import { APP_URLS } from "@/constraints/url";
-import NavButton from "../../../../components/simple-nav/nav-button";
+import { APP_URLS } from "@/constraints";
 import { CalendarDaysIcon, LinkIcon } from "lucide-react";
-import BackButton from "../../../../components/simple-nav/back-button";
-import ButtonShell from "../../../../components/simple-nav/button-shell";
+import NavButton from "@/components/simple-nav/nav-button";
+import BackButton from "@/components/simple-nav/back-button";
+import ButtonShell from "@/components/simple-nav/button-shell";
 
 export default function page() {
   return (

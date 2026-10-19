@@ -31,16 +31,14 @@ export default function SubjectSidebar({
       <SetupSidebar>
         <SetupSidebarHearder>
           <SidebarHearder
-            header={{
-              title: "All Subjects",
-              actionBtnlabel: "Add a new subject",
+            header={{ title: "All Subjects" }}
+            action={{
+              btnLabel: "Add a new subject",
               onAction() {
                 setIsAddingSubject(true);
               },
             }}
-            search={{
-              placeholder: "Search by Name, code, or category",
-            }}
+            search={{ placeholder: "Search by Name, code, or category" }}
           />
         </SetupSidebarHearder>
         <SetupSidebarContent>

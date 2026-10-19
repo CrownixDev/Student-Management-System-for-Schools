@@ -31,16 +31,14 @@ export default function TeachersSidebar({
       <SetupSidebar>
         <SetupSidebarHearder>
           <SidebarHearder
-            header={{
-              title: "All Teachers",
-              actionBtnlabel: "Add a new teacher",
+            header={{ title: "All Teachers" }}
+            action={{
+              btnLabel: "Add a new teacher",
               onAction() {
                 setIsAdding(true);
               },
             }}
-            search={{
-              placeholder: "Search by Name or phone",
-            }}
+            search={{ placeholder: "Search by Name or phone" }}
           />
         </SetupSidebarHearder>
         <SetupSidebarContent>

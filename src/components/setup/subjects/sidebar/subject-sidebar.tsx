@@ -12,6 +12,8 @@ import { ISubjectListItem } from "@/features/subjects/subject.types";
 import { useState } from "react";
 import SidebarHearder from "@/components/setup/sidebar/sidebar-hearder";
 import SubjectSidebarItem from "./sidebar-item";
+import EmptyState from "@/components/ui/empty-state";
+import { LibraryBig } from "lucide-react";
 
 export default function SubjectSidebar({
   subjectList,
@@ -47,12 +49,12 @@ export default function SubjectSidebar({
             return <SubjectSidebarItem key={subject.id} category={category} subject={subject} />;
           })}
           {subjectList.length === 0 && (
-            <div className="px-4 py-8 text-center">
-              <p className="text-sm font-medium">{isQuery ? "No subjects match this search." : "No subjects yet."}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {isQuery ? "Try a different search." : "Add a subject to get started."}
-              </p>
-            </div>
+            <EmptyState
+              icon={LibraryBig}
+              title={isQuery ? "No subjects match this search." : "No subjects yet."}
+              description={isQuery ? "Try a different search." : "Add a subject to get started."}
+              noBorder
+            />
           )}
         </SetupSidebarContent>
         <SetupSidebarFooter>

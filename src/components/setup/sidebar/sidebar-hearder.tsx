@@ -1,12 +1,10 @@
 "use client";
 
 import { Button } from "@/components/shadcn/button";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/shadcn/input-group";
 import { Separator } from "@/components/shadcn/separator";
+import SearchInput from "@/components/ui/search-input";
 import { TypographyH1 } from "@/components/ui/typography";
-import { filterParsers } from "@/lib/nuqs/filter";
-import { PlusIcon, SearchIcon } from "lucide-react";
-import { useQueryStates } from "nuqs";
+import { PlusIcon } from "lucide-react";
 
 interface Props {
   header: {
@@ -20,8 +18,6 @@ interface Props {
 }
 
 export default function SidebarHearder({ header, search }: Props) {
-  const [{ search: seachValue }, SetParsers] = useQueryStates(filterParsers);
-
   return (
     <div className="flex flex-col gap-3 p-3">
       <div className="flex flex-col gap-3">
@@ -32,19 +28,7 @@ export default function SidebarHearder({ header, search }: Props) {
         </Button>
       </div>
 
-      <InputGroup>
-        <InputGroupAddon>
-          <SearchIcon />
-        </InputGroupAddon>
-        <InputGroupInput
-          value={seachValue ?? ""}
-          onChange={(e) => SetParsers({ search: e.target.value, page: null })}
-          placeholder={search.placeholder}
-        />
-        <InputGroupButton size={"sm"} onClick={() => SetParsers({ search: null })}>
-          Clear
-        </InputGroupButton>
-      </InputGroup>
+      <SearchInput placeholder={search.placeholder} />
 
       <Separator />
     </div>

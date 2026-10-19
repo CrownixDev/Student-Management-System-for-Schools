@@ -2,9 +2,9 @@ import { RESULT_LIMIT } from "@/constraints";
 import { StrictOmit } from "./utils";
 
 export interface IQueryParams {
-  search: string | null;
-  page: number | null;
-  limit: number | null;
+  search?: string | null;
+  page?: number | null;
+  limit?: number | null;
 }
 
 /**
@@ -21,7 +21,7 @@ export const getPagination = ({ page, limit }: StrictOmit<IQueryParams, "search"
   return { pageNumber, limitNumber, skipCount };
 };
 
-export const getCleanSearch = (search: string | null): string => {
+export const getCleanSearch = (search: undefined | null | string): string => {
   const cleanSearch = search === "undefined" || search === "null" || !search ? "" : search;
   return cleanSearch;
 };

@@ -28,7 +28,6 @@ import {
   NotebookPenIcon,
   SettingsIcon,
   UsersIcon,
-  WaypointsIcon,
 } from "lucide-react";
 import { Route } from "next";
 import Link from "next/link";
@@ -44,7 +43,6 @@ export default function SetupLayout({ children }: { children: React.ReactNode })
     { name: "Students", icon: CircleUserIcon, link: "/setup/students" },
     { name: "Subjects", icon: LibraryBigIcon, link: "/setup/subjects" },
     { name: "Exams", icon: NotebookPenIcon, link: "/setup/exams" },
-    { name: "Streams", icon: WaypointsIcon, link: "/setup/streams" },
     { name: "Batch", icon: LinkIcon, link: "/setup/batch" },
     { name: "Teachers", icon: UsersIcon, link: "/setup/teachers" },
     { name: "Medium", icon: Languages, link: "/setup/medium" },

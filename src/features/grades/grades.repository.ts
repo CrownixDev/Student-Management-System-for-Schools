@@ -1,10 +1,22 @@
 import { prisma } from "@/lib/prisma";
-import { gradeListSelect, IGradeListItem } from "./grades.types";
+import { gradeListSelect, gradesSelect } from "./grades.types";
+import { getCleanSearch, IQueryParams } from "@/lib/filter";
+import { GradeLevelWhereInput } from "@/generated/prisma/models";
 
 export class GradesRepository {
-  async getList(): Promise<IGradeListItem[]> {
+  async getList({ search }: Pick<IQueryParams, "search">) {
+    const cleanSearch = getCleanSearch(search);
+
+    const where: GradeLevelWhereInput = {};
+
+    if (cleanSearch) {
+      where.OR = [{ name: { contains: cleanSearch } }];
+    }
+
     return await prisma.gradeLevel.findMany({
+      where,
       select: gradeListSelect,
+      orderBy: { number: "asc" },
     });
   }
 

@@ -1,9 +1,14 @@
 import { ApiError } from "@/lib/ApiError";
 import { GradesRepository } from "./grades.repository";
-import { IGradeListItem, IGradeListItemForYear } from "./grades.types";
+import { IGradeListItem, IGradeListItemForYear, IGradeWithClasses } from "./grades.types";
+import { IQueryParams } from "@/lib/filter";
 
 export class GradesService {
   constructor(private repository: GradesRepository) {}
+
+  async getList({ search }: Pick<IQueryParams, "search">): Promise<IGradeListItem[]> {
+    return await this.repository.getList({ search });
+  }
 
   async getListByYear(yearId: string): Promise<IGradeListItemForYear[]> {
     const gradeData = await this.repository.getListByYear(yearId);

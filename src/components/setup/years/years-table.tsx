@@ -1,18 +1,24 @@
-"use client";
-
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { CheckCircle2Icon, PencilIcon, } from "lucide-react";
-import { IAcademicYear } from "@/features/academic-years";
-import SetAsCurrentYearDialog from "@/components/dialog/academic-years/set-as-current-year-dialog";
+import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import YearsEditBtn from "./buttons/years-edit-btn";
+import YearsSetCurrentBtn from "./buttons/years-set-current-btn";
+import { filterCache } from "@/lib/nuqs/filter";
+import { redirect } from "next/navigation";
+import EmptyState from "@/components/ui/empty-state";
+import { CalendarsIcon } from "lucide-react";
 
-interface YearsTableProps {
-  years: IAcademicYear[];
-  onEdit: (year: IAcademicYear) => void;
-}
+export default async function YearsTable() {
+  const search = filterCache.get("search");
+  let years: IAcademicYear[] | null = null;
 
-export default function YearsTable({ years, onEdit }: YearsTableProps) {
+  try {
+    years = await academicYearsService.getList({ search });
+  } catch (error) {
+    console.error("Failed to load academic years from service:", error);
+    redirect("/setup");
+  }
+
   return (
     <div className="overflow-y-scroll">
       <Table>
@@ -35,7 +41,7 @@ export default function YearsTable({ years, onEdit }: YearsTableProps) {
                   {year.isCurrent ? (
                     <Badge variant="success">Current Active Year</Badge>
                   ) : (
-                    <Badge variant="outline">Inactive</Badge>
+                    <Badge variant="outline">Past</Badge>
                   )}
                 </TableCell>
 
@@ -45,20 +51,8 @@ export default function YearsTable({ years, onEdit }: YearsTableProps) {
 
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    {/* Set as current button */}
-                    {year.isCurrent ? (
-                      <Button size="sm" variant="ghost" disabled>
-                        <CheckCircle2Icon />
-                        Active
-                      </Button>
-                    ) : (
-                      <SetAsCurrentYearDialog year={year} />
-                    )}
-
-                    {/* Edit button */}
-                    <Button size="icon-sm" variant="ghost" title="Edit academic year" onClick={() => onEdit(year)}>
-                      <PencilIcon />
-                    </Button>
+                    <YearsSetCurrentBtn year={year} />
+                    <YearsEditBtn year={year} />
                   </div>
                 </TableCell>
               </TableRow>
@@ -66,6 +60,19 @@ export default function YearsTable({ years, onEdit }: YearsTableProps) {
           })}
         </TableBody>
       </Table>
+      {years.length === 0 && (
+        <div className="py-12">
+          <EmptyState
+            icon={CalendarsIcon}
+            title={search ? "No matching academic years" : "No academic years found"}
+            description={
+              search
+                ? `No academic years match "${search}". Try searching for another year.`
+                : "Get started by adding the first academic year."
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

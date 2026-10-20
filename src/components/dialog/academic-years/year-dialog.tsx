@@ -12,7 +12,7 @@ import { TrashIcon } from "lucide-react";
 import RenderDialogErrors from "../compoennts/render-dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 
-export default function YearDialog({
+export default function AcademicYearDialog({
   open,
   onOpenChange,
   data,

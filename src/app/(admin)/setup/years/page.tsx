@@ -1,29 +1,25 @@
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
-import { IQueryParams } from "@/lib/filter";
-import { filterCache } from "@/lib/nuqs/filter";
-import { redirect } from "next/navigation";
+import { TypographyH1 } from "@/components/ui/typography";
+import { Separator } from "@/components/shadcn/separator";
+import SearchInput from "@/components/ui/search-input";
 import { Suspense } from "react";
 import PageLoading from "@/components/ui/page-loading";
-import YearsPage from "@/components/setup/years/years-page";
+import YearsNewBtn from "@/components/setup/years/buttons/years-new-btn";
+import YearsTable from "@/components/setup/years/years-table";
+import { filterCache } from "@/lib/nuqs/filter";
 
-async function YearsContent({ search }: Pick<IQueryParams, "search">) {
-  let years: IAcademicYear[] | null = null;
-
-  try {
-    years = await academicYearsService.getList({ search });
-  } catch (error) {
-    console.error("Failed to load academic years from service:", error);
-    redirect("/setup");
-  }
-  return <YearsPage academicYears={years} />;
-}
-
-export default async function Page({ searchParams }: PageProps<"/setup/years">) {
-  const { search } = await filterCache.parse(searchParams);
-
+export default async function page({ searchParams }: PageProps<"/setup/years">) {
+  await filterCache.parse(searchParams);
   return (
-    <Suspense fallback={<PageLoading />}>
-      <YearsContent search={search} />
-    </Suspense>
+    <div className="flex flex-col overflow-y-auto p-8 space-y-6">
+      <div className="flex w-full items-center justify-between gap-5">
+        <TypographyH1 className="text-xl lg:text-2xl font-bold tracking-tight">Academic Years</TypographyH1>
+        <YearsNewBtn />
+      </div>
+      <SearchInput placeholder="Search academic years..." />
+      <Separator />
+      <Suspense fallback={<PageLoading />}>
+        <YearsTable />
+      </Suspense>
+    </div>
   );
 }

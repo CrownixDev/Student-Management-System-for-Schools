@@ -47,7 +47,6 @@ export default function GradesPage({ grades }: { grades: IGradeListItem[] }) {
       ) : (
         <div className="py-12 border border-dashed rounded-xl border-border bg-card/40">
           <EmptyState
-            noBorder
             icon={GraduationCapIcon}
             title={search ? "No matching grades" : "No grades found"}
             description={

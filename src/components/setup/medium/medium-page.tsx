@@ -51,7 +51,6 @@ export default function MediumPage({ mediums }: MediumPageProps) {
       ) : (
         <div className="py-12 border border-dashed rounded-xl border-border bg-card/40">
           <EmptyState
-            noBorder
             icon={Languages}
             title={search ? "No matching mediums" : "No mediums found"}
             description={

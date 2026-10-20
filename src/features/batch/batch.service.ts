@@ -1,9 +1,14 @@
 import { ApiError } from "@/lib/ApiError";
 import { BatchRepository } from "./batch.repository";
 import { IBatch, IBatchListItem } from "./batch.types";
+import { IQueryParams } from "@/lib/filter";
 
 export class BatchService {
   constructor(private repository: BatchRepository) {}
+
+  async getList({ search }: Pick<IQueryParams, "search">): Promise<IBatchListItem[]> {
+    return await this.repository.getList({ search });
+  }
 
   async getById(batchId: string): Promise<IBatch> {
     const batchData = await this.repository.getById(batchId);
@@ -38,6 +43,7 @@ export class BatchService {
     return {
       id: batchData.id,
       name: batchData.name,
+      type: batchData.type,
       academicYear: [...academicYears.values()],
     };
   }

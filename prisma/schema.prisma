@@ -44,6 +44,11 @@ enum UserRole {
   subject_teacher
 }
 
+enum BatchType {
+  ol
+  al
+}
+
 // Models
 
 model AcademicYear {
@@ -133,10 +138,11 @@ model Teacher {
   updatedAt DateTime @updatedAt
 }
 
-// A/L Grouping
+// O/L | A/L Grouping
 model Batch {
-  id   String @id @default(uuid())
-  name String @unique // "2026"
+  id   String    @id @default(uuid())
+  name String    @unique // "2026"
+  type BatchType @default(al)
 
   classes Class[]
 

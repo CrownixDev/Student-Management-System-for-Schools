@@ -5,7 +5,7 @@ import NavButton from "@/components/simple-nav/nav-button";
 import { Route } from "next";
 
 export default async function page() {
-  const academicYearList = await academicYearsRepository.getList();
+  const academicYearList = await academicYearsRepository.getList({});
 
   return (
     <ButtonShell backButton={<BackButton href="/" />}>

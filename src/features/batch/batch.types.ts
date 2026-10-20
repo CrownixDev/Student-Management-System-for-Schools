@@ -5,6 +5,7 @@ import { BatchGetPayload, BatchSelect } from "@/generated/prisma/models";
 export const batchListSelect = {
   id: true,
   name: true,
+  type: true,
 } satisfies BatchSelect;
 
 export type IBatchListItem = BatchGetPayload<{
@@ -32,6 +33,7 @@ export const batchClassSelect = {
 export interface IBatch {
   id: Batch["id"];
   name: Batch["name"];
+  type: Batch["type"];
   academicYear: {
     id: AcademicYear["id"];
     name: AcademicYear["name"];

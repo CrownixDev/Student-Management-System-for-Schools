@@ -47,7 +47,6 @@ export default function YearsPage({ academicYears }: { academicYears: IAcademicY
       ) : (
         <div className="py-12 border border-dashed rounded-xl border-border bg-card/40">
           <EmptyState
-            noBorder
             icon={CalendarsIcon}
             title={search ? "No matching academic years" : "No academic years found"}
             description={

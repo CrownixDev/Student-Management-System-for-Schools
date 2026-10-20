@@ -1,25 +1,32 @@
-"use client";
-
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { IBatchListItem } from "@/features/batch";
-import { batchTypeOptions } from "@/features/batch/batch.enums";
-import { PencilIcon } from "lucide-react";
+import { batchService, IBatchListItem } from "@/features/batch";
+import { filterCache } from "@/lib/nuqs/filter";
+import { redirect } from "next/navigation";
+import BatchEditBtn from "./batch-edit-btn";
+import { BatchType } from "@/generated/prisma/enums";
+import EmptyState from "@/components/ui/empty-state";
+import { EyeIcon, LinkIcon } from "lucide-react";
+import { buttonVariants } from "@/components/shadcn/button";
+import TooltipLink from "@/components/ui/tooltip-link";
 
-interface BatchTableProps {
-  batches: IBatchListItem[];
-  onEdit: (batch: IBatchListItem) => void;
-}
+export default async function BatchTable({ type }: { type: BatchType }) {
+  const search = filterCache.get("search");
 
-export default function BatchTable({ batches, onEdit }: BatchTableProps) {
+  let batches: IBatchListItem[] | null = null;
+
+  try {
+    batches = await batchService.getList({ search, type });
+  } catch (error) {
+    console.error("Failed to load batches:", error);
+    redirect("/setup");
+  }
+
   return (
     <div className="overflow-y-auto">
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow>
             <TableHead className="font-semibold text-foreground">Batch Name</TableHead>
-            <TableHead className="font-semibold text-foreground">Type</TableHead>
             <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -27,22 +34,33 @@ export default function BatchTable({ batches, onEdit }: BatchTableProps) {
           {batches.map((batch) => (
             <TableRow key={batch.id}>
               <TableCell className="font-medium">{batch.name}</TableCell>
-
-              <TableCell>
-                <Badge variant="outline" className="text-muted-foreground">
-                  {batchTypeOptions.find((option) => option.value === batch.type)?.label}
-                </Badge>
-              </TableCell>
-
               <TableCell className="text-right">
-                <Button size="icon-sm" variant="ghost" title="Edit batch" onClick={() => onEdit(batch)}>
-                  <PencilIcon />
-                </Button>
+                <TooltipLink
+                  tooltip="View this batch"
+                  href={`/grades?batchId=${batch.id}`}
+                  className={buttonVariants({ size: "icon-sm", variant: "ghost" })}
+                >
+                  <EyeIcon />
+                </TooltipLink>
+                <BatchEditBtn batch={batch} />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {batches.length === 0 && (
+        <div className="py-12">
+          <EmptyState
+            icon={LinkIcon}
+            title={search ? "No matching batches" : "No batches found for this type"}
+            description={
+              search
+                ? `No batches match "${search}". Try searching for another batch.`
+                : "Batches group A/L and O/L classes across years. Get started by adding the first batch."
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

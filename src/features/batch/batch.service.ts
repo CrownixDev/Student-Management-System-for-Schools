@@ -2,12 +2,13 @@ import { ApiError } from "@/lib/ApiError";
 import { BatchRepository } from "./batch.repository";
 import { IBatch, IBatchListItem } from "./batch.types";
 import { IQueryParams } from "@/lib/filter";
+import { BatchType } from "@/generated/prisma/enums";
 
 export class BatchService {
   constructor(private repository: BatchRepository) {}
 
-  async getList({ search }: Pick<IQueryParams, "search">): Promise<IBatchListItem[]> {
-    return await this.repository.getList({ search });
+  async getList({ search, type }: { search: IQueryParams["search"]; type: BatchType }): Promise<IBatchListItem[]> {
+    return await this.repository.getList({ search, type });
   }
 
   async getById(batchId: string): Promise<IBatch> {

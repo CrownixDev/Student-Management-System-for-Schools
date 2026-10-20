@@ -1,0 +1,18 @@
+"use client";
+import BatchDialog from "@/components/dialog/batch/batch-dialog";
+import TooltipButton from "@/components/ui/tooltip-button";
+import { IBatchListItem } from "@/features/batch";
+import { PencilIcon } from "lucide-react";
+import { useState } from "react";
+
+export default function BatchEditBtn({ batch }: { batch: IBatchListItem }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <TooltipButton tooltip="Edit batch" size="icon-sm" variant="ghost" onClick={() => setOpen(true)}>
+        <PencilIcon />
+      </TooltipButton>
+      <BatchDialog open={open} onOpenChange={setOpen} data={batch} />
+    </>
+  );
+}

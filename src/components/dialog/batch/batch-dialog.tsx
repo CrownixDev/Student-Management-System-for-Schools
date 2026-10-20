@@ -16,12 +16,11 @@ import { batchTypeOptions } from "@/features/batch/batch.enums";
 interface BatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data?: IBatchListItem | null;
+  data?: Partial<IBatchListItem> | null;
 }
 
 export default function BatchDialog({ open, onOpenChange, data }: BatchDialogProps) {
   const isEditing = Boolean(data?.id);
-
   const [badgeData, setBadgeData] = useState<StrictOmit<IBatchListItem, "id">>({
     name: data?.name ?? "",
     type: data?.type ?? "al",

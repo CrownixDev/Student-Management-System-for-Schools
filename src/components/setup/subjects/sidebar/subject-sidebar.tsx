@@ -1,6 +1,3 @@
-"use client";
-
-import SubjectDialog, { subjectCategories } from "@/components/dialog/subject-dialog";
 import {
   SetupSidebar,
   SetupSidebarContent,
@@ -8,58 +5,54 @@ import {
   SetupSidebarHearder,
 } from "@/components/setup/sidebar/setup-sidebar";
 import SidebarPagination from "@/components/ui/sidebar/sidebar-pagination";
-import { ISubjectListItem } from "@/features/subjects/subject.types";
-import { useState } from "react";
-import SidebarHearder from "@/components/setup/sidebar/sidebar-hearder";
-import SubjectSidebarItem from "./sidebar-item";
+import SubjectSidebarItem from "./subject-sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import { LibraryBig } from "lucide-react";
+import SubjectSidebarHeader from "./subject-sidebar-header";
+import { subjectCategories } from "@/features/subjects/subject.enums";
+import { filterCache } from "@/lib/nuqs/filter";
+import { subjectService } from "@/features/subjects";
+import { Suspense } from "react";
+import PageLoading from "@/components/ui/page-loading";
 
-export default function SubjectSidebar({
-  subjectList,
-  itemCount,
-  isQuery = false,
-}: {
-  itemCount: number;
-  subjectList: ISubjectListItem[];
-  isQuery: boolean;
-}) {
-  const [isAddingSubject, setIsAddingSubject] = useState(false);
+async function SidebarContent() {
+  const { search, page, limit } = filterCache.all();
+  const subjects = await subjectService.getList({ search, page, limit });
+  return (
+    <>
+      <SetupSidebarContent>
+        {subjects.list.map((subject) => {
+          const category = subjectCategories.find((cat) => cat.value === subject.category)?.label ?? subject.category;
+          return <SubjectSidebarItem key={subject.id} category={category} subject={subject} />;
+        })}
 
+        {subjects.list.length === 0 && (
+          <EmptyState
+            icon={LibraryBig}
+            title={search ? "No subjects match this search." : "No subjects yet."}
+            description={search ? "Try a different search." : "Add a subject to get started."}
+            noBorder
+          />
+        )}
+      </SetupSidebarContent>
+      <SetupSidebarFooter>
+        <SidebarPagination itemCount={subjects.count} />
+      </SetupSidebarFooter>
+    </>
+  );
+}
+
+export default function SubjectSidebar() {
   return (
     <>
       <SetupSidebar>
         <SetupSidebarHearder>
-          <SidebarHearder
-            header={{ title: "All Subjects" }}
-            action={{
-              btnLabel: "Add a new subject",
-              onAction() {
-                setIsAddingSubject(true);
-              },
-            }}
-            search={{ placeholder: "Search by Name, code, or category" }}
-          />
+          <SubjectSidebarHeader />
         </SetupSidebarHearder>
-        <SetupSidebarContent>
-          {subjectList.map((subject) => {
-            const category = subjectCategories.find((cat) => cat.value === subject.category)?.label ?? subject.category;
-            return <SubjectSidebarItem key={subject.id} category={category} subject={subject} />;
-          })}
-          {subjectList.length === 0 && (
-            <EmptyState
-              icon={LibraryBig}
-              title={isQuery ? "No subjects match this search." : "No subjects yet."}
-              description={isQuery ? "Try a different search." : "Add a subject to get started."}
-              noBorder
-            />
-          )}
-        </SetupSidebarContent>
-        <SetupSidebarFooter>
-          <SidebarPagination itemCount={itemCount} />
-        </SetupSidebarFooter>
+        <Suspense fallback={<PageLoading />}>
+          <SidebarContent />
+        </Suspense>
       </SetupSidebar>
-      <SubjectDialog open={isAddingSubject} onOpenChange={setIsAddingSubject} />
     </>
   );
 }

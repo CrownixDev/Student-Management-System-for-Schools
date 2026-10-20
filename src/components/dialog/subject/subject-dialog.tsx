@@ -1,49 +1,31 @@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
-import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { SubjectCategory } from "@/generated/prisma/client";
-import { useState } from "react";
-
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Button } from "@/components/shadcn/button";
 import { SubjectCreateInput } from "@/generated/prisma/models";
-import RenderDialogErrors from "./compoennts/render-dialog-errors";
-import { Alert, AlertDescription, AlertTitle } from "../shadcn/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { CircleQuestionMarkIcon } from "lucide-react";
+import { subjectCategories } from "@/features/subjects/subject.enums";
+import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
+import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/shadcn/button";
 import { ISubject } from "@/features/subjects";
-import { IStreamListItem } from "@/features/streams/steam.types";
-
-export const subjectCategories = [
-  { label: "Core", value: "core" },
-  { label: "Religion", value: "religion" },
-  { label: "O/L Basket", value: "ol_basket" },
-  { label: "A/L Main", value: "al_main" },
-  { label: "A/L Common", value: "al_common" },
-  { label: "Other", value: "other" },
-] satisfies { value: SubjectCategory; label: string }[];
+import { useState } from "react";
+import RenderDialogErrors from "../compoennts/render-dialog-errors";
 
 export default function SubjectDialog({
   open,
   onOpenChange,
   data,
-  streams = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data?: Pick<ISubject, "name" | "code" | "category" | "streams">;
-  streams?: IStreamListItem[];
 }) {
   const [subject, setSubject] = useState<Pick<SubjectCreateInput, "name" | "category" | "code">>(
     data ?? { name: "", category: "core", code: "" },
   );
 
-  const [streamIds, setStreamIds] = useState<string[]>(streams.map((stream) => stream.id) ?? []);
   const [errors, setErrors] = useState<string[]>([]);
-
-  function toggleStream(id: string, checked: boolean) {
-    setStreamIds((current) => (checked ? [...new Set([...current, id])] : current.filter((value) => value !== id)));
-  }
 
   function handleSave() {
     setErrors(["Diga wadi"]);
@@ -108,23 +90,6 @@ export default function SubjectDialog({
                 Core subjects are mandatory for all non A/L students. E.g: Sinhala, Science
               </AlertDescription>
             </Alert>
-          )}
-
-          {subject.category === "al_main" && streams?.length > 0 && (
-            <Field>
-              <FieldLabel>A/L streams</FieldLabel>
-              <div className="flex flex-wrap gap-4">
-                {streams.map((stream) => (
-                  <label key={stream.id} className="inline-flex items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={streamIds.includes(stream.id)}
-                      onCheckedChange={(checked) => toggleStream(stream.id, checked === true)}
-                    />
-                    {stream.name}
-                  </label>
-                ))}
-              </div>
-            </Field>
           )}
 
           <RenderDialogErrors errors={errors} />

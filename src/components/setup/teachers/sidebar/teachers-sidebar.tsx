@@ -1,64 +1,49 @@
-"use client";
-
-import TeacherDialog from "@/components/dialog/teacher-dialog";
-import SidebarHearder from "@/components/setup/sidebar/sidebar-hearder";
-import SidebarPagination from "@/components/ui/sidebar/sidebar-pagination";
-import { ITeacherListItem } from "@/features/teachers";
-import { useState } from "react";
-import TeacherSidebarItem from "./sidebar-item";
-import EmptyState from "@/components/ui/empty-state";
+import { Suspense } from "react";
 import { UsersIcon } from "lucide-react";
-import {
-  SetupSidebar,
-  SetupSidebarContent,
-  SetupSidebarFooter,
-  SetupSidebarHearder,
-} from "@/components/setup/sidebar/setup-sidebar";
+import { filterCache } from "@/lib/nuqs/filter";
+import { teachersService } from "@/features/teachers";
+import { SetupSidebar, SetupSidebarContent, SetupSidebarFooter } from "@/components/setup/sidebar/setup-sidebar";
+import TeachersSidebarHeader from "./teachers-sidebar-header";
+import TeacherSidebarItem from "./teachers-sidebar-item";
+import SidebarPagination from "@/components/ui/sidebar/sidebar-pagination";
+import PageLoading from "@/components/ui/page-loading";
+import EmptyState from "@/components/ui/empty-state";
 
-export default function TeachersSidebar({
-  itemCount,
-  teacherList,
-  isQuery = false,
-}: {
-  itemCount: number;
-  teacherList: ITeacherListItem[];
-  isQuery?: boolean;
-}) {
-  const [isAdding, setIsAdding] = useState(false);
+async function SidebarContent() {
+  const { search, page, limit } = await filterCache.all();
+  const teachers = await teachersService.getList({ search, limit, page });
 
   return (
     <>
-      <SetupSidebar>
-        <SetupSidebarHearder>
-          <SidebarHearder
-            header={{ title: "All Teachers" }}
-            action={{
-              btnLabel: "Add a new teacher",
-              onAction() {
-                setIsAdding(true);
-              },
-            }}
-            search={{ placeholder: "Search by Name or phone" }}
+      <SetupSidebarContent>
+        {teachers.list.map((teacher) => (
+          <TeacherSidebarItem key={teacher.id} teacher={teacher} />
+        ))}
+        {teachers.list.length === 0 && (
+          <EmptyState
+            icon={UsersIcon}
+            title={search ? "No teachers match this search." : "No teachers yet."}
+            description={search ? "Try another name or phone number." : "Add a teacher to get started."}
+            noBorder
           />
-        </SetupSidebarHearder>
-        <SetupSidebarContent>
-          {teacherList.map((teacher) => (
-            <TeacherSidebarItem key={teacher.id} teacher={teacher} />
-          ))}
-          {teacherList.length === 0 && (
-            <EmptyState
-              icon={UsersIcon}
-              title={isQuery ? "No teachers match this search." : "No teachers yet."}
-              description={isQuery ? "Try another name or phone number." : "Add a teacher to get started."}
-              noBorder
-            />
-          )}
-        </SetupSidebarContent>
-        <SetupSidebarFooter>
-          <SidebarPagination itemCount={itemCount} />
-        </SetupSidebarFooter>
+        )}
+      </SetupSidebarContent>
+      <SetupSidebarFooter>
+        <SidebarPagination itemCount={teachers.count} />
+      </SetupSidebarFooter>
+    </>
+  );
+}
+
+export default function TeachersSidebar() {
+  return (
+    <>
+      <SetupSidebar>
+        <TeachersSidebarHeader />
+        <Suspense fallback={<PageLoading />}>
+          <SidebarContent />
+        </Suspense>
       </SetupSidebar>
-      <TeacherDialog open={isAdding} onOpenChange={setIsAdding} />
     </>
   );
 }

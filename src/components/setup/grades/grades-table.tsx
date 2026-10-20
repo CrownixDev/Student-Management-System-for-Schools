@@ -1,25 +1,31 @@
-"use client";
-
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { PencilIcon } from "lucide-react";
-import { IGradeListItem } from "@/features/grades";
-
-interface GradesTableProps {
-  grades: IGradeListItem[];
-  onEdit: (grade: IGradeListItem) => void;
-}
+import { gradesService, IGradeListItem } from "@/features/grades";
+import GradesEditBtn from "./buttons/grades-edit-btn";
+import { filterCache } from "@/lib/nuqs/filter";
+import { redirect } from "next/navigation";
+import EmptyState from "@/components/ui/empty-state";
+import { GraduationCapIcon } from "lucide-react";
 
 function getGradeStage(num: number): string {
   if (num >= 1 && num <= 5) return "Primary (Grades 1-5)";
   if (num >= 6 && num <= 9) return "Junior Secondary (Grades 6-9)";
   if (num >= 10 && num <= 11) return "Ordinary Level (O/L)";
   if (num >= 12 && num <= 13) return "Advanced Level (A/L)";
-  return "General";
+  return "Other";
 }
 
-export default function GradesTable({ grades, onEdit }: GradesTableProps) {
+export default async function GradesTable() {
+  let grades: IGradeListItem[] | null = null;
+  const search = filterCache.get("search");
+
+  try {
+    grades = await gradesService.getList({ search });
+  } catch (error) {
+    console.error("Failed to load grades from service:", error);
+    redirect("/setup");
+  }
+
   return (
     <div className="overflow-y-scroll">
       <Table>
@@ -46,18 +52,26 @@ export default function GradesTable({ grades, onEdit }: GradesTableProps) {
                 </TableCell>
 
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    {/* Edit button */}
-                    <Button size="icon-sm" variant="ghost" title="Edit grade" onClick={() => onEdit(grade)}>
-                      <PencilIcon />
-                    </Button>
-                  </div>
+                  <GradesEditBtn grade={grade} />
                 </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+      {grades.length === 0 && (
+        <div className="py-12">
+          <EmptyState
+            icon={GraduationCapIcon}
+            title={search ? "No matching grades" : "No grades found"}
+            description={
+              search
+                ? `No grades match "${search}". Try searching for another grade.`
+                : "Get started by adding a grade."
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

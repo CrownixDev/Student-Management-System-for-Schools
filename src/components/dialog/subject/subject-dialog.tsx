@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { SubjectCategory } from "@/generated/prisma/client";
 import { SubjectCreateInput } from "@/generated/prisma/models";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import { CircleQuestionMarkIcon } from "lucide-react";
+import { CircleQuestionMarkIcon, TrashIcon } from "lucide-react";
 import { subjectCategories } from "@/features/subjects/subject.enums";
 import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
@@ -11,6 +11,7 @@ import { Button } from "@/components/shadcn/button";
 import { ISubject } from "@/features/subjects";
 import { useState } from "react";
 import RenderDialogErrors from "../compoennts/render-dialog-errors";
+import TooltipButton from "@/components/ui/tooltip-button";
 
 export default function SubjectDialog({
   open,
@@ -19,11 +20,13 @@ export default function SubjectDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data?: Pick<ISubject, "name" | "code" | "category" | "streams">;
+  data?: Partial<Pick<ISubject, "name" | "code" | "category">>;
 }) {
-  const [subject, setSubject] = useState<Pick<SubjectCreateInput, "name" | "category" | "code">>(
-    data ?? { name: "", category: "core", code: "" },
-  );
+  const [subject, setSubject] = useState<Pick<SubjectCreateInput, "name" | "category" | "code">>({
+    name: data?.name ?? "",
+    category: data?.category ?? "core",
+    code: data?.code ?? "",
+  });
 
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -82,7 +85,7 @@ export default function SubjectDialog({
             </Field>
           </div>
 
-          {!data && subject.category === "core" && (
+          {!(data?.name || data?.code) && subject.category === "core" && (
             <Alert className="max-w-md border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
               <CircleQuestionMarkIcon />
               <AlertTitle>Core</AlertTitle>
@@ -95,9 +98,27 @@ export default function SubjectDialog({
           <RenderDialogErrors errors={errors} />
         </FieldGroup>
         <DialogFooter className="mt-5">
-          <Button type="submit" onClick={handleSave}>
-            {data ? "Save changes" : "Add subject"}
-          </Button>
+          <div className="flex min-w-full items-center">
+            {(data?.name || data?.code) && (
+              <TooltipButton
+                tooltip="Delete this subject"
+                variant="destructive"
+                size="icon"
+                type="button"
+                onClick={() => console.log("Deleting")}
+              >
+                <TrashIcon />
+              </TooltipButton>
+            )}
+            <div className="flex flex-1 gap-3 justify-end">
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" onClick={handleSave}>
+                {data ? "Save changes" : "Add subject"}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

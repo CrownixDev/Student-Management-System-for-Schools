@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { ISubject, ISubjectListItem, subjectListSelect, subjectSelect } from "./subject.types";
-import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
+import { getCleanSearch, IQueryParams } from "@/lib/filter";
 import { SubjectWhereInput } from "@/generated/prisma/models";
+import { SubjectCategory } from "@/generated/prisma/enums";
 
 export class SubjectRepository {
   async getListByEnrollmentId(enrollmentId: string): Promise<ISubjectListItem[]> {
@@ -15,25 +16,19 @@ export class SubjectRepository {
     });
   }
 
-  async getList({ search, page, limit }: IQueryParams) {
-    const { limitNumber, skipCount } = getPagination({ page, limit });
+  async getList({ search, category }: { search: IQueryParams["search"]; category: SubjectCategory }) {
     const cleanSearch = getCleanSearch(search);
 
     const where: SubjectWhereInput = {};
 
     if (cleanSearch) {
-      where.OR = [{ name: { contains: cleanSearch }, code: { contains: cleanSearch } }];
+      where.OR = [{ name: { contains: cleanSearch } }, { code: { contains: cleanSearch } }];
     }
 
-    return await Promise.all([
-      prisma.subject.findMany({
-        where,
-        select: subjectListSelect,
-        skip: skipCount,
-        take: limitNumber,
-      }),
-      prisma.subject.count({ where }),
-    ]);
+    return await prisma.subject.findMany({
+      where: { ...where, category },
+      select: subjectListSelect,
+    });
   }
 
   async getById(subId: string): Promise<ISubject | null> {

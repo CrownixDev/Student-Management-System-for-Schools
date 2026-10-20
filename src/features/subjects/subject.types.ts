@@ -3,6 +3,7 @@ import { SubjectGetPayload, SubjectSelect } from "@/generated/prisma/models";
 export const subjectListSelect = {
   id: true,
   name: true,
+  code: true,
   category: true,
 } satisfies SubjectSelect;
 

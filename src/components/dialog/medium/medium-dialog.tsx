@@ -8,16 +8,12 @@ import { TrashIcon } from "lucide-react";
 import { useState } from "react";
 import RenderDialogErrors from "../compoennts/render-dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
-
-export interface IMediumItem {
-  id: string;
-  name: string;
-}
+import { IMediumListItem } from "@/features/medium";
 
 interface MediumDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data?: IMediumItem | null;
+  data?: IMediumListItem | null;
 }
 
 export default function MediumDialog({ open, onOpenChange, data }: MediumDialogProps) {

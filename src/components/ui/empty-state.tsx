@@ -27,7 +27,7 @@ export default function EmptyState({
               </EmptyMedia>
             )}
             <EmptyTitle>{title}</EmptyTitle>
-            <EmptyDescription>{description}</EmptyDescription>
+            <EmptyDescription className="wrap-anywhere">{description}</EmptyDescription>
           </EmptyHeader>
           {action}
         </Empty>

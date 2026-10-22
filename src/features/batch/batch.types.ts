@@ -12,6 +12,11 @@ export type IBatchListItem = BatchGetPayload<{
   select: typeof batchListSelect;
 }>;
 
+export type IBatchList = {
+  list: IBatchListItem[];
+  count: number;
+};
+
 export const batchClassSelect = {
   id: true,
   name: true,

@@ -1,6 +1,30 @@
 import { prisma } from "@/lib/prisma";
+import { classSelect } from "./class.types";
 
 export class ClassRepository {
+  async getById(id: string) {
+    return await prisma.class.findUnique({
+      where: { id },
+      select: {
+        ...classSelect,
+        classSubjects: {
+          select: {
+            medium: { select: { id: true, name: true } },
+            teacher: { select: { id: true, fullName: true } },
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                category: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async getList(yearId: string, gradeId: string) {
     return await prisma.class.findMany({
       where: { academicYearId: yearId, gradeLevelId: gradeId },

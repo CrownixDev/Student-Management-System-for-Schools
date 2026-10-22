@@ -15,4 +15,10 @@ export class AcademicYearsService {
     if (!year) throw new ApiError(404, "Year not found");
     return year;
   }
+
+  async getActiveYear(): Promise<IAcademicYear> {
+    const year = await this.repository.getActiveYear();
+    if (!year) throw new ApiError(404, "No active years found");
+    return year;
+  }
 }

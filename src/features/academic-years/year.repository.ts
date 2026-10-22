@@ -26,4 +26,10 @@ export class AcademicYearsRepository {
       select: academicYearListSelect,
     });
   }
+
+  async getActiveYear() {
+    return await prisma.academicYear.findFirst({
+      where: { isCurrent: true },
+    });
+  }
 }

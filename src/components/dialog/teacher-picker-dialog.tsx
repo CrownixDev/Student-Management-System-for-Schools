@@ -7,12 +7,13 @@ import { useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getTeachersListAction } from "@/features/teachers/teachers.actions";
 import { TEACHERS_LIST } from "@/lib/query-keys";
-import { toast } from "react-toastify";
-import PageLoading from "@/components/ui/page-loading";
-import EmptyState from "@/components/ui/empty-state";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Label } from "@/components/shadcn/label";
 import { RESULT_LIMIT } from "@/constraints";
+import { ITeacherListItem } from "@/features/teachers";
+import { toast } from "react-toastify";
+import PageLoading from "@/components/ui/page-loading";
+import EmptyState from "@/components/ui/empty-state";
 import SearchInput from "../ui/search-input";
 import DialogPagination from "../ui/dialog/dialog-pagination";
 
@@ -25,7 +26,7 @@ export default function TeacherPickerDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (teacherId: string) => void;
+  onSelect: (teacher: ITeacherListItem) => void;
   selectedTeacherId?: string;
   title?: string;
 }) {
@@ -34,7 +35,6 @@ export default function TeacherPickerDialog({
   const [teacherId, setTeacherId] = useState<string | null>(selectedTeacherId ?? null);
   const teacherList = useRef<HTMLDivElement>(null);
 
-  // Fetching teachers list
   const {
     data = { count: 0, list: [] },
     isPending,
@@ -55,8 +55,9 @@ export default function TeacherPickerDialog({
   });
 
   function confirmSelection() {
-    if (teacherId) {
-      onSelect(teacherId);
+    const teacher = data.list.find((teacher) => teacher.id === teacherId);
+    if (teacher) {
+      onSelect(teacher);
       onOpenChange(false);
     }
   }
@@ -113,7 +114,10 @@ export default function TeacherPickerDialog({
         <DialogPagination
           itemCount={data.count}
           page={page}
-          onPageChange={setPage}
+          onPageChange={(page) => {
+            setPage(page);
+            teacherList.current?.scrollTo({ top: 0, behavior: "auto" });
+          }}
           disable={{ next: isPlaceholderData }}
         />
 

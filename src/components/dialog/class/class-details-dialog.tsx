@@ -1,16 +1,25 @@
 "use client";
 
-import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { referenceOptions } from "@/components/setup/classes/classes.data";
 import { IClass } from "@/features/class";
-import { PencilIcon, TrashIcon } from "lucide-react";
+import { Loader2Icon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { MEDIUM_OPTIONS } from "@/lib/query-keys";
+import { getMediumOptionsAction } from "@/features/medium/medium.actions";
+import { toast } from "react-toastify";
 import RenderDialogErrors from "../compoennts/render-dialog-errors";
+import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
+
+export interface IClassDetailsDialogData {
+  name: string;
+  mediumId: string | null;
+  teacherId: string | null;
+}
 
 export default function ClassDetailsDialog({
   open,
@@ -25,39 +34,53 @@ export default function ClassDetailsDialog({
   data?: IClass;
   year: IClass["academicYear"];
   grade: IClass["gradeLevel"];
-  onSave?: (savedClass: Partial<IClass>) => void;
+  onSave: (data: IClassDetailsDialogData) => void;
 }) {
-  const [name, setName] = useState(data?.name ?? "");
-  const [defaultMediumId, setDefaultMediumId] = useState(data?.defaultMedium?.id ?? "none");
-  const [classTeacherId, setClassTeacherId] = useState(data?.classTeacher?.id ?? "");
+  interface ClassDetails {
+    name: string;
+    mediumId: string | null;
+    teacher: IClass["classTeacher"];
+  }
+
+  const [classDetails, setClassDetails] = useState<ClassDetails>({
+    name: data?.name ?? "",
+    mediumId: data?.defaultMedium?.id ?? null,
+    teacher: data?.classTeacher ?? null,
+  });
+
   const [changingTeacher, setChangingTeacher] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const selectedTeacher = referenceOptions.teachers.find((teacher) => teacher.id === classTeacherId);
+  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
+    enabled: open,
+    queryFn: async () => {
+      const res = await getMediumOptionsAction();
+      if (res.success) {
+        return res.data;
+      } else {
+        toast.error(res.message);
+        throw new Error(res.message);
+      }
+    },
+    queryKey: [MEDIUM_OPTIONS],
+  });
 
   function saveClassDetails() {
     const nextErrors: string[] = [];
-    if (!name.trim()) nextErrors.push("Class name is required.");
+
+    if (!classDetails.name.trim()) nextErrors.push("Class name is required.");
+
     if (nextErrors.length) {
       setErrors(nextErrors);
       return;
     }
 
-    const defaultMedium =
-      defaultMediumId === "none"
-        ? null
-        : (referenceOptions.mediums.find((medium) => medium.id === defaultMediumId) ?? null);
-    const classTeacher = referenceOptions.teachers.find((teacher) => teacher.id === classTeacherId);
-    const savedClass: Partial<IClass> = {
-      ...(data ? { id: data.id } : {}),
-      name: name.trim(),
-      defaultMedium,
-      classTeacher: classTeacher ? { id: classTeacher.id, fullName: classTeacher.fullName, phone: null } : null,
-      batch: data?.batch ?? null,
-    };
+    onSave({
+      name: classDetails.name,
+      mediumId: classDetails.mediumId,
+      teacherId: classDetails.teacher?.id ?? null,
+    });
 
-    console.log("Class details draft:", savedClass);
-    onSave?.(savedClass);
     onOpenChange(false);
   }
 
@@ -72,48 +95,70 @@ export default function ClassDetailsDialog({
           <FieldGroup className="gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <FieldLabel htmlFor="class-academic-year">Academic year</FieldLabel>
-                <Input id="class-academic-year" value={year.name} disabled />
+                <FieldLabel>Academic year</FieldLabel>
+                <Input value={year.name} disabled />
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="class-academic-year">Grade</FieldLabel>
-                <Input id="class-academic-year" value={grade.name} disabled />
+                <FieldLabel>Grade</FieldLabel>
+                <Input value={grade.name} disabled />
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="class-name">Class name</FieldLabel>
                 <Input
                   id="class-name"
-                  value={name}
+                  value={classDetails.name}
                   placeholder="e.g. 10-A"
-                  onChange={(event) => {
-                    setName(event.target.value);
+                  onChange={(e) => {
+                    setClassDetails((preData) => ({
+                      ...preData,
+                      name: e.target.value,
+                    }));
                     setErrors([]);
                   }}
                 />
               </Field>
 
               <Field>
-                <FieldLabel>Default teaching medium</FieldLabel>
-                <Select
-                  value={defaultMediumId}
-                  onValueChange={(value) => {
-                    if (value !== null) setDefaultMediumId(value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a medium" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not set</SelectItem>
-                    {referenceOptions.mediums.map((medium) => (
-                      <SelectItem key={medium.id} value={medium.id}>
-                        {medium.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FieldLabel htmlFor="medium-select">Default teaching medium</FieldLabel>
+                {isMediumPending && (
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue>
+                        <Loader2Icon className="animate-spin" />
+                        Getting medium list...
+                      </SelectValue>
+                    </SelectTrigger>
+                  </Select>
+                )}
+                {!isMediumPending && (
+                  <Select
+                    id="medium-select"
+                    items={[{ value: "none", label: "Not set" }, ...mediumOptions]}
+                    value={classDetails.mediumId}
+                    onValueChange={(value) => {
+                      if (value !== null)
+                        if (value === "none") {
+                          setClassDetails((preData) => ({ ...preData, mediumId: null }));
+                        } else {
+                          setClassDetails((preData) => ({ ...preData, mediumId: value }));
+                        }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a medium" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not set</SelectItem>
+                      {mediumOptions.map((medium) => (
+                        <SelectItem key={medium.value} value={medium.value}>
+                          {medium.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </Field>
             </div>
 
@@ -121,8 +166,18 @@ export default function ClassDetailsDialog({
               <FieldLabel>Class teacher</FieldLabel>
               <div className="flex items-center gap-3 rounded-md border px-3 py-2">
                 <span className="min-w-0 flex-1 truncate text-sm">
-                  {selectedTeacher?.fullName ?? data?.classTeacher?.fullName ?? "No teacher selected"}
+                  {classDetails.teacher?.fullName ?? "No teacher selected"}
                 </span>
+                {classDetails.teacher && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setClassDetails((preData) => ({ ...preData, teacher: null }))}
+                  >
+                    <XIcon />
+                    Remove
+                  </Button>
+                )}
                 <Button type="button" size="sm" variant="outline" onClick={() => setChangingTeacher(true)}>
                   <PencilIcon />
                   Change
@@ -148,7 +203,7 @@ export default function ClassDetailsDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="button" onClick={saveClassDetails}>
+            <Button type="button" onClick={saveClassDetails} disabled={!classDetails.name}>
               {data ? "Save changes" : "Create class"}
             </Button>
           </DialogFooter>
@@ -159,8 +214,8 @@ export default function ClassDetailsDialog({
         <TeacherPickerDialog
           open
           onOpenChange={setChangingTeacher}
-          selectedTeacherId={classTeacherId}
-          onSelect={setClassTeacherId}
+          selectedTeacherId={classDetails.teacher?.id}
+          onSelect={(teacher) => setClassDetails((preData) => ({ ...preData, teacher }))}
         />
       )}
     </>

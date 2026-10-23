@@ -1,6 +1,6 @@
 "use client";
 
-import ClassDetailsDialog from "@/components/dialog/class/class-details-dialog";
+import ClassDetailsDialog, { IClassDetailsDialogData } from "@/components/dialog/class/class-details-dialog";
 import { Button } from "@/components/shadcn/button";
 import { IClass } from "@/features/class";
 import { PencilIcon } from "lucide-react";
@@ -9,8 +9,8 @@ import { useState } from "react";
 export default function ClassEditBtn({ classData }: { classData: IClass }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  function handleSave(savedData: Partial<IClass>) {
-    console.log(savedData);
+  function handleSave(data: IClassDetailsDialogData) {
+    console.log(data);
   }
 
   return (

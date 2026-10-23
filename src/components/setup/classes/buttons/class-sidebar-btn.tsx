@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/shadcn/badge";
 import { IGradeWithClassesItem } from "@/features/grades";
 import { idParsers } from "@/lib/nuqs/id";
 import { UserCircleIcon } from "lucide-react";
@@ -17,13 +16,10 @@ export default function ClassSidebarBtn({ classItem }: { classItem: IGradeWithCl
       onClick={() => setParsers({ classId: classItem.id })}
     >
       <span className="min-w-0 flex-1 truncate text-sm">{classItem.name}</span>
-      <div className="flex gap-3">
-        <Badge variant="outline">{classItem.batch?.name}</Badge>
-        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-          <UserCircleIcon className="size-3.5" />
-          {classItem.studentCount}
-        </span>
-      </div>
+      <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+        <UserCircleIcon className="size-3.5" />
+        {classItem.studentCount}
+      </span>
     </button>
   );
 }

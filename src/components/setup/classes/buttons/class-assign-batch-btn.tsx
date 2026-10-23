@@ -1,6 +1,6 @@
 "use client";
 
-import GradeBatchDialog from "@/components/dialog/class/grade-batch-dialog";
+import ClassBatchDialog, { IClassBatchDialogData } from "@/components/dialog/class/class-batch-dialog";
 import TooltipButton from "@/components/ui/tooltip-button";
 import { IGradeWithClassesItem } from "@/features/grades";
 import { LinkIcon } from "lucide-react";
@@ -8,6 +8,11 @@ import { useState } from "react";
 
 export default function ClassAssignBatchBtn({ grade }: { grade: IGradeWithClassesItem }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  function handleSave(data: IClassBatchDialogData) {
+    console.log(data);
+  }
+
   return (
     <>
       <TooltipButton
@@ -19,7 +24,7 @@ export default function ClassAssignBatchBtn({ grade }: { grade: IGradeWithClasse
       >
         <LinkIcon />
       </TooltipButton>
-      {isOpen && <GradeBatchDialog open={isOpen} onOpenChange={setIsOpen} grade={grade} />}
+      {isOpen && <ClassBatchDialog open={isOpen} onOpenChange={setIsOpen} grade={grade} onSave={handleSave} />}
     </>
   );
 }

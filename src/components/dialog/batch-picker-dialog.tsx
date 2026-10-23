@@ -25,13 +25,15 @@ export default function BatchPickerDialog({
   onOpenChange,
   onSelect,
   title = "Select a Batch",
+  selectedBatchId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (batch: IBatchListItem) => void;
   title?: string;
+  selectedBatchId?: string;
 }) {
-  const [batch, setBatch] = useState<IBatchListItem>();
+  const [batchId, setBatchId] = useState<string>(selectedBatchId ?? "");
   const [batchType, setBatchType] = useState<BatchType>("al");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -57,6 +59,7 @@ export default function BatchPickerDialog({
   });
 
   function confirmSelection() {
+    const batch = data.list.find((batch) => batch.id === batchId);
     if (batch) {
       onSelect(batch);
       onOpenChange(false);
@@ -64,7 +67,7 @@ export default function BatchPickerDialog({
   }
 
   function handleSelectBatch(batchId: string) {
-    setBatch(data.list.find((batch) => batch.id === batchId));
+    setBatchId(batchId);
   }
 
   return (
@@ -96,8 +99,8 @@ export default function BatchPickerDialog({
           {batchTypeOptions.map((type) => (
             <TabsContent key={type.value} value={type.value}>
               {!isPending && (
-                <div ref={batchListDiv} className="h-[35dvh] flex-1 overflow-y-auto rounded-md border">
-                  <RadioGroup value={batch?.id} onValueChange={handleSelectBatch}>
+                <div ref={batchListDiv} className="h-[20dvh] flex-1 overflow-y-auto rounded-md border">
+                  <RadioGroup value={batchId} onValueChange={handleSelectBatch}>
                     {data.list.map((item) => (
                       <div key={item.id} className="flex w-full justify-between items-center gap-3 px-3 py-2.5">
                         <div className="flex w-full items-center gap-3 cursor-pointer">
@@ -106,7 +109,7 @@ export default function BatchPickerDialog({
                             {item.name}
                           </Label>
                         </div>
-                        {batch?.id === item.id && <CheckIcon className="size-4 shrink-0 text-muted-foreground" />}
+                        {batchId === item.id && <CheckIcon className="size-4 shrink-0 text-muted-foreground" />}
                       </div>
                     ))}
                   </RadioGroup>
@@ -131,7 +134,10 @@ export default function BatchPickerDialog({
         <DialogPagination
           itemCount={data.count}
           page={page}
-          onPageChange={setPage}
+          onPageChange={(page) => {
+            setPage(page);
+            batchListDiv.current?.scrollTo({ top: 0, behavior: "auto" });
+          }}
           disable={{ next: isPlaceholderData }}
         />
 
@@ -139,8 +145,8 @@ export default function BatchPickerDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={confirmSelection} disabled={!batch}>
-            Select teacher
+          <Button type="button" onClick={confirmSelection} disabled={!batchId}>
+            Select batch
           </Button>
         </DialogFooter>
       </DialogContent>

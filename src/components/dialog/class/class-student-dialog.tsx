@@ -1,505 +1,368 @@
 "use client";
 
+import StudentPickerDialog, { SelectedStudent } from "@/components/dialog/student-picker-dialog";
 import { Button } from "@/components/shadcn/button";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
-import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { previousClassesMock } from "@/components/setup/classes/classes.data";
-import { IEnrolledStudentItem, IPreviousClassOption } from "@/components/setup/classes/classes.types";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import EmptyState from "@/components/ui/empty-state";
+import PageLoading from "@/components/ui/page-loading";
 import { IClass } from "@/features/class";
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, Trash2Icon, UsersIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { getMediumOptionsAction } from "@/features/medium/medium.actions";
+import { MEDIUM_OPTIONS } from "@/lib/query-keys";
+import { getStudentListForClassAction } from "@/features/students/students.actions";
+import { IStudentsListItem } from "@/features/students";
+import { useQuery } from "@tanstack/react-query";
+import { Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "react-toastify";
 
-type EnrollmentMode = "previous-class" | "individual";
-type CurrentEnrollment = IClass["enrollments"][number];
-
-function createEnrollments(
-  sourceStudents: IPreviousClassOption["students"],
-  currentEnrollmentCount: number,
-): IEnrolledStudentItem[] {
-  return sourceStudents.map((student, index) => ({
-    id: `enrollment-${student.studentId}-${Date.now()}-${index}`,
-    studentId: student.studentId,
-    classIndex: currentEnrollmentCount + index + 1,
-    status: "active",
-    admissionNo: student.admissionNo,
-    fullName: student.fullName,
-    gender: student.gender,
-    phone: null,
-    guardianName: null,
-    guardianPhone: null,
-    joinedOn: new Date().toISOString().slice(0, 10),
-  }));
-}
+type SubjectColumnState = Record<string, boolean>;
+type StudentSubjectState = Record<string, Record<string, boolean>>;
+type StudentMediumState = Record<string, Record<string, string>>;
 
 export default function ClassStudentDialog({
   open,
   onOpenChange,
-  className,
-  currentEnrollments,
-  currentEnrollmentCount,
-  onSaveSelection,
+  classData,
+  onAddStudents,
+  onRemoveStudent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  className: string;
-  currentEnrollments: CurrentEnrollment[];
-  currentEnrollmentCount: number;
-  onSaveSelection?: (selection: {
-    keepEnrollmentIds: string[];
-    addStudents: IEnrolledStudentItem[];
-  }) => void;
+  classData: IClass;
+  onAddStudents?: (students: IStudentsListItem[]) => void;
+  onRemoveStudent?: (studentId: string) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<"current" | "add">("current");
-  const [mode, setMode] = useState<EnrollmentMode | "">("");
-  const [step, setStep] = useState<"choose" | "select">("choose");
-  const [yearId, setYearId] = useState("");
-  const [gradeName, setGradeName] = useState("");
-  const [sourceClassId, setSourceClassId] = useState("");
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [keepEnrollmentIds, setKeepEnrollmentIds] = useState<string[]>(
-    () => currentEnrollments.map((enrollment) => enrollment.id),
-  );
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
-
-  const years = Array.from(new Map(previousClassesMock.map((item) => [item.yearId, item.yearName])).entries());
-  const grades = Array.from(
-    new Set(previousClassesMock.filter((item) => item.yearId === yearId).map((item) => item.gradeName)),
-  );
-  const sourceClasses = previousClassesMock.filter((item) => item.yearId === yearId && item.gradeName === gradeName);
-  const selectedSourceClass = previousClassesMock.find((item) => item.classId === sourceClassId);
-  const allIndividualStudents = useMemo(() => {
-    const uniqueStudents = new Map<string, IPreviousClassOption["students"][number]>();
-    previousClassesMock.forEach((sourceClass) =>
-      sourceClass.students.forEach((student) => uniqueStudents.set(student.studentId, student)),
-    );
-    return Array.from(uniqueStudents.values());
-  }, []);
-  const filteredIndividualStudents = allIndividualStudents.filter((student) =>
-    [student.fullName, student.admissionNo].some((value) =>
-      value.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+  const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
+  const [addedStudents, setAddedStudents] = useState<IStudentsListItem[]>([]);
+  const [removedStudentIds, setRemovedStudentIds] = useState<string[]>([]);
+  const [classIndexes, setClassIndexes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      classData.enrollments.map((enrollment) => [enrollment.student.id, String(enrollment.classIndex)]),
     ),
   );
-  const pageCount = Math.max(1, Math.ceil(filteredIndividualStudents.length / pageSize));
-  const pageStudents = filteredIndividualStudents.slice((page - 1) * pageSize, page * pageSize);
-  const currentEnrollmentIds = new Set(currentEnrollments.map((enrollment) => enrollment.id));
-  const hasCurrentEnrollmentChanges =
-    keepEnrollmentIds.some((id) => !currentEnrollmentIds.has(id)) ||
-    currentEnrollments.some((enrollment) => !keepEnrollmentIds.includes(enrollment.id));
-  const alreadyEnrolledStudentIds = new Set(currentEnrollments.map((enrollment) => enrollment.student.id));
-  const importRoster = mode === "previous-class" && selectedSourceClass;
+  const [disabledSubjectColumns, setDisabledSubjectColumns] = useState<SubjectColumnState>(() =>
+    Object.fromEntries(classData.subjects.map((subject) => [subject.id, false])),
+  );
+  const [studentSubjectState, setStudentSubjectState] = useState<StudentSubjectState>({});
+  const [studentMediumState, setStudentMediumState] = useState<StudentMediumState>({});
 
-  function toggleStudent(studentId: string, checked: boolean) {
-    setSelectedStudentIds((current) =>
-      checked ? [...new Set([...current, studentId])] : current.filter((id) => id !== studentId),
+  const { data: enrolledStudents = [], isPending } = useQuery({
+    enabled: open,
+    queryFn: async () => {
+      const result = await getStudentListForClassAction(
+        classData.academicYear.id,
+        classData.gradeLevel.id,
+        classData.id,
+      );
+      if (!result.success) {
+        toast.error(result.message);
+        throw new Error(result.message);
+      }
+      return result.data;
+    },
+    queryKey: ["class-students", classData.academicYear.id, classData.gradeLevel.id, classData.id],
+  });
+
+  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
+    enabled: open,
+    queryFn: async () => {
+      const result = await getMediumOptionsAction();
+      if (!result.success) {
+        toast.error(result.message);
+        throw new Error(result.message);
+      }
+      return result.data;
+    },
+    queryKey: [MEDIUM_OPTIONS],
+  });
+
+  const studentsById = new Map<string, IStudentsListItem>();
+  for (const student of enrolledStudents) {
+    if (!removedStudentIds.includes(student.id)) studentsById.set(student.id, student);
+  }
+  for (const student of addedStudents) {
+    if (!removedStudentIds.includes(student.id)) studentsById.set(student.id, student);
+  }
+  const students = Array.from(studentsById.values());
+
+  function addStudents(selectedStudents: SelectedStudent[]) {
+    const existingIds = new Set(students.map((student) => student.id));
+    const newSelections = selectedStudents.filter(({ student }) => !existingIds.has(student.id));
+    if (newSelections.length === 0) return;
+
+    let nextIndex = Math.max(
+      students.length,
+      ...students.map((student, index) => Number(classIndexes[student.id]) || index + 1),
+      ...newSelections.map(({ previousClassIndex }) => previousClassIndex ?? 0),
     );
+    const newStudents: IStudentsListItem[] = [];
+    const nextIndexes: Record<string, string> = {};
+    for (const { student, previousClassIndex } of newSelections) {
+      newStudents.push(student);
+      if (previousClassIndex !== undefined) {
+        nextIndexes[student.id] = String(previousClassIndex);
+      } else {
+        nextIndexes[student.id] = String(++nextIndex);
+      }
+    }
+
+    setRemovedStudentIds((current) => current.filter((id) => !newStudents.some((student) => student.id === id)));
+    setClassIndexes((current) => ({ ...current, ...nextIndexes }));
+    setAddedStudents((current) => {
+      const knownIds = new Set(current.map((student) => student.id));
+      return [...current, ...newStudents.filter((student) => !knownIds.has(student.id))];
+    });
+    setStudentSubjectState((current) => {
+      const next = { ...current };
+      for (const student of newStudents) {
+        next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, true]));
+      }
+      return next;
+    });
+    setStudentMediumState((current) => {
+      const next = { ...current };
+      for (const student of newStudents) {
+        next[student.id] = Object.fromEntries(
+          classData.subjects.map((subject) => [subject.id, subject.medium?.id ?? classData.defaultMedium?.id ?? ""]),
+        );
+      }
+      return next;
+    });
+    onAddStudents?.(newStudents);
   }
 
-  function toggleCurrentEnrollment(enrollmentId: string) {
-    setKeepEnrollmentIds((current) =>
-      current.includes(enrollmentId)
-        ? current.filter((id) => id !== enrollmentId)
-        : [...current, enrollmentId],
-    );
+  function removeStudent(studentId: string) {
+    setRemovedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]));
+    setAddedStudents((current) => current.filter((student) => student.id !== studentId));
+    onRemoveStudent?.(studentId);
   }
 
-  function beginSelection() {
-    if (!mode) return;
-    setStep("select");
-    setSearch("");
-    setPage(1);
-    setSelectedStudentIds([]);
-    setYearId("");
-    setGradeName("");
-    setSourceClassId("");
+  function isEnrolledInSubject(studentId: string, subjectId: string) {
+    return studentSubjectState[studentId]?.[subjectId] ?? true;
   }
 
-  function selectSourceClass(sourceClass: IPreviousClassOption) {
-    setSourceClassId(sourceClass.classId);
-    setSelectedStudentIds(
-      sourceClass.students
-        .filter((student) => !alreadyEnrolledStudentIds.has(student.studentId))
-        .map((student) => student.studentId),
-    );
+  function getStudentMedium(studentId: string, subjectId: string) {
+    const subject = classData.subjects.find((item) => item.id === subjectId);
+    return studentMediumState[studentId]?.[subjectId] ?? subject?.medium?.id ?? classData.defaultMedium?.id ?? null;
   }
 
-  function saveSelection(addStudents: IEnrolledStudentItem[] = []) {
-    onSaveSelection?.({ keepEnrollmentIds, addStudents });
-    onOpenChange(false);
+  async function toggleStudentSubject(
+    studentId: string,
+    subjectId: string,
+    enrolled: boolean,
+    columnAlreadyDisabled = false,
+  ) {
+    if (!columnAlreadyDisabled) {
+      setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
+    }
+    try {
+      setStudentSubjectState((current) => ({
+        ...current,
+        [studentId]: { ...current[studentId], [subjectId]: enrolled },
+      }));
+      // Add the subject enrollment mutation here.
+      await Promise.resolve();
+    } finally {
+      if (!columnAlreadyDisabled) {
+        setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
+      }
+    }
   }
 
-  function saveAddedStudents() {
-    const sourceStudents =
-      mode === "previous-class"
-        ? (selectedSourceClass?.students.filter((student) => selectedStudentIds.includes(student.studentId)) ?? [])
-        : allIndividualStudents.filter((student) => selectedStudentIds.includes(student.studentId));
-    const addStudents = createEnrollments(
-      sourceStudents.filter((student) => !alreadyEnrolledStudentIds.has(student.studentId)),
-      currentEnrollmentCount,
-    );
-    saveSelection(addStudents);
+  async function toggleAllForSubject(subjectId: string) {
+    const nextValue = !students.every((student) => isEnrolledInSubject(student.id, subjectId));
+    setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
+    try {
+      for (const student of students) {
+        await toggleStudentSubject(student.id, subjectId, nextValue, true);
+      }
+    } finally {
+      setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
+    }
   }
 
-  function goBack() {
-    setStep("choose");
-    setSelectedStudentIds([]);
+  async function changeStudentMedium(studentId: string, subjectId: string, mediumId: string | null) {
+    setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
+    try {
+      setStudentMediumState((current) => ({
+        ...current,
+        [studentId]: { ...current[studentId], [subjectId]: mediumId ?? "" },
+      }));
+      // Add the student subject medium mutation here.
+      await Promise.resolve();
+    } finally {
+      setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92dvh] flex-col overflow-hidden sm:max-w-xl">
-        <DialogHeader className="shrink-0">
-          <DialogTitle>Manage students · {className}</DialogTitle>
-        </DialogHeader>
-
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as "current" | "add")}
-          className="min-h-0 flex-1"
+    <>
+      <Dialog open={open}>
+        <DialogContent
+          showCloseButton={false}
+          className="fixed! inset-0! left-0! top-0! h-dvh! max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! rounded-none! flex flex-col overflow-hidden p-4"
         >
-          <TabsList className="grid w-full shrink-0 grid-cols-2">
-            <TabsTrigger value="current">Current students ({currentEnrollments.length})</TabsTrigger>
-            <TabsTrigger value="add">Add students</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="current" className="min-h-0 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                {keepEnrollmentIds.length} of {currentEnrollments.length} students will remain enrolled.
-              </p>
-            </div>
-            <ScrollArea className="h-[min(55vh,26rem)] rounded-md border">
-              <div className="divide-y">
-                {currentEnrollments.map((enrollment) => {
-                  const willRemain = keepEnrollmentIds.includes(enrollment.id);
-                  return (
-                    <div
-                      key={enrollment.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 ${
-                        willRemain ? "" : "text-muted-foreground"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm ${willRemain ? "font-medium" : "line-through"}`}>
-                          {enrollment.student.fullName}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {enrollment.student.admissionNo} · Index {enrollment.classIndex}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant={willRemain ? "ghost" : "outline"}
-                        size="icon-sm"
-                        aria-label={
-                          willRemain
-                            ? `Remove ${enrollment.student.fullName}`
-                            : `Keep ${enrollment.student.fullName}`
-                        }
-                        title={willRemain ? "Remove student" : "Undo removal"}
-                        onClick={() => toggleCurrentEnrollment(enrollment.id)}
-                      >
-                        {willRemain ? <Trash2Icon /> : <ChevronLeftIcon />}
-                      </Button>
-                    </div>
-                  );
-                })}
-                {currentEnrollments.length === 0 && (
-                  <p className="p-5 text-center text-sm text-muted-foreground">
-                    No students currently enrolled.
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="add" className="min-h-0">
-            {step === "choose" ? (
-              <RadioGroup
-                value={mode}
-                onValueChange={(value) => setMode(value as EnrollmentMode)}
-                className="max-h-[min(55vh,26rem)] gap-3 overflow-y-auto py-2"
+          <DialogHeader className="shrink-0 flex-row items-center justify-between gap-4 pr-10">
+            <DialogTitle className="min-w-0 truncate" title={classData.name}>
+              Students · {classData.name}
+            </DialogTitle>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setIsStudentPickerOpen(true)}>
+                <UserPlusIcon />
+                Add students
+              </Button>
+              <Button
+                size={"default"}
+                onClick={() => {
+                  if (confirm("Are you sure you want to close this dialog? Unsaved changes will be lost.")) {
+                    onOpenChange(false);
+                  }
+                }}
+                variant="secondary"
               >
-                <label className="flex cursor-pointer items-start gap-3 rounded-md border p-4">
-                  <RadioGroupItem value="previous-class" className="mt-0.5" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium">Import from a previous-year class</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      Choose a year, grade, and class, then review its student list.
-                    </span>
-                  </span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-3 rounded-md border p-4">
-                  <RadioGroupItem value="individual" className="mt-0.5" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium">Select students individually</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      Search the student list and choose students to add.
-                    </span>
-                  </span>
-                </label>
-              </RadioGroup>
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+            {isPending ? (
+              <PageLoading />
             ) : (
-              <div className="max-h-[min(55vh,26rem)] space-y-4 overflow-y-auto py-2">
-                {mode === "previous-class" ? (
-                  <>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <label htmlFor="previous-year" className="text-sm font-medium">
-                          Academic year
-                        </label>
-                        <Select
-                          value={yearId}
-                          onValueChange={(value) => {
-                            if (value === null) return;
-                            setYearId(value);
-                            setGradeName("");
-                            setSourceClassId("");
-                            setSelectedStudentIds([]);
-                          }}
-                        >
-                          <SelectTrigger id="previous-year">
-                            <SelectValue placeholder="Select a year" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {years.map(([id, name]) => (
-                              <SelectItem key={id} value={id}>{name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="previous-grade" className="text-sm font-medium">Grade</label>
-                        <Select
-                          value={gradeName}
-                          disabled={!yearId}
-                          onValueChange={(value) => {
-                            if (value === null) return;
-                            setGradeName(value);
-                            setSourceClassId("");
-                            setSelectedStudentIds([]);
-                          }}
-                        >
-                          <SelectTrigger id="previous-grade">
-                            <SelectValue placeholder="Select a grade" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {grades.map((grade) => (
-                              <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    {yearId && gradeName && (
-                      <section className="space-y-2">
-                        <h3 className="text-sm font-medium">Classes</h3>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {sourceClasses.map((sourceClass) => (
-                            <Button
-                              key={sourceClass.classId}
-                              type="button"
-                              variant={sourceClassId === sourceClass.classId ? "secondary" : "outline"}
-                              className="h-auto justify-between gap-2 py-3"
-                              onClick={() => selectSourceClass(sourceClass)}
-                            >
-                              <span>{sourceClass.className}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {sourceClass.students.length} students
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      </section>
-                    )}
-                    {importRoster && (
-                      <section className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <h3 className="min-w-0 truncate text-sm font-medium">
-                            Students in {importRoster.className}
-                          </h3>
+              <Table className="min-w-max" containerClassName="overflow-visible">
+                <TableHeader className="sticky top-0 z-10 bg-background">
+                  <TableRow>
+                    <TableHead className="w-24">Class index</TableHead>
+                    <TableHead className="w-48">Admission number</TableHead>
+                    <TableHead className="w-72">Student name</TableHead>
+                    {classData.subjects.map((subject) => (
+                      <TableHead key={subject.id} className="w-60">
+                        <div className="flex min-w-0 flex-col gap-1.5 py-1">
+                          <span className="truncate" title={subject.name}>
+                            {subject.name}
+                          </span>
                           <Button
                             type="button"
                             size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              setSelectedStudentIds((current) =>
-                                current.length ===
-                                importRoster.students.filter(
-                                  (student) => !alreadyEnrolledStudentIds.has(student.studentId),
-                                ).length
-                                  ? []
-                                  : importRoster.students
-                                      .filter((student) => !alreadyEnrolledStudentIds.has(student.studentId))
-                                      .map((student) => student.studentId),
-                              )
-                            }
+                            variant="outline"
+                            className="h-7 w-full text-xs"
+                            disabled={students.length === 0 || disabledSubjectColumns[subject.id]}
+                            onClick={() => void toggleAllForSubject(subject.id)}
                           >
-                            Select/clear all
+                            Toggle all
                           </Button>
                         </div>
-                        <ScrollArea className="h-40 rounded-md border">
-                          <div className="divide-y">
-                            {importRoster.students.map((student) => {
-                              const alreadyEnrolled = alreadyEnrolledStudentIds.has(student.studentId);
-                              return (
-                                <label
-                                  key={student.studentId}
-                                  className={`flex items-center gap-3 px-3 py-2 ${
-                                    alreadyEnrolled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                                  }`}
-                                >
-                                  <Checkbox
-                                    checked={alreadyEnrolled || selectedStudentIds.includes(student.studentId)}
-                                    disabled={alreadyEnrolled}
-                                    onCheckedChange={(checked) => toggleStudent(student.studentId, checked === true)}
-                                  />
-                                  <span className="min-w-0 flex-1 truncate text-sm">{student.fullName}</span>
-                                  <span className="shrink-0 text-xs text-muted-foreground">
-                                    {alreadyEnrolled ? "Already enrolled" : student.admissionNo}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </ScrollArea>
-                      </section>
-                    )}
-                  </>
-                ) : (
-                  <section className="space-y-3">
-                    <div className="relative">
-                      <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                      <Input
-                        className="pl-9"
-                        placeholder="Search students by name or admission number"
-                        value={search}
-                        onChange={(event) => {
-                          setSearch(event.target.value);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-                    <ScrollArea className="h-48 rounded-md border">
-                      <div className="divide-y">
-                        {pageStudents.map((student) => {
-                          const alreadyEnrolled = alreadyEnrolledStudentIds.has(student.studentId);
-                          return (
-                            <label
-                              key={student.studentId}
-                              className={`flex items-center gap-3 px-3 py-2 ${
-                                alreadyEnrolled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                              }`}
-                            >
-                              <Checkbox
-                                checked={alreadyEnrolled || selectedStudentIds.includes(student.studentId)}
-                                disabled={alreadyEnrolled}
-                                onCheckedChange={(checked) => toggleStudent(student.studentId, checked === true)}
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium">{student.fullName}</span>
-                                <span className="block truncate text-xs text-muted-foreground">
-                                  {student.admissionNo}
-                                </span>
-                              </span>
-                              <span className="shrink-0 text-xs capitalize text-muted-foreground">
-                                {alreadyEnrolled ? "Enrolled" : student.gender}
-                              </span>
-                            </label>
-                          );
-                        })}
-                        {pageStudents.length === 0 && (
-                          <p className="p-5 text-center text-sm text-muted-foreground">No students found.</p>
-                        )}
-                      </div>
-                    </ScrollArea>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {selectedStudentIds.length} selected · {filteredIndividualStudents.length} students
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="outline"
-                          aria-label="Previous page"
-                          disabled={page <= 1}
-                          onClick={() => setPage((current) => current - 1)}
-                        >
-                          <ChevronLeftIcon />
-                        </Button>
-                        <span className="text-xs tabular-nums">{page} / {pageCount}</span>
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="outline"
-                          aria-label="Next page"
-                          disabled={page >= pageCount}
-                          onClick={() => setPage((current) => current + 1)}
-                        >
-                          <ChevronRightIcon />
-                        </Button>
-                      </div>
-                    </div>
-                  </section>
-                )}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+                      </TableHead>
+                    ))}
+                    <TableHead className="w-20 text-center">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students.map((student, index) => (
+                    <TableRow key={student.id}>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min={1}
+                          step={1}
+                          className="h-8 w-20"
+                          value={classIndexes[student.id] ?? String(index + 1)}
+                          onChange={(event) =>
+                            setClassIndexes((current) => ({ ...current, [student.id]: event.target.value }))
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="max-w-48 truncate font-mono" title={student.admissionNo}>
+                        {student.admissionNo}
+                      </TableCell>
+                      <TableCell className="max-w-72 truncate" title={student.fullName}>
+                        {student.fullName}
+                      </TableCell>
+                      {classData.subjects.map((subject) => {
+                        const enrolled = isEnrolledInSubject(student.id, subject.id);
+                        const columnDisabled = disabledSubjectColumns[subject.id] ?? false;
+                        const mediumId = getStudentMedium(student.id, subject.id);
 
-        <DialogFooter className="shrink-0">
-          {activeTab === "current" ? (
-            <>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={() => saveSelection()}
-                disabled={!hasCurrentEnrollmentChanges}
-              >
-                Save student changes
-              </Button>
-            </>
-          ) : step === "choose" ? (
-            <>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="button" disabled={!mode} onClick={beginSelection}>
-                Continue
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button type="button" variant="outline" onClick={goBack}>
-                Back
-              </Button>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={saveAddedStudents}
-                disabled={
-                  !selectedStudentIds.length ||
-                  (mode === "previous-class" && !importRoster)
-                }
-              >
-                <UsersIcon />
-                Add {selectedStudentIds.length} student{selectedStudentIds.length === 1 ? "" : "s"}
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                        return (
+                          <TableCell key={subject.id} className="w-60 max-w-60">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <Checkbox
+                                checked={enrolled}
+                                disabled={columnDisabled}
+                                onCheckedChange={(checked) =>
+                                  void toggleStudentSubject(student.id, subject.id, checked === true)
+                                }
+                              />
+                              <Select
+                                items={mediumOptions}
+                                value={mediumId}
+                                disabled={!enrolled || columnDisabled || isMediumPending}
+                                onValueChange={(value) => {
+                                  if (value !== null) void changeStudentMedium(student.id, subject.id, value);
+                                }}
+                              >
+                                <SelectTrigger className="h-8 w-full min-w-0">
+                                  <SelectValue placeholder="Select medium" className="truncate" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {mediumOptions.map((medium) => (
+                                    <SelectItem key={medium.value} value={medium.value}>
+                                      <span className="max-w-48 truncate" title={medium.label}>
+                                        {medium.label}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-center">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="size-8"
+                          title="Remove student"
+                          onClick={() => removeStudent(student.id)}
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {students.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={classData.subjects.length + 4} className="h-48">
+                        <EmptyState
+                          noBorder
+                          icon={UsersIcon}
+                          title="No students in this class"
+                          description="Add students to build this class roster."
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {isStudentPickerOpen && (
+        <StudentPickerDialog
+          open
+          onOpenChange={setIsStudentPickerOpen}
+          selectedStudentIds={students.map((student) => student.id)}
+          onAdd={addStudents}
+        />
+      )}
+    </>
   );
 }

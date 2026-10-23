@@ -47,3 +47,5 @@ export interface IClass extends ClassGetPayload<{
     teacher: { id: Teacher["id"]; fullName: Teacher["fullName"] };
   }[];
 }
+
+export type IClassOption = { value: Class["id"]; label: Class["name"] };

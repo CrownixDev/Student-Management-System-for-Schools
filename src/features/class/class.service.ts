@@ -1,6 +1,6 @@
 import { ApiError } from "@/lib/ApiError";
 import { ClassRepository } from "./class.repository";
-import { IClass, IClassList } from "./class.types";
+import { IClass, IClassList, IClassOption } from "./class.types";
 
 export class ClassService {
   constructor(private repository: ClassRepository) {}
@@ -35,5 +35,10 @@ export class ClassService {
       name: classItem.name,
       studentCount: classItem.enrollments.length,
     }));
+  }
+
+  async getAsOptions(yearId: string, gradeId: string): Promise<IClassOption[]> {
+    const classList = await this.repository.getList(yearId, gradeId);
+    return classList.map((item) => ({ value: item.id, label: item.name }));
   }
 }

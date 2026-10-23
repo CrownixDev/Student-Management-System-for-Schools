@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { academicYearListSelect, academicYearSelect } from "./year.types";
+import { academicYearSelect } from "./year.types";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";
 import { AcademicYearWhereInput } from "@/generated/prisma/models";
 
@@ -23,13 +23,14 @@ export class AcademicYearsRepository {
   async getListItemById(yearId: string) {
     return await prisma.academicYear.findUnique({
       where: { id: yearId },
-      select: academicYearListSelect,
+      select: academicYearSelect,
     });
   }
 
   async getActiveYear() {
     return await prisma.academicYear.findFirst({
       where: { isCurrent: true },
+      select: academicYearSelect,
     });
   }
 }

@@ -5,16 +5,16 @@ export const studentListSelect = {
   id: true,
   admissionNo: true,
   fullName: true,
-  enrollments: {
-    select: {
-      classIndex: true,
-    },
-  },
 } satisfies StudentSelect;
 
 export type IStudentsListItem = StudentGetPayload<{
   select: typeof studentListSelect;
 }>;
+
+export type IStudentList = {
+  list: IStudentsListItem[];
+  count: number;
+};
 
 export const studentSelect = {
   id: true,

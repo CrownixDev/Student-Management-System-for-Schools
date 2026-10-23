@@ -1,12 +1,18 @@
 import { ApiError } from "@/lib/ApiError";
 import { StudentsRepository } from "./students.repository";
-import { IStudent, IStudentsListItem } from "./students.types";
+import { IStudent, IStudentList, IStudentsListItem } from "./students.types";
+import { IQueryParams } from "@/lib/filter";
 
 export class StudentsService {
   constructor(private repository: StudentsRepository) {}
 
-  async getSortedList(yearId: string, gradeId: string, classId: string): Promise<IStudentsListItem[]> {
-    const itemList = await this.repository.getList(yearId, gradeId, classId);
+  async getList({ search, page, limit }: IQueryParams): Promise<IStudentList> {
+    const [count, list] = await this.repository.getList({ search, page, limit });
+    return { count, list };
+  }
+
+  async getListForClass(yearId: string, gradeId: string, classId: string): Promise<IStudentsListItem[]> {
+    const itemList = await this.repository.getListForClass(yearId, gradeId, classId);
     const sortedItemList = itemList.sort((a, b) => a.enrollments[0].classIndex - b.enrollments[0].classIndex);
     return sortedItemList;
   }

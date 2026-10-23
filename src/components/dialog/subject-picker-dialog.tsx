@@ -32,8 +32,9 @@ export default function SubjectPickerDialog({
   onAdd: (subjectList: ISubjectListItem[]) => void;
 }) {
   const [category, setcategory] = useState<SubjectCategory>(subjectCategories[0].value);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<ISubjectListItem[]>([]);
   const [search, setSearch] = useState("");
+  const selectedIds = selectedSubjects.map((subject) => subject.id);
 
   const {
     data: subjects = [],
@@ -55,33 +56,31 @@ export default function SubjectPickerDialog({
   const availableSubjects = subjects.filter((subject) => !selectedSubjectIds.includes(subject.id));
 
   function toggleSubject(subjectId: string, checked: boolean) {
-    setSelectedIds((current) => {
+    const subject = subjects.find((item) => item.id === subjectId);
+    setSelectedSubjects((current) => {
       if (selectedSubjectIds.includes(subjectId)) {
-        return current.filter((id) => id !== subjectId);
+        return current;
       }
 
       if (!checked) {
-        return current.filter((id) => id !== subjectId);
+        return current.filter((item) => item.id !== subjectId);
       }
 
-      return current.includes(subjectId) ? current : [...current, subjectId];
+      return subject && !current.some((item) => item.id === subjectId) ? [...current, subject] : current;
     });
   }
 
   function toggleAll(checked: boolean) {
-    setSelectedIds((current) => {
-      const currentCategoryIds = new Set(subjects.map((subject) => subject.id));
-      const otherSelections = current.filter((id) => !currentCategoryIds.has(id) && !selectedSubjectIds.includes(id));
-
-      return checked ? [...otherSelections, ...availableSubjects.map((subject) => subject.id)] : otherSelections;
+    setSelectedSubjects((current) => {
+      const availableIds = new Set(availableSubjects.map((subject) => subject.id));
+      const otherSelections = current.filter((subject) => !availableIds.has(subject.id));
+      return checked ? [...otherSelections, ...availableSubjects] : otherSelections;
     });
   }
 
   function addSelected() {
-    const finalIdList = selectedIds.filter((id) => !selectedSubjectIds.includes(id));
-    const finalSubjectList = subjects.filter((sub) => finalIdList.includes(sub.id));
-    onAdd(finalSubjectList);
-    setSelectedIds([]);
+    onAdd(selectedSubjects.filter((subject) => !selectedSubjectIds.includes(subject.id)));
+    setSelectedSubjects([]);
     onOpenChange(false);
   }
 

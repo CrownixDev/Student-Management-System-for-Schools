@@ -11,7 +11,7 @@ import ClassStudentsTable from "./class-students-table";
 import ClassSubjectTable from "./class-subject-table";
 import ClassStudentAddBtn from "./buttons/class-student-add-btn";
 import { redirect } from "next/navigation";
-import ClassSubjectAddBtn from "./buttons/class-subjects-add--btn";
+import ClassSubjectAddBtn from "./buttons/class-subjects-add-btn";
 
 export default async function ClassDetails() {
   const classId = idCache.get("classId");

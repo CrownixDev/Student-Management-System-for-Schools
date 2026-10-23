@@ -32,7 +32,7 @@ export class GradesRepository {
     });
   }
 
-  async getListItemById(gradeId: string): Promise<IGradeListItem | null> {
+  async getListItemById(gradeId: string) {
     return await prisma.gradeLevel.findUnique({
       where: { id: gradeId },
       select: gradeListSelect,
@@ -80,6 +80,22 @@ export class GradesRepository {
           },
         },
       },
+    });
+  }
+
+  async getListWithClasses(yearId: string) {
+    return await prisma.gradeLevel.findMany({
+      select: {
+        ...gradesSelect,
+        classes: {
+          select: {
+            ...gradesSelect.classes.select,
+            enrollments: { select: { id: true } },
+          },
+          where: { academicYearId: yearId },
+        },
+      },
+      orderBy: { number: "asc" },
     });
   }
 }

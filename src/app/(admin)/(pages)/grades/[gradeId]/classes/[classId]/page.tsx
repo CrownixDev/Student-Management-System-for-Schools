@@ -24,7 +24,7 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
     />
   );
 
-  const studentList = await studentsService.getSortedList(yearId, gradeId, classId);
+  const studentList = await studentsService.getListForClass(yearId, gradeId, classId);
 
   if (studentId) {
     const student = await studentsService.getById(studentId, yearId, gradeId, classId);

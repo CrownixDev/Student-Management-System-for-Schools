@@ -1,3 +1,4 @@
+import { Medium } from "@/generated/prisma/client";
 import { MediumGetPayload, MediumSelect } from "@/generated/prisma/models";
 
 export const mediumSelect = {
@@ -8,3 +9,5 @@ export const mediumSelect = {
 export type IMediumListItem = MediumGetPayload<{
   select: typeof mediumSelect;
 }>;
+
+export type IMediumOption = { value: Medium["id"]; label: Medium["name"] };

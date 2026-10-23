@@ -1,4 +1,4 @@
-import { IAcademicYear, IAcademicYearListItem } from "./year.types";
+import { IAcademicYear } from "./year.types";
 import { AcademicYearsRepository } from "./year.repository";
 import { ApiError } from "@/lib/ApiError";
 import { IQueryParams } from "@/lib/filter";
@@ -10,9 +10,15 @@ export class AcademicYearsService {
     return await this.repository.getList({ search });
   }
 
-  async getListItemById(yearId: string): Promise<IAcademicYearListItem> {
+  async getListItemById(yearId: string): Promise<IAcademicYear> {
     const year = await this.repository.getListItemById(yearId);
     if (!year) throw new ApiError(404, "Year not found");
+    return year;
+  }
+
+  async getActiveYear(): Promise<IAcademicYear> {
+    const year = await this.repository.getActiveYear();
+    if (!year) throw new ApiError(404, "No active years found");
     return year;
   }
 }

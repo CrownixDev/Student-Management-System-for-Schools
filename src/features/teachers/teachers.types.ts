@@ -5,6 +5,7 @@ import { StrictOmit } from "@/lib/utils";
 export const teacherListSelect = {
   id: true,
   fullName: true,
+  phone: true,
   isActive: true,
 } satisfies TeacherSelect;
 

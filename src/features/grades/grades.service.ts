@@ -1,6 +1,6 @@
 import { ApiError } from "@/lib/ApiError";
 import { GradesRepository } from "./grades.repository";
-import { IGradeListItem, IGradeListItemForYear, IGradeWithClasses } from "./grades.types";
+import { IGradeListItem, IGradeListItemForYear, IGradeWithClassesItem } from "./grades.types";
 import { IQueryParams } from "@/lib/filter";
 
 export class GradesService {
@@ -26,5 +26,20 @@ export class GradesService {
     const grade = await this.repository.getListItemById(gradeId);
     if (!grade) throw new ApiError(404, "Grade Not Found");
     return grade;
+  }
+
+  async getListWithClasses(yearId: string): Promise<IGradeWithClassesItem[]> {
+    if (!yearId) throw new ApiError(400, "Academic Year not Provided");
+    const grades = await this.repository.getListWithClasses(yearId);
+
+    return grades.map((grade) => ({
+      ...grade,
+      classes: grade.classes.map((classItem) => ({
+        id: classItem.id,
+        name: classItem.name,
+        batch: classItem.batch,
+        studentCount: classItem.enrollments.length,
+      })),
+    }));
   }
 }

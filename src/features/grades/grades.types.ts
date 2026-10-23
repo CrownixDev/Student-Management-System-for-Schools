@@ -1,3 +1,4 @@
+import { Batch, Class, GradeLevel } from "@/generated/prisma/client";
 import { GradeLevelGetPayload, GradeLevelSelect } from "@/generated/prisma/models";
 
 export const gradeListSelect = {
@@ -22,10 +23,29 @@ export const gradesSelect = {
     select: {
       id: true,
       name: true,
+      batch: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      },
     },
   },
 } satisfies GradeLevelSelect;
 
-export type IGrades = GradeLevelGetPayload<{
-  select: typeof gradesSelect;
-}>;
+export type IGradeWithClassesItem = {
+  id: GradeLevel["id"];
+  number: GradeLevel["number"];
+  name: GradeLevel["name"];
+  classes: {
+    id: Class["id"];
+    name: Class["name"];
+    studentCount: number;
+    batch: {
+      id: Batch["id"];
+      name: Batch["name"];
+      type: Batch["type"];
+    } | null;
+  }[];
+};

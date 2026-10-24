@@ -28,10 +28,7 @@ export default async function ClassSidebar() {
     <>
       <SetupSidebar>
         <SetupSidebarHearder>
-          <SidebarHearder
-            header={{ title: `All Classes (${activeYear.name})` }}
-            search={{ placeholder: "Search by class or grade" }}
-          />
+          <SidebarHearder header={{ title: `All Classes (${activeYear.name})` }} />
         </SetupSidebarHearder>
         <SetupSidebarContent>
           {grades.map((grade) => {

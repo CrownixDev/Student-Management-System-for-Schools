@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { batchService, IBatchListItem } from "@/features/batch";
+import { batchService, IBatchList } from "@/features/batch";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
 import BatchEditBtn from "./batch-edit-btn";
@@ -12,7 +12,7 @@ import TooltipLink from "@/components/ui/tooltip-link";
 export default async function BatchTable({ type }: { type: BatchType }) {
   const search = filterCache.get("search");
 
-  let batches: IBatchListItem[] | null = null;
+  let batches: IBatchList | null = null;
 
   try {
     batches = await batchService.getList({ search, type });
@@ -31,7 +31,7 @@ export default async function BatchTable({ type }: { type: BatchType }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {batches.map((batch) => (
+          {batches.list.map((batch) => (
             <TableRow key={batch.id}>
               <TableCell className="font-medium">{batch.name}</TableCell>
               <TableCell className="text-right">
@@ -48,7 +48,7 @@ export default async function BatchTable({ type }: { type: BatchType }) {
           ))}
         </TableBody>
       </Table>
-      {batches.length === 0 && (
+      {batches.list.length === 0 && (
         <div className="py-12">
           <EmptyState
             icon={LinkIcon}

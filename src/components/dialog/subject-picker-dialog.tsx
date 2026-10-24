@@ -25,11 +25,13 @@ export default function SubjectPickerDialog({
   onOpenChange,
   selectedSubjectIds,
   onAdd,
+  title = "Add subjects to class",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedSubjectIds: string[];
   onAdd: (subjectList: ISubjectListItem[]) => void;
+  title?: string;
 }) {
   const [category, setcategory] = useState<SubjectCategory>(subjectCategories[0].value);
   const [selectedSubjects, setSelectedSubjects] = useState<ISubjectListItem[]>([]);
@@ -88,7 +90,7 @@ export default function SubjectPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Add subjects to class</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <SearchInput value={search} onChange={setSearch} placeholder="Search for a subject" />

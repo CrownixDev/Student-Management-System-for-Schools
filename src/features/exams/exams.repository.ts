@@ -1,15 +1,15 @@
 import { prisma } from "@/lib/prisma";
-import { examListSelect, examSelect, IExamListItem } from "./exams.types";
+import { examListSelect, examSelect } from "./exams.types";
 
 export class ExamRepository {
-  async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
+  async getList(yearId: string, gradeId: string) {
     return await prisma.exam.findMany({
       where: { academicYearId: yearId, gradeLevelId: gradeId },
       select: examListSelect,
     });
   }
 
-  async getListItemById(examId: string): Promise<IExamListItem | null> {
+  async getListItemById(examId: string) {
     return await prisma.exam.findUnique({
       where: { id: examId },
       select: examListSelect,

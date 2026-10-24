@@ -22,13 +22,34 @@ export class ExamService {
   ) {}
 
   async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
-    return await this.repository.getList(yearId, gradeId);
+    const examList = await this.repository.getList(yearId, gradeId);
+    return examList.map((exam) => ({
+      ...exam,
+      examSubjects: exam.examSubjects.map((esub) => ({
+        id: esub.subject.id,
+        name: esub.subject.name,
+        code: esub.subject.code,
+        category: esub.subject.category,
+        passMark: esub.passMark,
+        maxMarks: esub.maxMarks,
+      })),
+    }));
   }
 
   async getListItemById(examId: string): Promise<IExamListItem> {
     const exam = await this.repository.getListItemById(examId);
     if (!exam) throw new ApiError(404, "Exam not found");
-    return exam;
+    return {
+      ...exam,
+      examSubjects: exam.examSubjects.map((esub) => ({
+        id: esub.subject.id,
+        name: esub.subject.name,
+        code: esub.subject.code,
+        category: esub.subject.category,
+        passMark: esub.passMark,
+        maxMarks: esub.maxMarks,
+      })),
+    };
   }
 
   async getDataByEnrollmentId(enrollmentId: string): Promise<IExamByEnrollmentId[]> {

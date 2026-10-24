@@ -1,0 +1,86 @@
+import { studentsService } from "@/features/students";
+import { filterCache } from "@/lib/nuqs/filter";
+import { redirect } from "next/navigation";
+import EmptyState from "@/components/ui/empty-state";
+import { CircleUserIcon } from "lucide-react";
+import { Badge } from "@/components/shadcn/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import StudentActions from "./student-actions";
+import PagePagination from "@/components/ui/page-pagination";
+import { studentFilterCach } from "@/features/students/student.cache";
+import { getHtmlDateString } from "@/lib/utils";
+
+export default async function StudentsTable() {
+  const { search, page, limit } = filterCache.all();
+  const { gender, dobFrom, dobTo } = studentFilterCach.all();
+
+  let students;
+
+  try {
+    students = await studentsService.getProfileList({ search, page, limit, gender, dobFrom, dobTo });
+  } catch (error) {
+    console.error("Failed to load students from service:", error);
+    redirect("/setup");
+  }
+
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-md border">
+        <Table className="min-w-[760px]" containerClassName="!overflow-visible">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="sticky top-0 z-10 bg-background font-semibold text-foreground">
+                Admission No.
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-background font-semibold text-foreground">
+                Student Name
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-background font-semibold text-foreground">
+                Date of Birth
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-background font-semibold text-foreground">Phone</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-background font-semibold text-foreground">NIC</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-background font-semibold text-foreground select-none">
+                Status
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-background text-right font-semibold text-foreground select-none">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {students.list.map((student) => (
+              <TableRow key={student.id}>
+                <TableCell className="font-mono select-all">{student.admissionNo}</TableCell>
+                <TableCell className="w-72 max-w-72 whitespace-normal wrap-break-word">{student.fullName}</TableCell>
+                <TableCell>{student.dob ? getHtmlDateString(student.dob) : "-"}</TableCell>
+                <TableCell className="select-all">{student.phone || "-"}</TableCell>
+                <TableCell>{student.nic || "-"}</TableCell>
+                <TableCell className="select-none">
+                  <Badge variant="success">Active</Badge>
+                </TableCell>
+                <TableCell className="text-right select-none">
+                  <StudentActions student={student} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {students.list.length === 0 && (
+          <div className="py-12">
+            <EmptyState
+              icon={CircleUserIcon}
+              title={search ? "No matching students" : "No students found"}
+              description={
+                search
+                  ? `No students match "${search}". Try searching for another student.`
+                  : "There are no active students to display."
+              }
+            />
+          </div>
+        )}
+      </div>
+      <PagePagination itemCount={students.count} className="shrink-0" />
+    </div>
+  );
+}

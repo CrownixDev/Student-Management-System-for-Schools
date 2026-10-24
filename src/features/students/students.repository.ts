@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { studentListSelect, studentSelect } from "./students.types";
+import { studentEnrollmentSelect, studentListSelect, studentProfuileSelect, studentSelect } from "./students.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
 import { StudentWhereInput } from "@/generated/prisma/models";
+import { DOBFilter, GenderFilter } from "./student.cache";
+
+export type IStudentProfileListFilters = IQueryParams & { gender: GenderFilter; dobFrom: DOBFilter; dobTo: DOBFilter };
 
 export class StudentsRepository {
   async getList({ search, page, limit }: IQueryParams) {
@@ -30,6 +33,46 @@ export class StudentsRepository {
         select: studentListSelect,
         take: limitNumber,
         skip: skipCount,
+      }),
+    ]);
+  }
+
+  async getProfileList({ search, page, limit, gender, dobFrom, dobTo }: IStudentProfileListFilters) {
+    const cleanSearch = getCleanSearch(search);
+    const { limitNumber, skipCount } = getPagination({ page, limit });
+
+    const where: StudentWhereInput = {};
+
+    if (cleanSearch) {
+      where.OR = [
+        { admissionNo: { contains: cleanSearch } },
+        { fullName: { contains: cleanSearch } },
+        { nic: { contains: cleanSearch } },
+        { phone: { contains: cleanSearch } },
+        { address: { contains: cleanSearch } },
+        { guardianName: { contains: cleanSearch } },
+        { guardianPhone: { contains: cleanSearch } },
+      ];
+    }
+
+    let genderWhere: StudentWhereInput = {};
+    if (gender !== "all") {
+      genderWhere = { gender: { equals: gender } };
+    }
+
+    let dobWhere: StudentWhereInput = {};
+    if (dobFrom && dobTo) {
+      dobWhere = { dob: { gte: dobFrom, lte: dobTo } };
+    }
+
+    return await Promise.all([
+      prisma.student.count({ where: { ...where, ...genderWhere, ...dobWhere } }),
+      prisma.student.findMany({
+        where: { ...where, ...genderWhere, ...dobWhere },
+        select: studentProfuileSelect,
+        take: limitNumber,
+        skip: skipCount,
+        orderBy: { createdAt: "desc" },
       }),
     ]);
   }
@@ -75,6 +118,13 @@ export class StudentsRepository {
           },
         },
       },
+    });
+  }
+
+  async getEnrollmentsById(studentId: string) {
+    return await prisma.student.findUnique({
+      where: { id: studentId },
+      select: studentEnrollmentSelect,
     });
   }
 }

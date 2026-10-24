@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MEDIUM_OPTIONS } from "@/lib/query-keys";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { toast } from "react-toastify";
-import RenderDialogErrors from "../compoennts/render-dialog-errors";
+import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 
 export interface IClassDetailsDialogData {

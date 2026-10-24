@@ -13,13 +13,13 @@ import { IGradeListItemForYear } from "@/features/grades";
 import EmptyState from "@/components/ui/empty-state";
 import SidebarGradeButton from "./sidebar-grade-button";
 import Link from "next/link";
-import { IAcademicYearListItem } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 
 export default function SidebarGradeContent({
   year,
   grades,
 }: {
-  year: IAcademicYearListItem;
+  year: IAcademicYear;
   grades: IGradeListItemForYear[];
 }) {
   return (
@@ -57,7 +57,8 @@ export default function SidebarGradeContent({
                     Take me to add a new grade
                   </Button>
                 }
-                noBorder              />
+                noBorder
+              />
             </SidebarGroupContent>
           )}
         </SidebarGroup>

@@ -7,7 +7,7 @@ import { Input } from "@/components/shadcn/input";
 import { IBatchListItem } from "@/features/batch";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
-import RenderDialogErrors from "../compoennts/render-dialog-errors";
+import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { StrictOmit } from "@/lib/utils";

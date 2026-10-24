@@ -1,4 +1,4 @@
-import { academicYearsService, IAcademicYearListItem } from "@/features/academic-years";
+import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { batchService, IBatch } from "@/features/batch";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { SidebarInset } from "@/components/shadcn/sidebar";
@@ -10,7 +10,7 @@ import GradesPage from "./grades-page";
 export default async function page({ searchParams }: PageProps<"/grades">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
 
-  let yearData: IAcademicYearListItem | null = null;
+  let yearData: IAcademicYear | null = null;
   let batchData: IBatch | null = null;
   let gradelist: IGradeListItemForYear[] = [];
 

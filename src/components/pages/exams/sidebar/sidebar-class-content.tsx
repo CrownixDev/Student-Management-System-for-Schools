@@ -11,7 +11,7 @@ import { TypographyH1, TypographyH2, TypographyP } from "@/components/ui/typogra
 import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
 import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
-import { IAcademicYearListItem } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { IClassList } from "@/features/class";
 import SidebarClassButton from "./sidebar-class-button";
 import { IGradeListItem } from "@/features/grades";
@@ -22,7 +22,7 @@ export default function SidebarClassContent({
   gradeItem,
   classList,
 }: {
-  year: IAcademicYearListItem;
+  year: IAcademicYear;
   gradeItem: IGradeListItem;
   classList: IClassList;
 }) {

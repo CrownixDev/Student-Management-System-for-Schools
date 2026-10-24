@@ -5,7 +5,7 @@ import { studentsService } from "@/features/students";
 import { subjectRepository } from "@/features/subjects";
 import { ExternalLinkIcon } from "lucide-react";
 import { redirect } from "next/navigation";
-import StudentDetails from "@/components/classes/student-details";
+import StudentDetails from "@/components/pages/classes/student-details";
 
 export default async function StudentDetailsViewButton({
   studentId,

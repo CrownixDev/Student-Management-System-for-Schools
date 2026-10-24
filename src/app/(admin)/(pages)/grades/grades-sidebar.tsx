@@ -17,7 +17,7 @@ import { Badge } from "@/components/shadcn/badge";
 import { IGradeListItemForYear } from "@/features/grades";
 import { Empty, EmptyContent, EmptyMedia, EmptyTitle } from "@/components/shadcn/empty";
 import { TypographyH1, TypographyH2 } from "@/components/ui/typography";
-import { IAcademicYearListItem } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { Separator } from "@/components/shadcn/separator";
 import { IBatch } from "@/features/batch";
 import { Route } from "next";
@@ -27,7 +27,7 @@ export default function GradesSidebar({
   year,
   batch,
 }: {
-  year: IAcademicYearListItem | null;
+  year: IAcademicYear | null;
   batch: IBatch | null;
   gradeList?: IGradeListItemForYear[];
 }) {

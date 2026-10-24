@@ -2,7 +2,7 @@
 
 import { idParsers } from "@/lib/nuqs/id";
 import { useQueryStates } from "nuqs";
-import { SidebarMenuButton, SidebarMenuItem } from "../../shadcn/sidebar";
+import { SidebarMenuButton, SidebarMenuItem } from "../../../shadcn/sidebar";
 import { IExamListItem } from "@/features/exams";
 
 export default function SidebarExamButton({ examItem }: { examItem: IExamListItem }) {

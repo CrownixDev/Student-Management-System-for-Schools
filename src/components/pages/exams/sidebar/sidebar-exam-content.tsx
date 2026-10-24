@@ -11,7 +11,7 @@ import { TypographyH1, TypographyH2, TypographyP } from "@/components/ui/typogra
 import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
 import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
-import { IAcademicYearListItem } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { IExamListItem } from "@/features/exams";
 import SidebarExamButton from "./sidebar-exam-button";
 import { IClassListItem } from "@/features/class";
@@ -23,7 +23,7 @@ export default function SidebarExamContent({
   classItem,
   examList,
 }: {
-  year: IAcademicYearListItem;
+  year: IAcademicYear;
   classItem?: IClassListItem;
   gradeItem: IGradeListItem;
   examList: IExamListItem[];
@@ -69,7 +69,8 @@ export default function SidebarExamContent({
                     Take me to add a new exam
                   </Button>
                 }
-                noBorder              />
+                noBorder
+              />
             </SidebarGroupContent>
           )}
         </SidebarGroup>

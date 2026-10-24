@@ -4,13 +4,13 @@ import { idCache } from "@/lib/nuqs/id";
 import { HomeIcon } from "lucide-react";
 import { Separator } from "@/components/shadcn/separator";
 import { redirect } from "next/navigation";
-import { academicYearsService, IAcademicYearListItem } from "@/features/academic-years";
+import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { classService, IClassList } from "@/features/class";
 import { examService, IExamListItem } from "@/features/exams";
-import SidebarGradeContent from "@/components/exams/sidebar/sidebar-grade-content";
-import SidebarClassContent from "@/components/exams/sidebar/sidebar-class-content";
-import SidebarExamContent from "@/components/exams/sidebar/sidebar-exam-content";
+import SidebarGradeContent from "@/components/pages/exams/sidebar/sidebar-grade-content";
+import SidebarClassContent from "@/components/pages/exams/sidebar/sidebar-class-content";
+import SidebarExamContent from "@/components/pages/exams/sidebar/sidebar-exam-content";
 import Link from "next/link";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
@@ -19,7 +19,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
   const awaitedParams = await searchParams;
   const isViewing = awaitedParams.type === "view";
 
-  let yearData: IAcademicYearListItem | null = null;
+  let yearData: IAcademicYear | null = null;
   let gradeList: IGradeListItemForYear[] = [];
   let classList: IClassList | null = null;
   let examList: IExamListItem[] | null = null;

@@ -20,7 +20,7 @@ import { ISubjectListItem } from "@/features/subjects";
 import { AlertTriangleIcon, BookPlusIcon, Trash2Icon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 import { subjectCategories } from "@/features/subjects/subject.enums";
-import RenderDialogErrors from "../compoennts/render-dialog-errors";
+import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import SubjectPickerDialog from "../subject-picker-dialog";
 

@@ -6,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/ta
 import { IExamByEnrollmentId } from "@/features/exams";
 import { ISubjectListItem } from "@/features/subjects";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { StudentSubjectMarksChart } from "@/components/classes/student-subject-marks-chart";
-import { StudentSubjectProgressChart } from "@/components/classes/student-subject-progress-chart";
+import { StudentSubjectMarksChart } from "@/components/pages/classes/student-subject-marks-chart";
+import { StudentSubjectProgressChart } from "@/components/pages/classes/student-subject-progress-chart";
 
 export default function StudentDetails({
   student,

@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
 import { TypographyH1, TypographyH2, TypographyH3 } from "@/components/ui/typography";
-import { academicYearsService, IAcademicYearListItem } from "@/features/academic-years";
+import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { classService } from "@/features/class";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { idCache } from "@/lib/nuqs/id";
@@ -26,7 +26,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
   const { yearId, batchId } = await idCache.parse(searchParams);
   const { gradeId } = await params;
 
-  let yearData: IAcademicYearListItem | null = null;
+  let yearData: IAcademicYear | null = null;
   let gradeData: IGradeListItem | null = null;
   let batchData: IBatchListItem | null = null;
 

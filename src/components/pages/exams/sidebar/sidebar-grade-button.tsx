@@ -2,8 +2,8 @@
 
 import { idParsers } from "@/lib/nuqs/id";
 import { useQueryStates } from "nuqs";
-import { SidebarMenuButton, SidebarMenuItem } from "../../shadcn/sidebar";
-import { Badge } from "../../shadcn/badge";
+import { SidebarMenuButton, SidebarMenuItem } from "../../../shadcn/sidebar";
+import { Badge } from "../../../shadcn/badge";
 import { IGradeListItemForYear } from "@/features/grades";
 
 export default function SidebarGradeButton({ gradeItem }: { gradeItem: IGradeListItemForYear }) {

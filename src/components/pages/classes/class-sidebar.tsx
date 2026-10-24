@@ -1,7 +1,7 @@
 import { TypographyH2 } from "@/components/ui/typography";
 import { Button } from "@/components/shadcn/button";
 import { PlusIcon, SearchIcon, XIcon } from "lucide-react";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../shadcn/input-group";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../../shadcn/input-group";
 import { Separator } from "@/components/shadcn/separator";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
 import { IStudentsListItem } from "@/features/students";

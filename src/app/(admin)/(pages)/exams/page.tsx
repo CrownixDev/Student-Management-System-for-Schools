@@ -2,9 +2,9 @@ import { examService, IExamClassData, IExamListItem, IExamTopResults } from "@/f
 import { ClipboardListIcon, MousePointerClickIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
-import ExamResultsPage from "@/components/exams/exam-results-page";
+import ExamResultsPage from "@/components/pages/exams/exam-results-page";
 import EmptyState from "@/components/ui/empty-state";
-import { ExamMarksPage } from "@/components/exams/exam-marks-page";
+import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);

@@ -32,7 +32,7 @@ export default async function ClassSidebar() {
         </SetupSidebarHearder>
         <SetupSidebarContent>
           {grades.map((grade) => {
-            return <ClassSidebarItem key={grade.id} grade={grade} />;
+            return <ClassSidebarItem key={grade.id} year={activeYear} grade={grade} />;
           })}
           {grades.length === 0 && (
             <EmptyState

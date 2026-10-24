@@ -1,13 +1,19 @@
 "use client";
 
-import ClassDetailsDialog from "@/components/dialog/class/class-details-dialog";
+import ClassDetailsDialog, { IClassDetailsDialogData } from "@/components/dialog/class/class-details-dialog";
 import { Button } from "@/components/shadcn/button";
+import { IAcademicYear } from "@/features/academic-years";
 import { IGradeWithClassesItem } from "@/features/grades";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
-export default function ClassNewBtn({ grade }: { grade: IGradeWithClassesItem }) {
+export default function ClassNewBtn({ year, grade }: { year: IAcademicYear; grade: IGradeWithClassesItem }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  function handleAddClass(data: IClassDetailsDialogData) {
+    console.log(data);
+  }
+
   return (
     <>
       <Button
@@ -19,13 +25,7 @@ export default function ClassNewBtn({ grade }: { grade: IGradeWithClassesItem })
         <PlusIcon />
         Add new class
       </Button>
-      {isOpen && (
-        <ClassDetailsDialog
-          open
-          onOpenChange={setIsOpen}
-          defaultGrade={{ id: grade.id, name: grade.name, number: grade.number }}
-        />
-      )}
+      {isOpen && <ClassDetailsDialog open onOpenChange={setIsOpen} year={year} grade={grade} onSave={handleAddClass} />}
     </>
   );
 }

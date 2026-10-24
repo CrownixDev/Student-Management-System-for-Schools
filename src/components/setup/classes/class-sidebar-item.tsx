@@ -5,8 +5,17 @@ import { ChevronRightIcon } from "lucide-react";
 import ClassAssignBatchBtn from "./buttons/class-assign-batch-btn";
 import ClassSidebarBtn from "./buttons/class-sidebar-btn";
 import ClassNewBtn from "./buttons/class-new-btn";
+import { IAcademicYear } from "@/features/academic-years";
 
-export default function ClassSidebarItem({ open = false, grade }: { open?: boolean; grade: IGradeWithClassesItem }) {
+export default function ClassSidebarItem({
+  open = false,
+  year,
+  grade,
+}: {
+  open?: boolean;
+  year: IAcademicYear;
+  grade: IGradeWithClassesItem;
+}) {
   const currentBatch = grade.classes.find((cls) => cls.batch)?.batch;
 
   return (
@@ -29,7 +38,7 @@ export default function ClassSidebarItem({ open = false, grade }: { open?: boole
           {grade.classes.map((item) => (
             <ClassSidebarBtn key={item.id} classItem={item} />
           ))}
-          <ClassNewBtn grade={grade} />
+          <ClassNewBtn year={year} grade={grade} />
         </div>
       </CollapsibleContent>
     </Collapsible>

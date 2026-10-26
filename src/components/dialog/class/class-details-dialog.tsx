@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MEDIUM_OPTIONS } from "@/lib/query-keys";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { toast } from "react-toastify";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 
 export interface IClassDetailsDialogData {
@@ -186,7 +186,7 @@ export default function ClassDetailsDialog({
             </Field>
           </FieldGroup>
 
-          <RenderDialogErrors errors={errors} />
+          <DialogErrors errors={errors} />
 
           <DialogFooter>
             {data && (

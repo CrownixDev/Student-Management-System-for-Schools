@@ -20,7 +20,7 @@ import { ISubjectListItem } from "@/features/subjects";
 import { AlertTriangleIcon, BookPlusIcon, Trash2Icon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 import { subjectCategories } from "@/features/subjects/subject.enums";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import SubjectPickerDialog from "../subject-picker-dialog";
 
@@ -163,7 +163,7 @@ export default function ExamDialog({
 
           <FieldGroup>
             <FieldSet>
-              <RenderDialogErrors errors={errors} />
+              <DialogErrors errors={errors} />
               <Field>
                 <FieldLabel htmlFor="exam-name">Exam Name</FieldLabel>
                 <Input

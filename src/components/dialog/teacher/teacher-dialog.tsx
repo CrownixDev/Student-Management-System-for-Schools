@@ -7,7 +7,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { ITeacher } from "@/features/teachers";
 import { useState } from "react";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 
 interface TeacherFormData {
   fullName: string;
@@ -81,7 +81,7 @@ function TeacherDialogForm({
           />
           <FieldLabel htmlFor="teacher-active">Active teacher</FieldLabel>
         </Field>
-        <RenderDialogErrors errors={errors} />
+        <DialogErrors errors={errors} />
       </FieldGroup>
       <DialogFooter>
         <Button onClick={handleSave}>{data ? "Save changes" : "Add teacher"}</Button>

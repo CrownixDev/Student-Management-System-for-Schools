@@ -7,7 +7,7 @@ import { Input } from "@/components/shadcn/input";
 import { IBatchListItem } from "@/features/batch";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { StrictOmit } from "@/lib/utils";
@@ -58,7 +58,7 @@ export default function BatchDialog({ open, onOpenChange, data }: BatchDialogPro
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <RenderDialogErrors errors={errors} />
+            <DialogErrors errors={errors} />
 
             <FieldGroup className="space-y-3">
               <Field>

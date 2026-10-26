@@ -8,7 +8,7 @@ import { useState } from "react";
 import { IGradeListItem } from "@/features/grades";
 import { StrictOmit } from "@/lib/utils";
 import { TrashIcon } from "lucide-react";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 
 export default function GradeDialog({
@@ -77,7 +77,7 @@ export default function GradeDialog({
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <RenderDialogErrors errors={errors} />
+            <DialogErrors errors={errors} />
 
             <FieldGroup className="space-y-3">
               <Field>

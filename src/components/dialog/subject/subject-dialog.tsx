@@ -10,7 +10,7 @@ import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
 import { ISubject } from "@/features/subjects";
 import { useState } from "react";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import TooltipButton from "@/components/ui/tooltip-button";
 
 export default function SubjectDialog({
@@ -95,7 +95,7 @@ export default function SubjectDialog({
             </Alert>
           )}
 
-          <RenderDialogErrors errors={errors} />
+          <DialogErrors errors={errors} />
         </FieldGroup>
         <DialogFooter className="mt-5">
           <div className="flex min-w-full items-center">

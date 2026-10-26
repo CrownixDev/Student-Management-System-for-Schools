@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { useState } from "react";
-import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 
 export default function UsersActionConfirmDialog({
   open,
@@ -44,7 +44,7 @@ export default function UsersActionConfirmDialog({
           <DialogTitle>Confirm its you</DialogTitle>
           <DialogDescription>Enter your password to authorize these changes.</DialogDescription>
         </DialogHeader>
-        <RenderDialogErrors errors={errors} />
+        <DialogErrors errors={errors} />
         <div className="space-y-2">
           <Label htmlFor="password">Your password</Label>
           <Input

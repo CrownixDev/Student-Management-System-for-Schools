@@ -6,20 +6,25 @@ import MediumTable from "@/components/setup/medium/medium-table";
 import { Suspense } from "react";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import MediumNewBtn from "@/components/setup/medium/buttons/medium-new-btn";
+import { PageLayout, PageLayoutContent, PageLayoutHeader } from "@/components/ui/page/page-layout";
 
 export default async function Page({ searchParams }: PageProps<"/setup/medium">) {
   await filterCache.parse(searchParams);
   return (
-    <div className="flex flex-col w-full h-screen overflow-y-auto p-8 space-y-6">
-      <div className="flex w-full items-center justify-between gap-5">
-        <TypographyH1>Medium</TypographyH1>
-        <MediumNewBtn />
-      </div>
-      <SearchInput placeholder="Search mediums..." />
-      <Separator />
-      <Suspense fallback={<LoadingIndicator />}>
-        <MediumTable />
-      </Suspense>
-    </div>
+    <PageLayout className="p-5">
+      <PageLayoutHeader className="space-y-6">
+        <div className="flex w-full items-center justify-between gap-5">
+          <TypographyH1>Medium</TypographyH1>
+          <MediumNewBtn />
+        </div>
+        <SearchInput placeholder="Search mediums..." />
+        <Separator />
+      </PageLayoutHeader>
+      <PageLayoutContent className="flex overflow-hidden py-5">
+        <Suspense fallback={<LoadingIndicator />}>
+          <MediumTable />
+        </Suspense>
+      </PageLayoutContent>
+    </PageLayout>
   );
 }

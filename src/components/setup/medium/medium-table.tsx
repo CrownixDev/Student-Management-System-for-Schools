@@ -18,7 +18,7 @@ export default async function MediumTable() {
   }
 
   return (
-    <div className="overflow-y-auto">
+    <div className="flex-1 border rounded-lg overflow-auto">
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow>

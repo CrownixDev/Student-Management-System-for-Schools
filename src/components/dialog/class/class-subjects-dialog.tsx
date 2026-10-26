@@ -16,7 +16,7 @@ import { ISubjectListItem } from "@/features/subjects";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 import SubjectPickerDialog from "@/components/dialog/subject-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
-import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
+import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
 
 interface ClassSubject {
   id: string;

@@ -6,7 +6,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
-import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
+import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { IMediumListItem } from "@/features/medium";
 

@@ -7,7 +7,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { ITeacher } from "@/features/teachers";
 import { useState } from "react";
-import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
+import RenderDialogErrors from "@/components/ui/dialog/render-dialog-errors";
 
 interface TeacherFormData {
   fullName: string;

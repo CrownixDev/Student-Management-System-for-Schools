@@ -1,25 +1,28 @@
+import { PageLayout, PageLayoutHeader } from "@/components/ui/page/page-layout";
 import { TypographyH1 } from "@/components/ui/typography";
 import { Separator } from "@/components/shadcn/separator";
-import SearchInput from "@/components/ui/search-input";
 import { Suspense } from "react";
+import { filterCache } from "@/lib/nuqs/filter";
+import SearchInput from "@/components/ui/search-input";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import YearsNewBtn from "@/components/setup/years/buttons/years-new-btn";
-import YearsTable from "@/components/setup/years/years-table";
-import { filterCache } from "@/lib/nuqs/filter";
+import YearsContent from "@/components/setup/years/years-content";
 
 export default async function page({ searchParams }: PageProps<"/setup/years">) {
   await filterCache.parse(searchParams);
   return (
-    <div className="flex flex-col overflow-y-auto p-8 space-y-6">
-      <div className="flex w-full items-center justify-between gap-5">
-        <TypographyH1 className="text-xl lg:text-2xl font-bold tracking-tight">Academic Years</TypographyH1>
-        <YearsNewBtn />
-      </div>
-      <SearchInput placeholder="Search academic years..." />
-      <Separator />
+    <PageLayout>
+      <PageLayoutHeader className="space-y-5">
+        <div className="flex w-full justify-between items-center">
+          <TypographyH1>Academic Years</TypographyH1>
+          <YearsNewBtn />
+        </div>
+        <SearchInput placeholder="Search academic years..." />
+        <Separator />
+      </PageLayoutHeader>
       <Suspense fallback={<LoadingIndicator />}>
-        <YearsTable />
+        <YearsContent />
       </Suspense>
-    </div>
+    </PageLayout>
   );
 }

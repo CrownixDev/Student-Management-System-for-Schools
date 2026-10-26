@@ -4,7 +4,6 @@ import LoadingIndicator from "@/components/ui/loading-indicator";
 import { TypographyH1 } from "@/components/ui/typography";
 import SubjectNewBtn from "@/components/setup/subjects/buttons/subject-new-btn";
 import SearchInput from "@/components/ui/search-input";
-import { Separator } from "@/components/shadcn/separator";
 import { Tabs, TabsContent, TabsList } from "@/components/shadcn/tabs";
 import { subjectCategories } from "@/features/subjects/subject.enums";
 import SubjectTabBtn from "@/components/setup/subjects/buttons/subject-tab-btn";
@@ -24,7 +23,6 @@ export default async function page({ searchParams }: PageProps<"/setup/subjects"
           <SubjectNewBtn category={tab} />
         </div>
         <SearchInput placeholder="Search by Name or code" />
-        <Separator />
       </PageLayoutHeader>
 
       <PageLayoutContent className="py-5">

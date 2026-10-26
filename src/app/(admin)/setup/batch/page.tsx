@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { TypographyH1 } from "@/components/ui/typography";
-import { Separator } from "@/components/shadcn/separator";
 import { Tabs, TabsContent, TabsList } from "@/components/shadcn/tabs";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
 import { batchTabCache } from "@/features/batch/batch.cache";
@@ -24,7 +23,6 @@ export default async function page({ searchParams }: PageProps<"/setup/batch">) 
           <BatchAddNewBtn />
         </div>
         <SearchInput placeholder="Search batches..." />
-        <Separator />
       </PageLayoutHeader>
       <PageLayoutContent className="py-5">
         <Tabs value={tab}>

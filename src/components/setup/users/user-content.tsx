@@ -13,7 +13,7 @@ import UserStatusBtn from "./buttons/user-status-btn";
 import PagePagination from "@/components/ui/page/page-pagination";
 import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
 
-export default async function UserTable() {
+export default async function UserContent() {
   const role = userFilterCache.get("role");
   const search = filterCache.get("search");
 
@@ -28,7 +28,7 @@ export default async function UserTable() {
 
   return (
     <>
-      <PageLayoutContent className="flex flex-col overflow-hidden">
+      <PageLayoutContent className="flex flex-col overflow-hidden py-5">
         <div className="min-h-0 min-w-0 flex-1 overflow-auto rounded-lg border">
           <Table className="min-w-[900px]" containerClassName="!overflow-visible">
             <TableHeader>

@@ -1,6 +1,5 @@
 import { PageLayout, PageLayoutHeader } from "@/components/ui/page/page-layout";
 import { TypographyH1 } from "@/components/ui/typography";
-import { Separator } from "@/components/shadcn/separator";
 import { Suspense } from "react";
 import { filterCache } from "@/lib/nuqs/filter";
 import SearchInput from "@/components/ui/search-input";
@@ -18,7 +17,6 @@ export default async function page({ searchParams }: PageProps<"/setup/years">) 
           <YearsNewBtn />
         </div>
         <SearchInput placeholder="Search academic years..." />
-        <Separator />
       </PageLayoutHeader>
       <Suspense fallback={<LoadingIndicator />}>
         <YearsContent />

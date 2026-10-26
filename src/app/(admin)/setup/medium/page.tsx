@@ -1,12 +1,11 @@
 import { filterCache } from "@/lib/nuqs/filter";
 import { TypographyH1 } from "@/components/ui/typography";
-import SearchInput from "@/components/ui/search-input";
-import { Separator } from "@/components/shadcn/separator";
-import MediumTable from "@/components/setup/medium/medium-table";
 import { Suspense } from "react";
+import { PageLayout, PageLayoutContent, PageLayoutHeader } from "@/components/ui/page/page-layout";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import MediumNewBtn from "@/components/setup/medium/buttons/medium-new-btn";
-import { PageLayout, PageLayoutContent, PageLayoutHeader } from "@/components/ui/page/page-layout";
+import SearchInput from "@/components/ui/search-input";
+import MediumTable from "@/components/setup/medium/medium-table";
 
 export default async function Page({ searchParams }: PageProps<"/setup/medium">) {
   await filterCache.parse(searchParams);
@@ -18,7 +17,6 @@ export default async function Page({ searchParams }: PageProps<"/setup/medium">)
           <MediumNewBtn />
         </div>
         <SearchInput placeholder="Search mediums..." />
-        <Separator />
       </PageLayoutHeader>
       <PageLayoutContent className="flex overflow-hidden py-5">
         <Suspense fallback={<LoadingIndicator />}>

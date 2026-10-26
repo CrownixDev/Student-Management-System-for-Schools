@@ -1,14 +1,13 @@
-import StudentsTable from "@/components/setup/students/students-table";
-import StudentFilters from "@/components/setup/students/student-filters";
-import { Separator } from "@/components/shadcn/separator";
 import { TypographyH1 } from "@/components/ui/typography";
-import SearchInput from "@/components/ui/search-input";
 import { Suspense } from "react";
-import LoadingIndicator from "@/components/ui/loading-indicator";
+import { PageLayout, PageLayoutHeader } from "@/components/ui/page/page-layout";
 import { filterCache } from "@/lib/nuqs/filter";
 import { studentFilterCach } from "@/features/students/student.cache";
+import LoadingIndicator from "@/components/ui/loading-indicator";
+import SearchInput from "@/components/ui/search-input";
+import StudentsTable from "@/components/setup/students/students-table";
+import StudentFilters from "@/components/setup/students/student-filters";
 import StudentsNewBtn from "@/components/setup/students/students-new-btn";
-import { PageLayout, PageLayoutHeader } from "@/components/ui/page/page-layout";
 
 export default async function page({ searchParams }: PageProps<"/setup/students">) {
   await filterCache.parse(searchParams);
@@ -25,7 +24,6 @@ export default async function page({ searchParams }: PageProps<"/setup/students"
           <SearchInput placeholder="Search students..." />
           <StudentFilters />
         </div>
-        <Separator />
       </PageLayoutHeader>
       <Suspense fallback={<LoadingIndicator />}>
         <StudentsTable />

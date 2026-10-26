@@ -10,7 +10,7 @@ import AssignmentHoverCard from "@/components/setup/users/assignment-hover-card"
 import EmptyState from "@/components/ui/empty-state";
 import UserManageBtn from "./buttons/user-manage-btn";
 import UserStatusBtn from "./buttons/user-status-btn";
-import PagePagination from "@/components/ui/page-pagination";
+import PagePagination from "@/components/ui/page/page-pagination";
 
 export default async function UserTable() {
   const role = userFilterCache.get("role");

@@ -6,7 +6,7 @@ import { CircleUserIcon } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import StudentActions from "./student-actions";
-import PagePagination from "@/components/ui/page-pagination";
+import PagePagination from "@/components/ui/page/page-pagination";
 import { studentFilterCach } from "@/features/students/student.cache";
 import { getHtmlDateString } from "@/lib/utils";
 

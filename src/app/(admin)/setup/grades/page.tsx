@@ -5,22 +5,25 @@ import { filterCache } from "@/lib/nuqs/filter";
 import SearchInput from "@/components/ui/search-input";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import GradesNewBtn from "@/components/setup/grades/buttons/grades-new-btn";
-import GradesTable from "@/components/setup/grades/grades-table";
+import GradesContent from "@/components/setup/grades/grades-content";
+import { PageLayout, PageLayoutHeader } from "@/components/ui/page/page-layout";
 
 export default async function page({ searchParams }: PageProps<"/setup/grades">) {
   await filterCache.parse(searchParams);
 
   return (
-    <div className="flex flex-col overflow-y-auto p-8 space-y-6">
-      <div className="flex w-full items-center justify-between gap-5">
-        <TypographyH1 className="text-xl lg:text-2xl font-bold tracking-tight">Grades</TypographyH1>
-        <GradesNewBtn />
-      </div>
-      <SearchInput placeholder="Search grades..." />
-      <Separator />
+    <PageLayout className="p-5">
+      <PageLayoutHeader className="space-y-5">
+        <div className="flex w-full items-center justify-between gap-5">
+          <TypographyH1>Grades</TypographyH1>
+          <GradesNewBtn />
+        </div>
+        <SearchInput placeholder="Search grades..." />
+        <Separator />
+      </PageLayoutHeader>
       <Suspense fallback={<LoadingIndicator />}>
-        <GradesTable />
+        <GradesContent />
       </Suspense>
-    </div>
+    </PageLayout>
   );
 }

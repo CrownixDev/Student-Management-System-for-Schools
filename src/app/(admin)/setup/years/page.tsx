@@ -11,7 +11,7 @@ import YearsContent from "@/components/setup/years/years-content";
 export default async function page({ searchParams }: PageProps<"/setup/years">) {
   await filterCache.parse(searchParams);
   return (
-    <PageLayout>
+    <PageLayout className="p-5">
       <PageLayoutHeader className="space-y-5">
         <div className="flex w-full justify-between items-center">
           <TypographyH1>Academic Years</TypographyH1>

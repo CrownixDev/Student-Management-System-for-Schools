@@ -83,7 +83,7 @@ export default function SetupLayout({ children }: { children: React.ReactNode })
         </SidebarContent>
         <SidebarFooter />
       </Sidebar>
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="min-w-0">{children}</SidebarInset>
     </SidebarProvider>
   );
 }

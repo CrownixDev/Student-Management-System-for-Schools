@@ -1,7 +1,7 @@
 import { idCache } from "@/lib/nuqs/id";
 import { Suspense } from "react";
 import ExamsSidebar from "@/components/setup/exams/sidebar/exams-sidebar";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import ExamsDetails from "@/components/setup/exams/exams-details";
 import { filterCache } from "@/lib/nuqs/filter";
 
@@ -12,7 +12,7 @@ export default async function Page({ searchParams }: PageProps<"/setup/exams">) 
   return (
     <div className="flex w-full h-screen">
       <ExamsSidebar />
-      <Suspense key={gradeId} fallback={<PageLoading />}>
+      <Suspense key={gradeId} fallback={<LoadingIndicator />}>
         <ExamsDetails />
       </Suspense>
     </div>

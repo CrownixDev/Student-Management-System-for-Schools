@@ -12,7 +12,7 @@ import { Label } from "@/components/shadcn/label";
 import { RESULT_LIMIT } from "@/constraints";
 import { ITeacherListItem } from "@/features/teachers";
 import { toast } from "react-toastify";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
 import SearchInput from "../ui/search-input";
 import DialogPagination from "../ui/dialog/dialog-pagination";
@@ -79,7 +79,7 @@ export default function TeacherPickerDialog({
           onClear={() => setSearch("")}
         />
 
-        {isPending && <PageLoading />}
+        {isPending && <LoadingIndicator />}
 
         {!isPending && (
           <div ref={teacherList} className="min-h-[35dvh] max-h-[35dvh]  flex-1  overflow-y-auto rounded-md border">

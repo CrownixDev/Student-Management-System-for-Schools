@@ -2,7 +2,7 @@ import { TypographyH1 } from "@/components/ui/typography";
 import { Separator } from "@/components/shadcn/separator";
 import SearchInput from "@/components/ui/search-input";
 import { Suspense } from "react";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import YearsNewBtn from "@/components/setup/years/buttons/years-new-btn";
 import YearsTable from "@/components/setup/years/years-table";
 import { filterCache } from "@/lib/nuqs/filter";
@@ -17,7 +17,7 @@ export default async function page({ searchParams }: PageProps<"/setup/years">) 
       </div>
       <SearchInput placeholder="Search academic years..." />
       <Separator />
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<LoadingIndicator />}>
         <YearsTable />
       </Suspense>
     </div>

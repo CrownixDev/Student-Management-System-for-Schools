@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BATCH_LIST } from "@/lib/query-keys";
 import { toast } from "react-toastify";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Label } from "@/components/shadcn/label";
@@ -86,7 +86,7 @@ export default function BatchPickerDialog({
           onClear={() => setSearch("")}
         />
 
-        {isPending && <PageLoading />}
+        {isPending && <LoadingIndicator />}
 
         <Tabs value={batchType} onValueChange={(value) => setBatchType(value)}>
           <TabsList>

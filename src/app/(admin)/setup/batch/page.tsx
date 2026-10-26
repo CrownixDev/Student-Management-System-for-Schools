@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList } from "@/components/shadcn/tabs";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
 import { batchTabCache } from "@/features/batch/batch.cache";
 import { filterCache } from "@/lib/nuqs/filter";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
 import BatchAddNewBtn from "@/components/setup/batch/batch-new-btn";
 import BatchTableTabBtn from "@/components/setup/batch/batch-table-tab-btn";
@@ -35,7 +35,7 @@ export default async function page({ searchParams }: PageProps<"/setup/batch">) 
         {batchTypeOptions.map((opt) => (
           <TabsContent key={opt.value} value={opt.value}>
             {tab === opt.value && (
-              <Suspense fallback={<PageLoading />}>
+              <Suspense fallback={<LoadingIndicator />}>
                 <BatchTable type={opt.value} />
               </Suspense>
             )}

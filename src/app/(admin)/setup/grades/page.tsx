@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Separator } from "@/components/shadcn/separator";
 import { filterCache } from "@/lib/nuqs/filter";
 import SearchInput from "@/components/ui/search-input";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import GradesNewBtn from "@/components/setup/grades/buttons/grades-new-btn";
 import GradesTable from "@/components/setup/grades/grades-table";
 
@@ -18,7 +18,7 @@ export default async function page({ searchParams }: PageProps<"/setup/grades">)
       </div>
       <SearchInput placeholder="Search grades..." />
       <Separator />
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<LoadingIndicator />}>
         <GradesTable />
       </Suspense>
     </div>

@@ -5,7 +5,7 @@ import SearchInput from "@/components/ui/search-input";
 import UserNewBtn from "@/components/setup/users/buttons/user-new-btn";
 import { Separator } from "@/components/shadcn/separator";
 import { Suspense } from "react";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import { userFilterCache } from "@/features/user/user.cache";
 import { filterCache } from "@/lib/nuqs/filter";
 
@@ -24,7 +24,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/setup/user
         <UserFilterBtn />
       </div>
       <Separator />
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<LoadingIndicator />}>
         <UserTable />
       </Suspense>
     </div>

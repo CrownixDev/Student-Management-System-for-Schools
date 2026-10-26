@@ -4,7 +4,7 @@ import { Separator } from "@/components/shadcn/separator";
 import { TypographyH1 } from "@/components/ui/typography";
 import SearchInput from "@/components/ui/search-input";
 import { Suspense } from "react";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import { filterCache } from "@/lib/nuqs/filter";
 import { studentFilterCach } from "@/features/students/student.cache";
 import StudentsNewBtn from "@/components/setup/students/students-new-btn";
@@ -25,7 +25,7 @@ export default async function page({ searchParams }: PageProps<"/setup/students"
       </div>
       <Separator className="shrink-0" />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <Suspense fallback={<PageLoading />}>
+        <Suspense fallback={<LoadingIndicator />}>
           <StudentsTable />
         </Suspense>
       </div>

@@ -20,7 +20,7 @@ import { IClassList, IClassListItem } from "@/features/class";
 import { IGradeListItem } from "@/features/grades";
 import GradePickerDialog from "@/components/dialog/grade-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 
 export default function ClassPickerDialog({
   open,
@@ -105,7 +105,7 @@ export default function ClassPickerDialog({
             <span className="text-xs text-muted-foreground">Select grade</span>
           </Button>
           {grade && isLoadingClasses ? (
-            <PageLoading />
+            <LoadingIndicator />
           ) : grade && classList ? (
             <div className="max-h-[40dvh] overflow-y-auto rounded-md border">
               {classList.length > 0 &&

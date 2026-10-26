@@ -22,7 +22,7 @@ import { BookUserIcon, CheckIcon, PencilIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import EmptyState from "@/components/ui/empty-state";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
 import DialogPagination from "@/components/ui/dialog/dialog-pagination";
 
@@ -184,7 +184,7 @@ export default function StudentPickerDialog({
                 onClear={() => handleSearchChange("")}
               />
               {studentListQuery.isPending ? (
-                <PageLoading />
+                <LoadingIndicator />
               ) : (
                 <ScrollArea className="h-[min(45vh,28rem)] rounded-md border">
                   <div className="divide-y">
@@ -284,7 +284,7 @@ export default function StudentPickerDialog({
               </div>
 
               {classStudentsQuery.isPending && classId ? (
-                <PageLoading />
+                <LoadingIndicator />
               ) : classId ? (
                 <>
                   <label className="flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5">

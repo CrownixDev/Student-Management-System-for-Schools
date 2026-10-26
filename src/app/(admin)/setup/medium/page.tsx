@@ -4,7 +4,7 @@ import SearchInput from "@/components/ui/search-input";
 import { Separator } from "@/components/shadcn/separator";
 import MediumTable from "@/components/setup/medium/medium-table";
 import { Suspense } from "react";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import MediumNewBtn from "@/components/setup/medium/buttons/medium-new-btn";
 
 export default async function Page({ searchParams }: PageProps<"/setup/medium">) {
@@ -17,7 +17,7 @@ export default async function Page({ searchParams }: PageProps<"/setup/medium">)
       </div>
       <SearchInput placeholder="Search mediums..." />
       <Separator />
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<LoadingIndicator />}>
         <MediumTable />
       </Suspense>
     </div>

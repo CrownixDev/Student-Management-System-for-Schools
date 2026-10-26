@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { filterCache } from "@/lib/nuqs/filter";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import { TypographyH1 } from "@/components/ui/typography";
 import SubjectNewBtn from "@/components/setup/subjects/buttons/subject-new-btn";
 import SearchInput from "@/components/ui/search-input";
@@ -35,7 +35,7 @@ export default async function page({ searchParams }: PageProps<"/setup/subjects"
         {subjectCategories.map((cat) => (
           <TabsContent key={cat.value} value={cat.value}>
             {tab === cat.value && (
-              <Suspense fallback={<PageLoading />}>
+              <Suspense fallback={<LoadingIndicator />}>
                 <SubjectTable category={cat.value} />
               </Suspense>
             )}

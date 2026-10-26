@@ -8,7 +8,7 @@ import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import EmptyState from "@/components/ui/empty-state";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import { IClass } from "@/features/class";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { MEDIUM_OPTIONS } from "@/lib/query-keys";
@@ -231,7 +231,7 @@ export default function ClassStudentDialog({
 
           <div className="min-h-0 flex-1 overflow-auto rounded-md border">
             {isPending ? (
-              <PageLoading />
+              <LoadingIndicator />
             ) : (
               <Table className="min-w-max" containerClassName="overflow-visible">
                 <TableHeader className="sticky top-0 z-10 bg-background">

@@ -6,7 +6,7 @@ import { SetupSidebar, SetupSidebarContent, SetupSidebarFooter } from "@/compone
 import TeachersSidebarHeader from "./teachers-sidebar-header";
 import TeacherSidebarItem from "./teachers-sidebar-item";
 import SidebarPagination from "@/components/ui/sidebar/sidebar-pagination";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
 
 async function SidebarContent() {
@@ -40,7 +40,7 @@ export default function TeachersSidebar() {
     <>
       <SetupSidebar>
         <TeachersSidebarHeader />
-        <Suspense fallback={<PageLoading />}>
+        <Suspense fallback={<LoadingIndicator />}>
           <SidebarContent />
         </Suspense>
       </SetupSidebar>

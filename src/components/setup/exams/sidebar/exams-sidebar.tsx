@@ -8,7 +8,7 @@ import { Suspense } from "react";
 import SidebarHearder from "../../sidebar/sidebar-hearder";
 import GradeSidebarItem from "./sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 
 async function SidebarContent() {
   const { search } = filterCache.all();
@@ -57,7 +57,7 @@ export default async function ExamsSidebar() {
   return (
     <SetupSidebar>
       <SidebarHearder header={{ title: `Exams (${activeYear.name})` }} search={{ placeholder: "Search grades..." }} />
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<LoadingIndicator />}>
         <SidebarContent />
       </Suspense>
     </SetupSidebar>

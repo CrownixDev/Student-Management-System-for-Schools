@@ -40,6 +40,7 @@ enum MarkStatus {
 
 enum UserRole {
   admin
+  mod
   class_teacher
   subject_teacher
 }
@@ -115,6 +116,7 @@ model Subject {
   enrollmentSubjects EnrollmentSubject[]
   examSubjects       ExamSubject[]
   marks              Mark[]
+  userSubjects       UserSubject[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -169,6 +171,7 @@ model Class {
 
   classSubjects ClassSubject[]
   enrollments   Enrollment[]
+  userClasses   UserClass[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -328,21 +331,12 @@ model Mark {
 
 // Other app related things
 
-// Grading bands (A/B/C/S/W)
-model GradeBand {
-  id      String @id @default(uuid())
-  label   String @unique // "A", "B", "C", "S", "W"
-  minMark Float
-  maxMark Float
-  order   Int    @default(0)
-}
-
 model User {
   id           String @id @default(uuid())
   username     String @unique
   passwordHash String
 
-  role     UserRole @default(admin) // TODO: change this later to a lower permission level
+  role     UserRole @default(admin)
   isActive Boolean  @default(true)
 
   refreshTokenHash      String? @unique
@@ -351,6 +345,27 @@ model User {
   teacherId String?  @unique // link login to a teacher record
   teacher   Teacher? @relation(fields: [teacherId], references: [id])
 
+  classes  UserClass[]
+  subjects UserSubject[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserClass {
+  id      String @id @default(uuid())
+  userId  String
+  classId String
+
+  user  User  @relation(fields: [userId], references: [id])
+  class Class @relation(fields: [classId], references: [id])
+}
+
+model UserSubject {
+  id        String @id @default(uuid())
+  userId    String
+  subjectId String
+
+  user    User    @relation(fields: [userId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
 }

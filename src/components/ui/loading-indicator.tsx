@@ -1,6 +1,6 @@
 import { LoaderIcon } from "lucide-react";
 
-export default function PageLoading() {
+export default function LoadingIndicator() {
   return (
     <div className="flex w-full h-full justify-center items-center">
       <div className="flex flex-col text-muted-foreground items-center justify-center gap-2">

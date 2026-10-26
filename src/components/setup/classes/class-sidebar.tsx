@@ -1,12 +1,17 @@
 import { redirect } from "next/navigation";
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeWithClassesItem } from "@/features/grades";
-import SidebarHearder from "@/components/setup/sidebar/sidebar-hearder";
+import SetupSidebarHearder from "@/components/setup/setup-sidebar-hearder";
 import ClassSidebarItem from "./class-sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import { GraduationCapIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
-import { SetupSidebar, SetupSidebarContent, SetupSidebarFooter, SetupSidebarHearder } from "../sidebar/setup-sidebar";
+import {
+  PageSidebar,
+  PageSidebarContent,
+  PageSidebarFooter,
+  PageSidebarHearder,
+} from "@/components/ui/page/page-sidebar";
 import { Separator } from "@/components/shadcn/separator";
 
 export default async function ClassSidebar() {
@@ -26,11 +31,11 @@ export default async function ClassSidebar() {
 
   return (
     <>
-      <SetupSidebar>
-        <SetupSidebarHearder>
-          <SidebarHearder header={{ title: `All Classes (${activeYear.name})` }} />
-        </SetupSidebarHearder>
-        <SetupSidebarContent>
+      <PageSidebar>
+        <PageSidebarHearder>
+          <SetupSidebarHearder header={{ title: `All Classes (${activeYear.name})` }} />
+        </PageSidebarHearder>
+        <PageSidebarContent>
           {grades.map((grade) => {
             return <ClassSidebarItem key={grade.id} year={activeYear} grade={grade} />;
           })}
@@ -44,14 +49,14 @@ export default async function ClassSidebar() {
               noBorder
             />
           )}
-        </SetupSidebarContent>
-        <SetupSidebarFooter>
+        </PageSidebarContent>
+        <PageSidebarFooter>
           <Separator />
           <p className="w-full flex justify-center items-center py-2 text-xs text-muted-foreground">
             {totalClasses} classes across {grades.length} grades
           </p>
-        </SetupSidebarFooter>
-      </SetupSidebar>
+        </PageSidebarFooter>
+      </PageSidebar>
     </>
   );
 }

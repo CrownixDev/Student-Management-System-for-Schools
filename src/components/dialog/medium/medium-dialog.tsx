@@ -6,7 +6,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
-import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { IMediumListItem } from "@/features/medium";
 
@@ -44,7 +44,7 @@ export default function MediumDialog({ open, onOpenChange, data }: MediumDialogP
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <RenderDialogErrors errors={errors} />
+            <DialogErrors errors={errors} />
             <FieldGroup className="space-y-3">
               <Field>
                 <FieldLabel htmlFor="medium-name">Medium Name</FieldLabel>

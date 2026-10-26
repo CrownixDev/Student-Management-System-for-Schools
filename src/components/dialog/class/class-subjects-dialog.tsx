@@ -16,7 +16,7 @@ import { ISubjectListItem } from "@/features/subjects";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 import SubjectPickerDialog from "@/components/dialog/subject-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
-import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 
 interface ClassSubject {
   id: string;
@@ -211,7 +211,7 @@ export default function ClassSubjectsDialog({
               </FieldGroup>
             </div>
             <div className="shrink-0">
-              <RenderDialogErrors errors={errors} />
+              <DialogErrors errors={errors} />
             </div>
           </div>
 

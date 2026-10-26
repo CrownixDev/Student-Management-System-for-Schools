@@ -12,7 +12,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { GRADE_OPTIONS } from "@/lib/query-keys";
 import EmptyState from "@/components/ui/empty-state";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
 
 export default function GradePickerDialog({
@@ -57,7 +57,7 @@ export default function GradePickerDialog({
         </DialogHeader>
         <SearchInput placeholder="Search grades" value={search} onChange={setSearch} onClear={() => setSearch("")} />
         {isPending ? (
-          <PageLoading />
+          <LoadingIndicator />
         ) : (
           <div className="max-h-[45dvh] flex-1 overflow-y-auto rounded-md border">
             <RadioGroup value={gradeId} onValueChange={setGradeId}>

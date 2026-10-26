@@ -20,7 +20,7 @@ interface Props {
   };
 }
 
-export default function SidebarHearder({ header, action, search }: Props) {
+export default function SetupSidebarHearder({ header, action, search }: Props) {
   return (
     <div className="flex flex-col gap-3 p-3">
       <div className="flex flex-col gap-3">

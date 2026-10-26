@@ -2,11 +2,11 @@ import { Suspense } from "react";
 import { UsersIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
 import { teachersService } from "@/features/teachers";
-import { SetupSidebar, SetupSidebarContent, SetupSidebarFooter } from "@/components/setup/sidebar/setup-sidebar";
+import { PageSidebar, PageSidebarContent, PageSidebarFooter } from "@/components/ui/page/page-sidebar";
 import TeachersSidebarHeader from "./teachers-sidebar-header";
 import TeacherSidebarItem from "./teachers-sidebar-item";
 import SidebarPagination from "@/components/ui/sidebar/sidebar-pagination";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
 
 async function SidebarContent() {
@@ -15,7 +15,7 @@ async function SidebarContent() {
 
   return (
     <>
-      <SetupSidebarContent>
+      <PageSidebarContent>
         {teachers.list.map((teacher) => (
           <TeacherSidebarItem key={teacher.id} teacher={teacher} />
         ))}
@@ -27,10 +27,10 @@ async function SidebarContent() {
             noBorder
           />
         )}
-      </SetupSidebarContent>
-      <SetupSidebarFooter>
+      </PageSidebarContent>
+      <PageSidebarFooter>
         <SidebarPagination itemCount={teachers.count} />
-      </SetupSidebarFooter>
+      </PageSidebarFooter>
     </>
   );
 }
@@ -38,12 +38,12 @@ async function SidebarContent() {
 export default function TeachersSidebar() {
   return (
     <>
-      <SetupSidebar>
+      <PageSidebar>
         <TeachersSidebarHeader />
-        <Suspense fallback={<PageLoading />}>
+        <Suspense fallback={<LoadingIndicator />}>
           <SidebarContent />
         </Suspense>
-      </SetupSidebar>
+      </PageSidebar>
     </>
   );
 }

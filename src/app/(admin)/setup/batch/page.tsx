@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import { TypographyH1 } from "@/components/ui/typography";
-import { Separator } from "@/components/shadcn/separator";
 import { Tabs, TabsContent, TabsList } from "@/components/shadcn/tabs";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
 import { batchTabCache } from "@/features/batch/batch.cache";
 import { filterCache } from "@/lib/nuqs/filter";
-import PageLoading from "@/components/ui/page-loading";
+import { PageLayout, PageLayoutContent, PageLayoutHeader } from "@/components/ui/page/page-layout";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
 import BatchAddNewBtn from "@/components/setup/batch/batch-new-btn";
 import BatchTableTabBtn from "@/components/setup/batch/batch-table-tab-btn";
@@ -16,32 +16,34 @@ export default async function page({ searchParams }: PageProps<"/setup/batch">) 
   const { tab } = await batchTabCache.parse(searchParams);
 
   return (
-    <div className="flex flex-col overflow-y-auto p-8 space-y-6">
-      <div className="flex w-full items-center justify-between gap-5">
-        <TypographyH1 className="text-2xl font-bold tracking-tight">Batches</TypographyH1>
-        <BatchAddNewBtn />
-      </div>
-      <SearchInput placeholder="Search batches..." />
-      <Separator />
-
-      <Tabs value={tab}>
-        <TabsList>
+    <PageLayout className="p-5">
+      <PageLayoutHeader className="space-y-5">
+        <div className="flex w-full items-center justify-between gap-5">
+          <TypographyH1>Batches</TypographyH1>
+          <BatchAddNewBtn />
+        </div>
+        <SearchInput placeholder="Search batches..." />
+      </PageLayoutHeader>
+      <PageLayoutContent className="py-5">
+        <Tabs value={tab}>
+          <TabsList>
+            {batchTypeOptions.map((opt) => (
+              <BatchTableTabBtn key={opt.value} value={opt.value}>
+                {opt.label}
+              </BatchTableTabBtn>
+            ))}
+          </TabsList>
           {batchTypeOptions.map((opt) => (
-            <BatchTableTabBtn key={opt.value} value={opt.value}>
-              {opt.label}
-            </BatchTableTabBtn>
+            <TabsContent key={opt.value} value={opt.value}>
+              {tab === opt.value && (
+                <Suspense fallback={<LoadingIndicator />}>
+                  <BatchTable type={opt.value} />
+                </Suspense>
+              )}
+            </TabsContent>
           ))}
-        </TabsList>
-        {batchTypeOptions.map((opt) => (
-          <TabsContent key={opt.value} value={opt.value}>
-            {tab === opt.value && (
-              <Suspense fallback={<PageLoading />}>
-                <BatchTable type={opt.value} />
-              </Suspense>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+        </Tabs>
+      </PageLayoutContent>
+    </PageLayout>
   );
 }

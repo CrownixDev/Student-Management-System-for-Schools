@@ -1,14 +1,14 @@
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
-import { SetupSidebar, SetupSidebarContent } from "@/components/setup/sidebar/setup-sidebar";
+import { PageSidebar, PageSidebarContent } from "@/components/ui/page/page-sidebar";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { GraduationCapIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import SidebarHearder from "../../sidebar/sidebar-hearder";
+import SetupSidebarHearder from "../../setup-sidebar-hearder";
 import GradeSidebarItem from "./sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
-import PageLoading from "@/components/ui/page-loading";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 
 async function SidebarContent() {
   const { search } = filterCache.all();
@@ -22,7 +22,7 @@ async function SidebarContent() {
   }
 
   return (
-    <SetupSidebarContent>
+    <PageSidebarContent>
       {gradesList.map((grade) => (
         <GradeSidebarItem key={grade.id} grade={grade} />
       ))}
@@ -41,7 +41,7 @@ async function SidebarContent() {
           />
         </div>
       )}
-    </SetupSidebarContent>
+    </PageSidebarContent>
   );
 }
 
@@ -55,11 +55,14 @@ export default async function ExamsSidebar() {
     redirect("/setup");
   }
   return (
-    <SetupSidebar>
-      <SidebarHearder header={{ title: `Exams (${activeYear.name})` }} search={{ placeholder: "Search grades..." }} />
-      <Suspense fallback={<PageLoading />}>
+    <PageSidebar>
+      <SetupSidebarHearder
+        header={{ title: `Exams (${activeYear.name})` }}
+        search={{ placeholder: "Search grades..." }}
+      />
+      <Suspense fallback={<LoadingIndicator />}>
         <SidebarContent />
       </Suspense>
-    </SetupSidebar>
+    </PageSidebar>
   );
 }

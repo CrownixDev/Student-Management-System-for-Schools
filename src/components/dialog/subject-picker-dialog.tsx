@@ -14,7 +14,7 @@ import { getSubjectListAction } from "@/features/subjects/subject.actions";
 import { toast } from "react-toastify";
 import { Field, FieldLabel } from "../shadcn/field";
 import { Badge } from "../shadcn/badge";
-import PageLoading from "../ui/page-loading";
+import LoadingIndicator from "../ui/loading-indicator";
 import { LibraryBigIcon, Loader2Icon } from "lucide-react";
 import EmptyState from "../ui/empty-state";
 import SearchInput from "../ui/search-input";
@@ -167,7 +167,7 @@ export default function SubjectPickerDialog({
                       description="There are no subjects available for this category."
                     />
                   )}
-                  {isPending && <PageLoading />}
+                  {isPending && <LoadingIndicator />}
                 </div>
               </ScrollArea>
             </TabsContent>

@@ -1,6 +1,6 @@
 import { DotIcon } from "lucide-react";
 
-export default function RenderDialogErrors({ errors }: { errors: string[] }) {
+export default function DialogErrors({ errors }: { errors: string[] }) {
   if (errors.length === 0) {
     return null;
   }

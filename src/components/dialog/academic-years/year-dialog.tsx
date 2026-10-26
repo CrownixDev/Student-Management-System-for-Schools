@@ -9,7 +9,7 @@ import { useState } from "react";
 import { IAcademicYear } from "@/features/academic-years";
 import { getHtmlDateString, StrictOmit } from "@/lib/utils";
 import { TrashIcon } from "lucide-react";
-import RenderDialogErrors from "../../ui/dialog/render-dialog-errors";
+import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 
 export default function AcademicYearDialog({
@@ -51,7 +51,7 @@ export default function AcademicYearDialog({
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <RenderDialogErrors errors={errors} />
+            <DialogErrors errors={errors} />
 
             <FieldGroup className="space-y-3">
               <Field>

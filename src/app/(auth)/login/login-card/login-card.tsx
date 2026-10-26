@@ -6,8 +6,8 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { InputGroup, InputGroupInput } from "@/components/shadcn/input-group";
 import { useActionState, useRef } from "react";
 import { userRegisterSchema } from "@/features/auth/auth.schema";
-import { registerAction } from "@/actions/auth/register.action";
-import { loginAction } from "@/actions/auth/login.actions";
+import { registerAction } from "@/features/auth/actions";
+import { loginAction } from "@/features/auth/actions";
 import { toast } from "react-toastify";
 import { redirect } from "next/navigation";
 import { APP_URLS } from "@/constraints";

@@ -1,7 +1,7 @@
 import { Route } from "next";
 
 export const APP_URLS = {
-  dashboard: "/",
+  dashboard: "/" as Route,
   auth: {
     login: "/login",
     deactivated: "/deactivated",

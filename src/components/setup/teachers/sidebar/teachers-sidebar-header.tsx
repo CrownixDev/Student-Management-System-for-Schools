@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PageSidebarHearder } from "@/components/ui/page/page-sidebar";
-import SidebarHearder from "@/components/setup/sidebar/sidebar-hearder";
+import SetupSidebarHearder from "@/components/setup/setup-sidebar-hearder";
 import TeacherDialog from "@/components/dialog/teacher/teacher-dialog";
 
 export default function TeachersSidebarHeader() {
@@ -10,7 +10,7 @@ export default function TeachersSidebarHeader() {
   return (
     <>
       <PageSidebarHearder>
-        <SidebarHearder
+        <SetupSidebarHearder
           header={{ title: "All Teachers" }}
           action={{
             btnLabel: "Add a new teacher",

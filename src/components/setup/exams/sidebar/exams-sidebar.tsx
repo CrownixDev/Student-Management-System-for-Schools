@@ -5,7 +5,7 @@ import { GraduationCapIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import SidebarHearder from "../../sidebar/sidebar-hearder";
+import SetupSidebarHearder from "../../setup-sidebar-hearder";
 import GradeSidebarItem from "./sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
@@ -56,7 +56,10 @@ export default async function ExamsSidebar() {
   }
   return (
     <PageSidebar>
-      <SidebarHearder header={{ title: `Exams (${activeYear.name})` }} search={{ placeholder: "Search grades..." }} />
+      <SetupSidebarHearder
+        header={{ title: `Exams (${activeYear.name})` }}
+        search={{ placeholder: "Search grades..." }}
+      />
       <Suspense fallback={<LoadingIndicator />}>
         <SidebarContent />
       </Suspense>

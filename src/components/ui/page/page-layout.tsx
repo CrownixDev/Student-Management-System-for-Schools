@@ -6,7 +6,7 @@ interface PageLayoutProps extends React.ComponentProps<"div"> {
 
 export function PageLayout({ sidebar, children, className, ...props }: PageLayoutProps) {
   return (
-    <div className={cn("flex h-svh min-h-0 w-full min-w-0 overflow-hidden p-5", className)} {...props}>
+    <div className={cn("flex h-svh min-h-0 w-full min-w-0 overflow-hidden", className)} {...props}>
       {sidebar != null && <div className="h-full min-h-0 shrink-0 overflow-hidden">{sidebar}</div>}
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
     </div>

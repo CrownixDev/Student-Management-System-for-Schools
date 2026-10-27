@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ApiError } from "@/lib/ApiError";
 import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
 import { IStudent, IStudentEnrollment, IStudentList, IStudentsListItem } from "./students.types";

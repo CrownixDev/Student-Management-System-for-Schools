@@ -1,3 +1,5 @@
+import "server-only";
+
 import { IAcademicYear } from "./year.types";
 import { AcademicYearsRepository } from "./year.repository";
 import { ApiError } from "@/lib/ApiError";

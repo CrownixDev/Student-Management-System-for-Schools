@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ApiError } from "@/lib/ApiError";
 import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { ExamRepository } from "./exams.repository";

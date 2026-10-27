@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ApiError } from "@/lib/ApiError";
 import { BatchRepository } from "./batch.repository";
 import { IBatch, IBatchList, IBatchListItem } from "./batch.types";

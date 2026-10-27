@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ApiError } from "@/lib/ApiError";
 import { ClassRepository } from "./class.repository";
 import { IClass, IClassList, IClassOption } from "./class.types";

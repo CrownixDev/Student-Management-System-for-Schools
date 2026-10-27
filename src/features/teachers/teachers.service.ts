@@ -1,3 +1,5 @@
+import "server-only";
+
 import { IQueryParams } from "@/lib/filter";
 import { ApiError } from "@/lib/ApiError";
 import { TeachersRepository } from "./teachers.repository";

@@ -1,3 +1,5 @@
+import "server-only";
+
 import { MediumWhereInput } from "@/generated/prisma/models";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";
 import { prisma } from "@/lib/prisma";

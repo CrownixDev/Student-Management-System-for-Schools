@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ApiError } from "@/lib/ApiError";
 import { GradesRepository } from "./grades.repository";
 import { IGradeListItem, IGradeListItemForYear, IGradeWithClassesItem } from "./grades.types";

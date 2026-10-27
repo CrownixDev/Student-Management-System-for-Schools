@@ -1,3 +1,5 @@
+import "server-only";
+
 import { IQueryParams } from "@/lib/filter";
 import { SubjectRepository } from "./subject.repository";
 import { ISubject, ISubjectListItem } from "./subject.types";

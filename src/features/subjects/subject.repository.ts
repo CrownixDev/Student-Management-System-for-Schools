@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { ISubject, ISubjectListItem, subjectListSelect, subjectSelect } from "./subject.types";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";

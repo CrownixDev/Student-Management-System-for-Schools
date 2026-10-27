@@ -1,3 +1,5 @@
+import "server-only";
+
 import { MediumRepository } from "./medium.repository";
 import { IQueryParams } from "@/lib/filter";
 import { IMediumListItem, IMediumOption } from "./medium.types";

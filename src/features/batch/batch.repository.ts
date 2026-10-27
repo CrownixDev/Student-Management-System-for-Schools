@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { batchClassSelect, batchListSelect, IBatchListItem } from "./batch.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";

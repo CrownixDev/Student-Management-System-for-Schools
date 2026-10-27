@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { gradeListSelect, gradesSelect } from "./grades.types";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";

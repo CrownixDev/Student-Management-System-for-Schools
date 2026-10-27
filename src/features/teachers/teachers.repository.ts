@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { teacherListSelect, teacherSelect } from "./teachers.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";

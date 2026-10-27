@@ -21,14 +21,14 @@ import { Input } from "@/components/shadcn/input";
 import { LucideIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
+const CONFIRMATION_PHARASE = "Yes i wanted to delete";
+
 export interface DeleteConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
   icon?: LucideIcon;
-  confirmationPhrase?: string;
-  itemIdentifier?: string;
   onConfirm?: () => void | Promise<void>;
 }
 
@@ -37,22 +37,18 @@ function DeleteConfirmationInner({
   title,
   description,
   icon: Icon = Trash2Icon,
-  confirmationPhrase = "Yes i wanted to delete",
-  itemIdentifier,
   onConfirm,
 }: {
   onClose: () => void;
   title: string;
   description: string;
   icon?: LucideIcon;
-  confirmationPhrase?: string;
-  itemIdentifier?: string;
   onConfirm?: () => void | Promise<void>;
 }) {
   const [typedPhrase, setTypedPhrase] = useState("");
   const [step, setStep] = useState<1 | 2>(1);
 
-  const isPhraseMatched = typedPhrase.trim() === confirmationPhrase.trim();
+  const isPhraseMatched = typedPhrase.trim() === CONFIRMATION_PHARASE.trim();
 
   function handleProceedToStep2() {
     if (!isPhraseMatched) return;
@@ -70,7 +66,7 @@ function DeleteConfirmationInner({
     <>
       {/* Step 1: Initial Prompt requiring typed confirmation */}
       <Dialog open={step === 1} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <DialogContent className="max-w-md gap-5">
+        <DialogContent className="min-w-sm gap-3">
           <DialogHeader className="gap-2 text-left">
             <div className="flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20">
               <Icon className="size-5" />
@@ -79,23 +75,17 @@ function DeleteConfirmationInner({
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
 
-          {itemIdentifier && (
-            <div className="text-foreground">
-              Target: <span className="font-semibold text-destructive select-all">{itemIdentifier}</span>
-            </div>
-          )}
-
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              To proceed, please type &ldquo;
-              <span className="text-foreground select-all font-mono">{confirmationPhrase}</span>
-              &rdquo; in the box below:
+              Please type &ldquo;
+              <span className="text-foreground select-all font-mono">{CONFIRMATION_PHARASE}</span>
+              &rdquo; in the box below to proceed:
             </p>
 
             <Input
               value={typedPhrase}
               onChange={(e) => setTypedPhrase(e.target.value)}
-              placeholder={confirmationPhrase}
+              placeholder={CONFIRMATION_PHARASE}
               className="font-mono"
               autoFocus
               onKeyDown={(e) => {
@@ -124,13 +114,19 @@ function DeleteConfirmationInner({
           <AlertDialogHeader className="gap-2 text-left">
             <AlertDialogTitle className="text-lg font-semibold">Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed text-muted-foreground">
-              This is the final confirmation. This action cannot be undone and will permanently remove this item from
-              the system.
+              This action cannot be undone and will permanently remove this item from the system.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <AlertDialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" type="button" onClick={() => setStep(1)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                setStep(1);
+                setTypedPhrase("");
+              }}
+            >
               Go Back
             </Button>
             <Button variant="destructive" type="button" onClick={handleFinalConfirm}>

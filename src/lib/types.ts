@@ -1,1 +1,3 @@
-export type IResponse<T> = { success: true; data: T } | { success: false; message: string };
+export type IResponse<T = unknown> =
+  | { success: true; data?: T; message?: string }
+  | { success: false; message: string };

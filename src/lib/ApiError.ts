@@ -12,3 +12,16 @@ export class ApiError extends Error {
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
+
+export class ApiErrorV2 extends Error {
+  public readonly code?: string;
+  public readonly statusCode?: number;
+
+  constructor(message: string, code?: string, statusCode?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.statusCode = statusCode;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}

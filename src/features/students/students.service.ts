@@ -17,12 +17,18 @@ export class StudentsService {
   }
 
   async getListForClass(yearId: string, gradeId: string, classId: string): Promise<IStudentsListItem[]> {
+    if (!yearId || !gradeId || !classId) throw new ApiError(400, "Year, grade and class ids are required");
+
     const itemList = await this.repository.getListForClass(yearId, gradeId, classId);
     const sortedItemList = itemList.sort((a, b) => a.enrollments[0].classIndex - b.enrollments[0].classIndex);
     return sortedItemList;
   }
 
   async getById(studentId: string, yearId: string, gradeId: string, classId: string): Promise<IStudent> {
+    if (!yearId || !gradeId || !classId || !studentId) {
+      throw new ApiError(400, "Year, grade, class and student ids are required");
+    }
+
     const student = await this.repository.getById(studentId, yearId, gradeId, classId);
     if (!student) throw new ApiError(404, "Student not found");
 

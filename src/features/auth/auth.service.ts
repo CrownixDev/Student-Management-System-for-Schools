@@ -1,5 +1,5 @@
 import { AuthRepository } from "./auth.repository";
-import { IAuthResponseUser, ILoginData } from "./auth.types";
+import { ILoginData } from "./auth.types";
 import { ApiError } from "@/lib/ApiError";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import {
@@ -14,17 +14,13 @@ import { REFRESH_TOKEN_DAYS } from "@/lib/auth/constants";
 export class AuthService {
   constructor(private repository: AuthRepository) {}
 
-  async getUserByUsername(username: string): Promise<IAuthResponseUser | null> {
-    const user = await this.repository.getUserByUsername(username);
-    if (!user) throw new ApiError(404, "User not found");
-    return user;
-  }
-
   async registerAdmin(data: ILoginData): Promise<{
     accessToken: string | null;
     refreshToken: string | null;
   }> {
     const { username, password } = data;
+
+    if (!username || !password) throw new ApiError(400, "Username and Password are required");
 
     const isUsernameAvailable = await this.repository.isUsernameAvailable(username);
     console.log("isUsernameAvailable", isUsernameAvailable);
@@ -57,6 +53,8 @@ export class AuthService {
   }> {
     const { username, password } = data;
 
+    if (!username || !password) throw new ApiError(400, "Username and Password are required");
+
     const user = await this.repository.getUserForLogin(username);
     if (!user) throw new ApiError(401, "Invalid credentials");
 
@@ -81,7 +79,7 @@ export class AuthService {
     refreshToken: string | null;
     active: boolean;
   }> {
-    if (!refreshToken) throw new ApiError(401, "Refresh token not found");
+    if (!refreshToken) throw new ApiError(401, "Refresh token required");
 
     const refreshTokenHash = hashRefreshToken(refreshToken);
 

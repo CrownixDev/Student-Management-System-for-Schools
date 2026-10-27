@@ -12,6 +12,8 @@ export class TeachersService {
   }
 
   async getById(teacherId: string): Promise<ITeacher> {
+    if (!teacherId) throw new ApiError(400, "Teacher id is required");
+
     const teacher = await this.repository.getById(teacherId);
     if (!teacher) throw new ApiError(404, "Teacher Not Found");
     return {

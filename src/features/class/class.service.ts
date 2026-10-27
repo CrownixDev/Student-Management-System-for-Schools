@@ -6,6 +6,7 @@ export class ClassService {
   constructor(private repository: ClassRepository) {}
 
   async getById(id: string): Promise<IClass> {
+    if (!id) throw new ApiError(400, "Class id is required");
     const classData = await this.repository.getById(id);
     if (!classData) throw new ApiError(404, "Class Not Found");
     return {
@@ -29,6 +30,7 @@ export class ClassService {
   }
 
   async getList(yearId: string, gradeId: string): Promise<IClassList> {
+    if (!yearId || !gradeId) throw new ApiError(400, "Year and grade ids are required");
     const classList = await this.repository.getList(yearId, gradeId);
     return classList.map((classItem) => ({
       id: classItem.id,
@@ -38,6 +40,7 @@ export class ClassService {
   }
 
   async getAsOptions(yearId: string, gradeId: string): Promise<IClassOption[]> {
+    if (!yearId || !gradeId) throw new ApiError(400, "Year and grade ids are required");
     const classList = await this.repository.getList(yearId, gradeId);
     return classList.map((item) => ({ value: item.id, label: item.name }));
   }

@@ -11,6 +11,7 @@ export class AcademicYearsService {
   }
 
   async getListItemById(yearId: string): Promise<IAcademicYear> {
+    if (!yearId) throw new ApiError(400, "Year is is required");
     const year = await this.repository.getListItemById(yearId);
     if (!year) throw new ApiError(404, "Year not found");
     return year;

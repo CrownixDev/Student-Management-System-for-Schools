@@ -8,11 +8,13 @@ export class BatchService {
   constructor(private repository: BatchRepository) {}
 
   async getList({ search, page, limit, type }: IQueryParams & { type: BatchType }): Promise<IBatchList> {
+    if (!type) throw new ApiError(400, "Batch type is required");
     const [count, list] = await this.repository.getList({ search, page, limit, type });
     return { count, list };
   }
 
   async getById(batchId: string): Promise<IBatch> {
+    if (!batchId) throw new ApiError(400, "Batch id is required");
     const batchData = await this.repository.getById(batchId);
 
     if (!batchData) throw new ApiError(404, "Batch not found");
@@ -51,6 +53,7 @@ export class BatchService {
   }
 
   async getListItemById(batchId: string): Promise<IBatchListItem> {
+    if (!batchId) throw new ApiError(400, "Batch id is required");
     const batch = await this.repository.getListItemById(batchId);
     if (!batch) throw new ApiError(404, "Batch Not Found");
     return batch;

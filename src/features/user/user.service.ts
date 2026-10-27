@@ -6,7 +6,13 @@ import { UserFilterRole } from "./user.cache";
 export class UserService {
   constructor(private repository: UserRepository) {}
 
-  async getList({ search, role }: { search?: IQueryParams["search"]; role?: UserFilterRole }): Promise<IUser[]> {
+  async getList({
+    search,
+    role = "all",
+  }: {
+    search?: IQueryParams["search"];
+    role?: UserFilterRole;
+  }): Promise<IUser[]> {
     const users = await this.repository.getList({ search, role });
     return users.map((user) => ({
       ...user,

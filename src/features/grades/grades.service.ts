@@ -11,6 +11,8 @@ export class GradesService {
   }
 
   async getListByYear(yearId: string): Promise<IGradeListItemForYear[]> {
+    if (!yearId) throw new ApiError(400, "Year id is required");
+
     const gradeData = await this.repository.getListByYear(yearId);
     if (!gradeData) throw new ApiError(400, "Invalid year id");
 
@@ -23,15 +25,17 @@ export class GradesService {
   }
 
   async getListItemById(gradeId: string): Promise<IGradeListItem> {
+    if (!gradeId) throw new ApiError(400, "Grade id is required");
+
     const grade = await this.repository.getListItemById(gradeId);
     if (!grade) throw new ApiError(404, "Grade Not Found");
     return grade;
   }
 
   async getListWithClasses(yearId: string): Promise<IGradeWithClassesItem[]> {
-    if (!yearId) throw new ApiError(400, "Academic Year not Provided");
-    const grades = await this.repository.getListWithClasses(yearId);
+    if (!yearId) throw new ApiError(400, "Year id is required");
 
+    const grades = await this.repository.getListWithClasses(yearId);
     return grades.map((grade) => ({
       ...grade,
       classes: grade.classes.map((classItem) => ({

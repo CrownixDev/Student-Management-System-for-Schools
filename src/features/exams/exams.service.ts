@@ -22,6 +22,8 @@ export class ExamService {
   ) {}
 
   async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
+    if (!yearId || !gradeId) throw new ApiError(400, "Year and grade ids are required");
+
     const examList = await this.repository.getList(yearId, gradeId);
     return examList.map((exam) => ({
       ...exam,
@@ -37,6 +39,8 @@ export class ExamService {
   }
 
   async getListItemById(examId: string): Promise<IExamListItem> {
+    if (!examId) throw new ApiError(400, "Exam id is required");
+
     const exam = await this.repository.getListItemById(examId);
     if (!exam) throw new ApiError(404, "Exam not found");
     return {
@@ -53,8 +57,9 @@ export class ExamService {
   }
 
   async getDataByEnrollmentId(enrollmentId: string): Promise<IExamByEnrollmentId[]> {
-    const enrollment = await this.enrollmentRepository.getById(enrollmentId);
+    if (!enrollmentId) throw new ApiError(400, "Enrollment id is required");
 
+    const enrollment = await this.enrollmentRepository.getById(enrollmentId);
     if (!enrollment) {
       throw new ApiError(404, "Enrollment not found");
     }
@@ -85,6 +90,8 @@ export class ExamService {
   }
 
   async getTopResults(yearId: string, gradeId: string, examId: string): Promise<IExamTopResults> {
+    if (!yearId || !gradeId || !examId) throw new ApiError(400, "Year, grade and exam ids are required");
+
     const exam = await this.getListItemById(examId);
     if (exam.academicYear.id !== yearId || exam.gradeLevel.id !== gradeId) {
       throw new ApiError(404, "Exam not found");
@@ -196,8 +203,11 @@ export class ExamService {
   }
 
   async getExamDataForClass(yearId: string, gradeId: string, classId: string, examId: string): Promise<IExamClassData> {
-    const classData = await this.classRepository.getStudentsWithExamData(yearId, gradeId, classId, examId);
+    if (!yearId || !gradeId || !classId || !examId) {
+      throw new ApiError(400, "Year, grade, class and exam ids are required");
+    }
 
+    const classData = await this.classRepository.getStudentsWithExamData(yearId, gradeId, classId, examId);
     if (!classData) throw new ApiError(404, "Class not found");
 
     return {

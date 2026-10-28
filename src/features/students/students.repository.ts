@@ -3,7 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { studentEnrollmentSelect, studentListSelect, studentProfuileSelect, studentSelect } from "./students.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
-import { StudentWhereInput } from "@/generated/prisma/models";
+import { StudentCreateInput, StudentUpdateInput, StudentWhereInput } from "@/generated/prisma/models";
 import { DOBFilter, GenderFilter } from "./student.cache";
 
 export type IStudentProfileListFilters = IQueryParams & { gender: GenderFilter; dobFrom: DOBFilter; dobTo: DOBFilter };
@@ -128,5 +128,26 @@ export class StudentsRepository {
       where: { id: studentId },
       select: studentEnrollmentSelect,
     });
+  }
+
+  async getRelations(id: string) {
+    return await prisma.student.findUnique({
+      where: { id },
+      select: {
+        enrollments: { select: { id: true } },
+      },
+    });
+  }
+
+  async create(data: StudentCreateInput) {
+    return await prisma.student.create({ data });
+  }
+
+  async update(id: string, data: StudentUpdateInput) {
+    return await prisma.student.update({ where: { id }, data });
+  }
+
+  async delete(id: string) {
+    return await prisma.student.delete({ where: { id } });
   }
 }

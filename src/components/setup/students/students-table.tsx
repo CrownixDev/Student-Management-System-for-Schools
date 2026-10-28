@@ -1,15 +1,16 @@
 import { studentsService } from "@/features/students";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
-import EmptyState from "@/components/ui/empty-state";
 import { CircleUserIcon } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import StudentActions from "./student-actions";
-import PagePagination from "@/components/ui/page/page-pagination";
 import { studentFilterCach } from "@/features/students/student.cache";
 import { getHtmlDateString } from "@/lib/utils";
 import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
+import EmptyState from "@/components/ui/empty-state";
+import StudentsEditBtn from "./buttons/students-edit-btn";
+import PagePagination from "@/components/ui/page/page-pagination";
+import StudentsEnrollmentsBtn from "./buttons/students-enrollments-btn";
 
 export default async function StudentsTable() {
   const { search, page, limit } = filterCache.all();
@@ -57,12 +58,17 @@ export default async function StudentsTable() {
                   <TableCell className="w-72 max-w-72 whitespace-normal wrap-break-word">{student.fullName}</TableCell>
                   <TableCell>{student.dob ? getHtmlDateString(student.dob) : "-"}</TableCell>
                   <TableCell className="select-all">{student.phone || "-"}</TableCell>
-                  <TableCell>{student.nic || "-"}</TableCell>
+                  <TableCell className="select-all">{student.nic || "-"}</TableCell>
                   <TableCell className="select-none">
-                    <Badge variant="success">Active</Badge>
+                    {student.status === "active" ? (
+                      <Badge variant="success">Active</Badge>
+                    ) : (
+                      <Badge variant="destructive">Left</Badge>
+                    )}
                   </TableCell>
-                  <TableCell className="text-right select-none">
-                    <StudentActions student={student} />
+                  <TableCell className="text-right select-none flex items-center justify-end gap-1.5">
+                    <StudentsEditBtn student={student} />
+                    <StudentsEnrollmentsBtn student={student} />
                   </TableCell>
                 </TableRow>
               ))}

@@ -2,13 +2,18 @@
 
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
-import DialogErrors from "@/components/ui/dialog/dialog-errors";
-import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { IMediumListItem } from "@/features/medium";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { mediumSchema } from "@/features/medium/medium.schema";
+import { createMediumAction, deleteMediumAction, updateMediumAction } from "@/features/medium/medium.actions";
+import { toast } from "react-toastify";
+import DeleteConfirmationDialog from "../delete-confirmation-dialog";
+import z from "zod";
 
 interface MediumDialogProps {
   open: boolean;
@@ -18,66 +23,99 @@ interface MediumDialogProps {
 
 export default function MediumDialog({ open, onOpenChange, data }: MediumDialogProps) {
   const isEditing = Boolean(data?.id);
-  const [name, setName] = useState(data?.name ?? "");
-  const [errors, setErrors] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  function handleSubmit() {
-    if (!name.trim()) {
-      setErrors(["Medium name is required (e.g. 'Sinhala', 'English')."]);
-      return;
+  const form = useForm({
+    defaultValues: {
+      name: data?.name ?? "",
+    },
+    resolver: zodResolver(mediumSchema),
+  });
+
+  async function handleCreate(formData: z.infer<typeof mediumSchema>) {
+    const res = await createMediumAction(formData);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
     }
-    console.log("Saving medium:", { id: data?.id, name: name.trim() });
-    onOpenChange(false);
   }
 
-  function handleDelete() {
-    console.log("Deleting medium:", data?.id);
+  async function handleUpdate(formData: z.infer<typeof mediumSchema>) {
+    if (!data?.id) return;
+    const res = await updateMediumAction(data.id, formData);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!data?.id) return;
+    const res = await deleteMediumAction(data.id);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
   }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={form.formState.isSubmitting ? undefined : onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit Medium" : "Add Medium"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <DialogErrors errors={errors} />
-            <FieldGroup className="space-y-3">
-              <Field>
-                <FieldLabel htmlFor="medium-name">Medium Name</FieldLabel>
-                <Input
-                  id="medium-name"
-                  placeholder="e.g. Sinhala, English, Tamil"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                />
-              </Field>
+          <form id="medium-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+            <FieldGroup>
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="medium-name">Medium Name</FieldLabel>
+                    <Input
+                      {...field}
+                      id="medium-name"
+                      placeholder="e.g. Sinhala, English, Tamil"
+                      aria-invalid={fieldState.invalid}
+                      disabled={form.formState.isSubmitting}
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
             </FieldGroup>
-          </div>
+          </form>
 
           <DialogFooter>
             <div className="flex min-w-full items-center">
               {isEditing && (
                 <Button
                   variant="destructive"
-                  size="icon"
-                  title="Delete medium"
                   type="button"
                   onClick={() => setIsDeleting(true)}
+                  disabled={form.formState.isSubmitting}
                 >
-                  <TrashIcon />
+                  <TrashIcon /> Delete Medium
                 </Button>
               )}
               <div className="flex flex-1 gap-3 justify-end">
-                <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  disabled={form.formState.isSubmitting}
+                >
                   Cancel
                 </Button>
-                <Button type="button" onClick={handleSubmit}>
+                <Button type="submit" form="medium-form" disabled={form.formState.isSubmitting}>
                   {isEditing ? "Save Changes" : "Create Medium"}
                 </Button>
               </div>
@@ -86,15 +124,15 @@ export default function MediumDialog({ open, onOpenChange, data }: MediumDialogP
         </DialogContent>
       </Dialog>
 
-      <DeleteConfirmationDialog
-        open={isDeleting}
-        onOpenChange={setIsDeleting}
-        title="Delete Medium"
-        description="Are you sure you want to delete this medium? This may affect classes and student enrollments that use this medium."
-        itemIdentifier={data ? `Medium: ${data.name}` : undefined}
-        confirmationPhrase="Yes i wanted to delete"
-        onConfirm={handleDelete}
-      />
+      {data && (
+        <DeleteConfirmationDialog
+          open={isDeleting}
+          onOpenChange={setIsDeleting}
+          title={`Delete ${data.name} Medium`}
+          description="Are you sure you want to delete this medium?"
+          onConfirm={handleDelete}
+        />
+      )}
     </>
   );
 }

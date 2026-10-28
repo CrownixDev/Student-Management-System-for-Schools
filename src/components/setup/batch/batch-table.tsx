@@ -39,6 +39,7 @@ export default async function BatchTable({ type }: { type: BatchType }) {
                   tooltip="View this batch"
                   href={`/grades?batchId=${batch.id}`}
                   className={buttonVariants({ size: "icon-sm", variant: "ghost" })}
+                  target="_blank"
                 >
                   <EyeIcon />
                 </TooltipLink>

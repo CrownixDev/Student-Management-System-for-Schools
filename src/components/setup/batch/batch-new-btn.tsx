@@ -9,19 +9,15 @@ import { useState } from "react";
 
 export default function BatchAddNewBtn() {
   const [{ tab }] = useQueryStates(batchTabParsers);
-  const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
-
-  function handleOpenAdd() {
-    setIsBatchDialogOpen(true);
-  }
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <Button onClick={handleOpenAdd} className="gap-1.5 shadow-xs">
+      <Button onClick={() => setIsOpen(true)} className="gap-1.5 shadow-xs">
         <PlusIcon className="size-4" />
         Add Batch
       </Button>
-      <BatchDialog key={tab} open={isBatchDialogOpen} onOpenChange={setIsBatchDialogOpen} data={{ type: tab }} />
+      {isOpen && <BatchDialog key={tab} open={isOpen} onOpenChange={setIsOpen} data={{ type: tab }} />}
     </>
   );
 }

@@ -2,16 +2,20 @@
 
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { IBatchListItem } from "@/features/batch";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
-import DialogErrors from "@/components/ui/dialog/dialog-errors";
-import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { StrictOmit } from "@/lib/utils";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
+import { Controller, useForm } from "react-hook-form";
+import { batchSchema } from "@/features/batch/batch.schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "react-toastify";
+import { createBatchAction, deleteBatchAction, updateBatchAction } from "@/features/batch/batch.action";
+import DeleteConfirmationDialog from "../delete-confirmation-dialog";
+import z from "zod";
 
 interface BatchDialogProps {
   open: boolean;
@@ -20,98 +24,127 @@ interface BatchDialogProps {
 }
 
 export default function BatchDialog({ open, onOpenChange, data }: BatchDialogProps) {
-  const isEditing = Boolean(data?.id);
-  const [badgeData, setBadgeData] = useState<StrictOmit<IBatchListItem, "id">>({
-    name: data?.name ?? "",
-    type: data?.type ?? "al",
-  });
-  const [errors, setErrors] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  function handleSubmit() {
-    const newErrors: string[] = [];
+  const form = useForm<z.infer<typeof batchSchema>>({
+    defaultValues: {
+      name: data?.name ?? "",
+      type: data?.type ?? "al",
+    },
+    resolver: zodResolver(batchSchema),
+  });
 
-    if (!badgeData.name.trim()) {
-      newErrors.push("Batch name is required (e.g. '2026').");
+  const isEditing = Boolean(data?.id);
+  const isFormSubmitting = form.formState.isSubmitting;
+
+  async function handleCreate(formData: z.infer<typeof batchSchema>) {
+    const res = await createBatchAction(formData);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
     }
-
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    const payload = { id: data?.id, name: badgeData.name.trim() };
-    console.log("Saving batch:", payload);
-    onOpenChange(false);
   }
 
-  function handleDelete() {
-    console.log("Deleting batch:", data?.id);
+  async function handleUpdate(formData: z.infer<typeof batchSchema>) {
+    if (!data?.id) return;
+    const res = await updateBatchAction(data.id, formData);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!data?.id) return;
+    const res = await deleteBatchAction(data.id);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
   }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={isFormSubmitting ? undefined : onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit Batch" : "Add Batch"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <DialogErrors errors={errors} />
+          <form id="batch-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+            <FieldGroup>
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="batch-name">Batch Name</FieldLabel>
+                    <Input
+                      {...field}
+                      id="batch-name"
+                      placeholder="e.g. 2026 A/L"
+                      aria-invalid={fieldState.invalid}
+                      disabled={isFormSubmitting}
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
-            <FieldGroup className="space-y-3">
-              <Field>
-                <FieldLabel htmlFor="batch-name">Batch Name</FieldLabel>
-                <Input
-                  id="batch-name"
-                  placeholder="e.g. 2026"
-                  value={badgeData.name}
-                  onChange={(e) => setBadgeData((prevData) => ({ ...prevData, name: e.target.value }))}
-                  autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="batch-name">Batch Type</FieldLabel>
-                <Select
-                  items={batchTypeOptions}
-                  value={badgeData.type}
-                  onValueChange={(value) => setBadgeData((prevData) => ({ ...prevData, type: value ?? "al" }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batchTypeOptions.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+              <Controller
+                name="type"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="batch-type">Batch Type</FieldLabel>
+                    <Select
+                      id="batch-type"
+                      items={batchTypeOptions}
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                      disabled={isFormSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {batchTypeOptions.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
             </FieldGroup>
-          </div>
+          </form>
 
           <DialogFooter>
             <div className="flex min-w-full items-center">
               {isEditing && (
                 <Button
-                  variant="destructive"
-                  size="icon"
-                  title="Delete batch"
                   type="button"
+                  variant="destructive"
                   onClick={() => setIsDeleting(true)}
+                  disabled={isFormSubmitting}
                 >
-                  <TrashIcon />
+                  <TrashIcon /> Delete batch
                 </Button>
               )}
               <div className="flex flex-1 gap-3 justify-end">
-                <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isFormSubmitting}>
                   Cancel
                 </Button>
-                <Button type="button" onClick={handleSubmit}>
+                <Button type="submit" form="batch-form" disabled={isFormSubmitting}>
                   {isEditing ? "Save Changes" : "Create Batch"}
                 </Button>
               </div>
@@ -120,15 +153,15 @@ export default function BatchDialog({ open, onOpenChange, data }: BatchDialogPro
         </DialogContent>
       </Dialog>
 
-      <DeleteConfirmationDialog
-        open={isDeleting}
-        onOpenChange={setIsDeleting}
-        title="Delete Batch"
-        description="Are you sure you want to delete this batch? Deleting a batch will remove the batch grouping from all associated classes."
-        itemIdentifier={data ? `Batch ${data.name}` : undefined}
-        confirmationPhrase="Yes i wanted to delete"
-        onConfirm={handleDelete}
-      />
+      {data && (
+        <DeleteConfirmationDialog
+          open={isDeleting}
+          onOpenChange={setIsDeleting}
+          title={`Delete ${data.name} Batch`}
+          description="Are you sure you want to delete this batch?"
+          onConfirm={handleDelete}
+        />
+      )}
     </>
   );
 }

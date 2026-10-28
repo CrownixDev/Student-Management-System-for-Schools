@@ -10,8 +10,8 @@ import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-l
 import PagePagination from "@/components/ui/page/page-pagination";
 
 function getGradeStage(num: number): string {
-  if (num >= 1 && num <= 5) return "Primary (Grades 1-5)";
-  if (num >= 6 && num <= 9) return "Junior Secondary (Grades 6-9)";
+  if (num >= 1 && num <= 5) return "Primary";
+  if (num >= 6 && num <= 9) return "Junior Secondary";
   if (num >= 10 && num <= 11) return "Ordinary Level (O/L)";
   if (num >= 12 && num <= 13) return "Advanced Level (A/L)";
   return "Other";
@@ -37,7 +37,7 @@ export default async function GradesContent() {
               <TableRow>
                 <TableHead className="font-semibold">Name</TableHead>
                 <TableHead className="font-semibold">Grade</TableHead>
-                <TableHead className="font-semibold">Educational Stage</TableHead>
+                <TableHead className="font-semibold">Category</TableHead>
                 <TableHead className="text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>

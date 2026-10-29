@@ -12,28 +12,15 @@ export const examListSelect = {
       id: true,
       passMark: true,
       maxMarks: true,
+      ignoreRanking: true,
       subject: { select: { id: true, name: true, code: true, category: true } },
     },
   },
 } satisfies ExamSelect;
 
-export type IExamSubject = {
-  id: string;
-  name: string;
-  code: string | null;
-  category: SubjectCategory;
-  passMark: number;
-  maxMarks: number;
-};
-
-export type IExamListItem = Omit<
-  ExamGetPayload<{
-    select: typeof examListSelect;
-  }>,
-  "examSubjects"
-> & {
-  examSubjects: IExamSubject[];
-};
+export type IExamListItem = ExamGetPayload<{
+  select: typeof examListSelect;
+}>;
 
 export const examSelect = {
   id: true,

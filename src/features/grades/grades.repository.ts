@@ -31,6 +31,7 @@ export class GradesRepository {
           select: { id: true },
         },
       },
+      orderBy: { number: "asc" },
     });
   }
 
@@ -59,7 +60,7 @@ export class GradesRepository {
                 student: { select: { id: true, fullName: true, admissionNo: true } },
                 subjects: {
                   select: {
-                    subject: { select: { id: true, name: true, ignoreRanking: true } },
+                    subject: { select: { id: true, name: true } },
                     medium: { select: { name: true } },
                   },
                 },
@@ -72,7 +73,6 @@ export class GradesRepository {
                       select: {
                         id: true,
                         name: true,
-                        ignoreRanking: true,
                       },
                     },
                   },

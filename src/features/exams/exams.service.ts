@@ -1,8 +1,5 @@
 import "server-only";
 
-import { ApiError } from "@/lib/ApiError";
-import { EnrollmentRepository } from "../enrollment/enrollment.repository";
-import { ExamRepository } from "./exams.repository";
 import {
   IExamByEnrollmentId,
   IExamClassData,
@@ -11,9 +8,21 @@ import {
   TopResultStudent,
   TopResultStudentWithClass,
 } from "./exams.types";
+import { ApiErrorV2 } from "@/lib/ApiError";
+import { EnrollmentRepository } from "../enrollment/enrollment.repository";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { ExamRepository } from "./exams.repository";
 import { GradesRepository } from "../grades/grades.repository";
 import { MarkStatus } from "@/generated/prisma/enums";
 import { ClassRepository } from "../class/class.repository";
+import { examSchema } from "./exams.schema";
+import { prisma } from "@/lib/prisma";
+import z from "zod";
+
+const rankTopResults = <T extends TopResultStudent>(students: Iterable<T>): T[] =>
+  Array.from(students).sort(
+    (a, b) => b.fullMarks - a.fullMarks || a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
+  );
 
 export class ExamService {
   constructor(
@@ -24,46 +33,23 @@ export class ExamService {
   ) {}
 
   async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
-    if (!yearId || !gradeId) throw new ApiError(400, "Year and grade ids are required");
-
-    const examList = await this.repository.getList(yearId, gradeId);
-    return examList.map((exam) => ({
-      ...exam,
-      examSubjects: exam.examSubjects.map((esub) => ({
-        id: esub.subject.id,
-        name: esub.subject.name,
-        code: esub.subject.code,
-        category: esub.subject.category,
-        passMark: esub.passMark,
-        maxMarks: esub.maxMarks,
-      })),
-    }));
+    if (!yearId || !gradeId) throw new ApiErrorV2("Year and grade ids are required");
+    return await this.repository.getList(yearId, gradeId);
   }
 
   async getListItemById(examId: string): Promise<IExamListItem> {
-    if (!examId) throw new ApiError(400, "Exam id is required");
-
+    if (!examId) throw new ApiErrorV2("Exam id is required");
     const exam = await this.repository.getListItemById(examId);
-    if (!exam) throw new ApiError(404, "Exam not found");
-    return {
-      ...exam,
-      examSubjects: exam.examSubjects.map((esub) => ({
-        id: esub.subject.id,
-        name: esub.subject.name,
-        code: esub.subject.code,
-        category: esub.subject.category,
-        passMark: esub.passMark,
-        maxMarks: esub.maxMarks,
-      })),
-    };
+    if (!exam) throw new ApiErrorV2("Exam not found");
+    return exam;
   }
 
   async getDataByEnrollmentId(enrollmentId: string): Promise<IExamByEnrollmentId[]> {
-    if (!enrollmentId) throw new ApiError(400, "Enrollment id is required");
+    if (!enrollmentId) throw new ApiErrorV2("Enrollment id is required");
 
     const enrollment = await this.enrollmentRepository.getById(enrollmentId);
     if (!enrollment) {
-      throw new ApiError(404, "Enrollment not found");
+      throw new ApiErrorV2("Enrollment not found");
     }
 
     const exams = await this.repository.getList(enrollment.academicYearId, enrollment.class.gradeLevelId);
@@ -92,23 +78,22 @@ export class ExamService {
   }
 
   async getTopResults(yearId: string, gradeId: string, examId: string): Promise<IExamTopResults> {
-    if (!yearId || !gradeId || !examId) throw new ApiError(400, "Year, grade and exam ids are required");
+    if (!yearId || !gradeId || !examId) throw new ApiErrorV2("Year, grade and exam ids are required");
 
     const exam = await this.getListItemById(examId);
     if (exam.academicYear.id !== yearId || exam.gradeLevel.id !== gradeId) {
-      throw new ApiError(404, "Exam not found");
+      throw new ApiErrorV2("Exam not found");
     }
 
     const grade = await this.gradesRepository.getAllStudentsWithResults(yearId, gradeId, examId);
 
     if (!grade) {
-      throw new ApiError(404, "Grade not found");
+      throw new ApiErrorV2("Grade not found");
     }
 
-    const rank = <T extends TopResultStudent>(students: Iterable<T>): T[] =>
-      Array.from(students).sort(
-        (a, b) => b.fullMarks - a.fullMarks || a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
-      );
+    const ignoredRankingSubjectIds = new Set(
+      exam.examSubjects.filter((examSubject) => examSubject.ignoreRanking).map((examSubject) => examSubject.id),
+    );
 
     const byGrade = new Map<string, TopResultStudentWithClass>();
     const subjectResults = new Map<
@@ -147,7 +132,7 @@ export class ExamService {
         byGrade.set(enrollment.student.id, gradeStudent);
 
         for (const { subject, medium } of enrollment.subjects) {
-          if (subject.ignoreRanking) continue;
+          if (ignoredRankingSubjectIds.has(subject.id)) continue;
 
           const mark = enrollment.marks.find((result) => result.subject.id === subject.id);
           const subjectResult = subjectResults.get(subject.id) ?? {
@@ -172,7 +157,7 @@ export class ExamService {
         }
 
         for (const mark of enrollment.marks) {
-          if (mark.subject.ignoreRanking) continue;
+          if (ignoredRankingSubjectIds.has(mark.subject.id)) continue;
 
           const subjectResult = subjectResults.get(mark.subject.id);
           const subjectStudent = subjectResult?.students.get(enrollment.student.id);
@@ -190,27 +175,27 @@ export class ExamService {
       return {
         id: classItem.id,
         name: classItem.name,
-        topResult: rank(students.values()),
+        topResult: rankTopResults(students.values()),
       };
     });
 
     return {
-      byGrade: rank(byGrade.values()),
+      byGrade: rankTopResults(byGrade.values()),
       byClass,
       bySubject: Array.from(subjectResults.values()).map(({ students, ...subject }) => ({
         ...subject,
-        topResult: rank(students.values()),
+        topResult: rankTopResults(students.values()),
       })),
     };
   }
 
   async getExamDataForClass(yearId: string, gradeId: string, classId: string, examId: string): Promise<IExamClassData> {
     if (!yearId || !gradeId || !classId || !examId) {
-      throw new ApiError(400, "Year, grade, class and exam ids are required");
+      throw new ApiErrorV2("Year, grade, class and exam ids are required");
     }
 
     const classData = await this.classRepository.getStudentsWithExamData(yearId, gradeId, classId, examId);
-    if (!classData) throw new ApiError(404, "Class not found");
+    if (!classData) throw new ApiErrorV2("Class not found");
 
     return {
       id: classData.id,
@@ -234,5 +219,138 @@ export class ExamService {
         })),
       })),
     };
+  }
+
+  async create(yearId: string, gradeId: string, data: z.infer<typeof examSchema>) {
+    const parsedData = examSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    try {
+      await this.repository.create({
+        name: parsedData.data.name,
+        academicYear: { connect: { id: yearId } },
+        gradeLevel: { connect: { id: gradeId } },
+        examSubjects: {
+          createMany: {
+            data: parsedData.data.examSubjects.map((esub) => ({
+              subjectId: esub.subject.id,
+              maxMarks: esub.maxMarks,
+              passMark: esub.passMark,
+              ignoreRanking: esub.ignoreRanking,
+            })),
+          },
+        },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ApiErrorV2("Exam name already exists");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async update(examId: string, data: z.infer<typeof examSchema>) {
+    if (!examId) throw new ApiErrorV2("Exam id is required");
+
+    const parsedData = examSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    try {
+      await this.repository.update(examId, {
+        name: parsedData.data.name,
+        examSubjects: {
+          // This is used to update=> if where clause if matched for existing record and, create=> if where does not match any of records
+          upsert: parsedData.data.examSubjects.map((esub) => ({
+            where: {
+              examId_subjectId: { examId, subjectId: esub.subject.id },
+            },
+            update: {
+              maxMarks: esub.maxMarks,
+              passMark: esub.passMark,
+              ignoreRanking: esub.ignoreRanking,
+            },
+            create: {
+              subject: { connect: { id: esub.subject.id } },
+              maxMarks: esub.maxMarks,
+              passMark: esub.passMark,
+              ignoreRanking: esub.ignoreRanking,
+            },
+          })),
+        },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ApiErrorV2("Exam name already exists");
+        }
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async delete(examId: string) {
+    if (!examId) throw new ApiErrorV2("Exam id is required");
+
+    const exam = await this.repository.getRelations(examId);
+    if (!exam) throw new ApiErrorV2("Exam not found");
+
+    const hasRelations = exam.marks.length > 0;
+    if (hasRelations) {
+      throw new ApiErrorV2("This Exam is currently in use");
+    }
+
+    try {
+      await prisma.$transaction(async (transaction) => {
+        await transaction.examSubject.deleteMany({ where: { examId } });
+        await this.repository.delete(examId, transaction);
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This Exam is currently in use");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async deleteExamSubject(eSubId: string) {
+    if (!eSubId) throw new ApiErrorV2("Exam subject id is required");
+    console.log(eSubId);
+    const esub = await this.repository.getExamSubjectById(eSubId);
+    if (!esub) throw new ApiErrorV2("Exam subject not found");
+    const esubRel = await this.repository.getRelationsForExamSubject(esub.examId, esub.subjectId);
+
+    // Do not delete the exam subject if any marks assined to it
+    const hasRelations = esubRel.length > 0;
+    if (hasRelations) {
+      throw new ApiErrorV2("This Exam Subject is currently in use");
+    }
+
+    try {
+      await prisma.examSubject.delete({ where: { id: eSubId } });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This Exam Subject is currently in use");
+        }
+      }
+      throw error;
+    }
   }
 }

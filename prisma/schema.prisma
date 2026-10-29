@@ -105,11 +105,10 @@ model Stream {
 }
 
 model Subject {
-  id            String          @id @default(uuid())
-  name          String
-  code          String?         @unique
-  category      SubjectCategory @default(other)
-  ignoreRanking Boolean         @default(false)
+  id       String          @id @default(uuid())
+  name     String
+  code     String?         @unique
+  category SubjectCategory @default(other)
 
   streams            Stream[]
   classSubjects      ClassSubject[]
@@ -293,11 +292,12 @@ model Exam {
 }
 
 model ExamSubject {
-  id        String @id @default(uuid())
-  examId    String
-  subjectId String
-  maxMarks  Float  @default(100)
-  passMark  Float  @default(35)
+  id            String  @id @default(uuid())
+  examId        String
+  subjectId     String
+  maxMarks      Float   @default(100)
+  passMark      Float   @default(35)
+  ignoreRanking Boolean @default(false)
 
   exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id])

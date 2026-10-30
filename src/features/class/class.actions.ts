@@ -103,3 +103,22 @@ export async function deleteClassAction(classId: string): Promise<IResponse> {
     return { success: false, message: "Unknown error occured" };
   }
 }
+
+export async function updateClassBatchAction(batchId: string | null, classIds: string[]): Promise<IResponse> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  if (classIds.length === 0) {
+    return { success: false, message: "Class ids are required" };
+  }
+
+  try {
+    await classService.updateBatch(batchId, classIds);
+    revalidatePath("/setup" as Route);
+    return { success: true, message: batchId ? "Batch assigned successfully" : "Batch removed successfully" };
+  } catch (error) {
+    if (error instanceof ApiErrorV2) {
+      return { success: false, message: error.message };
+    }
+    return { success: false, message: "Unknown error occured" };
+  }
+}

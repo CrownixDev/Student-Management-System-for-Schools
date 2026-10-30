@@ -133,4 +133,17 @@ export class ClassService {
       throw error;
     }
   }
+
+  async updateBatch(batchId: string | null, classIds: string[]) {
+    if (classIds.length === 0) throw new ApiErrorV2("Class ids are required");
+
+    try {
+      await prisma.class.updateMany({
+        where: { id: { in: classIds } },
+        data: { batchId },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 }

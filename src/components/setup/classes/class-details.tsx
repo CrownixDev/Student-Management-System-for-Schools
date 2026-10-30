@@ -5,12 +5,12 @@ import { classService, IClass } from "@/features/class";
 import { TypographyH1 } from "@/components/ui/typography";
 import { Separator } from "@/components/shadcn/separator";
 import { idCache } from "@/lib/nuqs/id";
+import { redirect } from "next/navigation";
 import EmptyState from "@/components/ui/empty-state";
 import ClassEditBtn from "./buttons/class-edit-btn";
 import ClassStudentsTable from "./class-students-table";
 import ClassSubjectTable from "./class-subject-table";
 import ClassStudentAddBtn from "./buttons/class-student-add-btn";
-import { redirect } from "next/navigation";
 import ClassSubjectAddBtn from "./buttons/class-subjects-add-btn";
 
 export default async function ClassDetails() {
@@ -66,11 +66,11 @@ export default async function ClassDetails() {
               )}
               <TableRow>
                 <TableCell className="font-medium">Class Teacher</TableCell>
-                <TableCell>{classData.classTeacher?.fullName ?? "No class teacher assigned"}</TableCell>
+                <TableCell>{classData.classTeacher?.fullName ?? "-"}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Medium</TableCell>
-                <TableCell>{classData.defaultMedium ? `${classData.defaultMedium.name} medium` : ""}</TableCell>
+                <TableCell>{classData.defaultMedium ? `${classData.defaultMedium.name}` : "-"}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

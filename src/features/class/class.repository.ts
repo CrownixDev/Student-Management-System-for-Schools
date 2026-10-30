@@ -78,6 +78,18 @@ export class ClassRepository {
     });
   }
 
+  async getRelationsForClassSubject(classId: string, subjectId: string) {
+    return await prisma.class.findUnique({
+      where: { id: classId },
+      select: {
+        enrollments: {
+          where: { subjects: { some: { subject: { id: subjectId } } } },
+          select: { id: true, subjects: { select: { id: true } } },
+        },
+      },
+    });
+  }
+
   async create(data: ClassCreateInput) {
     return await prisma.class.create({ data });
   }

@@ -34,7 +34,7 @@ export default async function SubjectTable({ category }: { category: SubjectCate
             return (
               <TableRow key={subject.id}>
                 <TableCell className="font-medium">{subject.name}</TableCell>
-                <TableCell className="font-medium">{subject.code}</TableCell>
+                <TableCell className="font-medium">{subject.code ?? "-"}</TableCell>
                 <TableCell className="text-right">
                   <SubjectEditBtn subject={subject} />
                 </TableCell>

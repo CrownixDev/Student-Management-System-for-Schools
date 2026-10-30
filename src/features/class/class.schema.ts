@@ -14,3 +14,11 @@ export const classDetailsSchema = z.object({
   teacherId: z.string().nullable(),
   mediumId: z.string().nullable(),
 });
+
+export const classSubjectsSchema = z.array(
+  z.object({
+    subjectId: z.string(),
+    teacherId: z.string(),
+    mediumId: z.string().nullable(),
+  }),
+);

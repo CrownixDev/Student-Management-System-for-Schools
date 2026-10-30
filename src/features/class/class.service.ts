@@ -3,7 +3,7 @@ import "server-only";
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { ClassRepository } from "./class.repository";
 import { IClass, IClassList, IClassOption } from "./class.types";
-import { classDetailsSchema } from "./class.schema";
+import { classDetailsSchema, classSubjectsSchema } from "./class.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
@@ -143,6 +143,72 @@ export class ClassService {
         data: { batchId },
       });
     } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateSubjects(classId: string, data: z.infer<typeof classSubjectsSchema>) {
+    if (!classId) {
+      throw new ApiErrorV2("Class id is required");
+    }
+
+    const parsedData = classSubjectsSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+    try {
+      await this.repository.update(classId, {
+        classSubjects: {
+          // This is used to update=> if where clause matched for existing record and, create=> if where does not match any of records
+          upsert: parsedData.data.map((csub) => ({
+            where: {
+              classId_subjectId: { classId, subjectId: csub.subjectId },
+            },
+            update: {
+              teacher: { connect: { id: csub.teacherId } },
+              medium: csub.mediumId ? { connect: { id: csub.mediumId } } : { disconnect: {} },
+            },
+            create: {
+              subject: { connect: { id: csub.subjectId } },
+              teacher: { connect: { id: csub.teacherId } },
+              medium: csub.mediumId ? { connect: { id: csub.mediumId } } : undefined,
+            },
+          })),
+        },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async deleteSubject(classId: string, subjectId: string) {
+    if (!classId || !subjectId) throw new ApiErrorV2("Class Id and Subject Id are required");
+
+    const classItem = await this.repository.getRelationsForClassSubject(classId, subjectId);
+    if (!classItem) throw new ApiErrorV2("Class not found");
+
+    // Do not delete the class subject if any of student doing it
+    const hasRelations = classItem.enrollments.length > 0;
+    if (hasRelations) {
+      throw new ApiErrorV2("This Class Subject is currently in use");
+    }
+
+    try {
+      await prisma.classSubject.delete({ where: { classId_subjectId: { classId, subjectId } } });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This Class Subject is currently in use");
+        }
+      }
       throw error;
     }
   }

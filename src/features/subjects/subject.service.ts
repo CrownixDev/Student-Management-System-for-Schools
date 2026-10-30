@@ -40,7 +40,7 @@ export class SubjectService {
     }
 
     try {
-      await this.repository.create(parsedData.data);
+      await this.repository.create({ ...parsedData.data, code: parsedData.data.code ? parsedData.data.code : null });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -60,7 +60,10 @@ export class SubjectService {
     }
 
     try {
-      await this.repository.update(subjectId, parsedData.data);
+      await this.repository.update(subjectId, {
+        ...parsedData.data,
+        code: parsedData.data.code ? parsedData.data.code : null,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {

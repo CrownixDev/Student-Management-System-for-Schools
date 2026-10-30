@@ -107,7 +107,7 @@ model Stream {
 model Subject {
   id       String          @id @default(uuid())
   name     String
-  code     String?         @unique
+  code     String?
   category SubjectCategory @default(other)
 
   streams            Stream[]

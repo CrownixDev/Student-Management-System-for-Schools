@@ -11,6 +11,36 @@ import {
 import { StudentGetPayload, StudentSelect } from "@/generated/prisma/models";
 import { StrictOmit } from "@/lib/utils";
 
+export const studentListWithSubjectsSelect = {
+  id: true,
+  admissionNo: true,
+  fullName: true,
+  enrollments: {
+    select: {
+      classIndex: true,
+      subjects: {
+        select: {
+          medium: { select: { id: true } },
+          subject: { select: { id: true } },
+        },
+      },
+    },
+  },
+} satisfies StudentSelect;
+
+export type IStudentsListWithSubjectsItem = {
+  id: string;
+  admissionNo: string;
+  fullName: string;
+  enrollment: {
+    classIndex: number | null
+    subjects: {
+      subjectId: string;
+      mediumId: string | null;
+    }[];
+  };
+};
+
 // Student List types
 export const studentListSelect = {
   id: true,
@@ -134,8 +164,6 @@ export const studentEnrollmentSelect = {
           medium: { select: { name: true } },
         },
       },
-      previousEnrollment: { select: { id: true } },
-      nextEnrollment: { select: { id: true } },
     },
   },
 } satisfies StudentSelect;
@@ -143,7 +171,7 @@ export const studentEnrollmentSelect = {
 export interface IStudentEnrollment {
   id: string;
   status: EnrollmentStatus;
-  classIndex: number;
+  classIndex: number | null;
   joinedOn: Date;
   endedOn: Date | null;
   academicYear: { id: string; name: string };
@@ -152,8 +180,6 @@ export interface IStudentEnrollment {
     name: string;
     gradeLevel: { id: string; name: string };
   };
-  previousEnrollment: { id: string } | null;
-  nextEnrollment: { id: string } | null;
   subjects: {
     name: string;
     category: SubjectCategory;

@@ -105,11 +105,10 @@ model Stream {
 }
 
 model Subject {
-  id            String          @id @default(uuid())
-  name          String
-  code          String?         @unique
-  category      SubjectCategory @default(other)
-  ignoreRanking Boolean         @default(false)
+  id       String          @id @default(uuid())
+  name     String
+  code     String?
+  category SubjectCategory @default(other)
 
   streams            Stream[]
   classSubjects      ClassSubject[]
@@ -229,20 +228,15 @@ model Enrollment {
   studentId      String
   classId        String
   academicYearId String
-  classIndex     Int
+  classIndex     Int?
   status         EnrollmentStatus @default(active)
 
   joinedOn DateTime  @default(now())
   endedOn  DateTime?
 
-  // helps with completed / repeat chain
-  previousEnrollmentId String? @unique
-
-  student            Student      @relation(fields: [studentId], references: [id])
-  class              Class        @relation(fields: [classId], references: [id])
-  academicYear       AcademicYear @relation(fields: [academicYearId], references: [id])
-  previousEnrollment Enrollment?  @relation("PromotionChain", fields: [previousEnrollmentId], references: [id])
-  nextEnrollment     Enrollment?  @relation("PromotionChain")
+  student      Student      @relation(fields: [studentId], references: [id])
+  class        Class        @relation(fields: [classId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
 
   subjects EnrollmentSubject[]
   marks    Mark[]
@@ -293,11 +287,12 @@ model Exam {
 }
 
 model ExamSubject {
-  id        String @id @default(uuid())
-  examId    String
-  subjectId String
-  maxMarks  Float  @default(100)
-  passMark  Float  @default(35)
+  id            String  @id @default(uuid())
+  examId        String
+  subjectId     String
+  maxMarks      Float   @default(100)
+  passMark      Float   @default(35)
+  ignoreRanking Boolean @default(false)
 
   exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id])

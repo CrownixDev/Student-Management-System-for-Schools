@@ -1,7 +1,18 @@
-import { ApiError } from "@/lib/ApiError";
+import "server-only";
+
+import { ApiErrorV2 } from "@/lib/ApiError";
 import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
-import { IStudent, IStudentEnrollment, IStudentList, IStudentsListItem } from "./students.types";
+import {
+  IStudent,
+  IStudentEnrollment,
+  IStudentList,
+  IStudentsListItem,
+  IStudentsListWithSubjectsItem,
+} from "./students.types";
 import { IQueryParams } from "@/lib/filter";
+import { studentSchema } from "./student.schema";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import z from "zod";
 
 export class StudentsService {
   constructor(private repository: StudentsRepository) {}
@@ -17,20 +28,47 @@ export class StudentsService {
   }
 
   async getListForClass(yearId: string, gradeId: string, classId: string): Promise<IStudentsListItem[]> {
-    if (!yearId || !gradeId || !classId) throw new ApiError(400, "Year, grade and class ids are required");
+    if (!yearId || !gradeId || !classId) throw new ApiErrorV2("Year, grade and class ids are required");
 
     const itemList = await this.repository.getListForClass(yearId, gradeId, classId);
-    const sortedItemList = itemList.sort((a, b) => a.enrollments[0].classIndex - b.enrollments[0].classIndex);
+    const sortedItemList = itemList.sort(
+      (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
+    );
     return sortedItemList;
+  }
+
+  async getListForClassWithSubjects(
+    yearId: string,
+    gradeId: string,
+    classId: string,
+  ): Promise<IStudentsListWithSubjectsItem[]> {
+    if (!yearId || !gradeId || !classId) throw new ApiErrorV2("Year, grade and class ids are required");
+
+    const itemList = await this.repository.getListForClassWithSubjects(yearId, gradeId, classId);
+    const sortedItemList = itemList.sort(
+      (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
+    );
+    return sortedItemList.map((st) => ({
+      id: st.id,
+      admissionNo: st.admissionNo,
+      fullName: st.fullName,
+      enrollment: {
+        classIndex: st.enrollments[0].classIndex,
+        subjects: st.enrollments[0].subjects.map((sub) => ({
+          subjectId: sub.subject.id,
+          mediumId: sub.medium?.id ?? null,
+        })),
+      },
+    }));
   }
 
   async getById(studentId: string, yearId: string, gradeId: string, classId: string): Promise<IStudent> {
     if (!yearId || !gradeId || !classId || !studentId) {
-      throw new ApiError(400, "Year, grade, class and student ids are required");
+      throw new ApiErrorV2("Year, grade, class and student ids are required");
     }
 
     const student = await this.repository.getById(studentId, yearId, gradeId, classId);
-    if (!student) throw new ApiError(404, "Student not found");
+    if (!student) throw new ApiErrorV2("Student not found");
 
     const enrollment = student.enrollments[0];
     const examsByName = new Map<string, IStudent["enrollment"]["exams"][number]>();
@@ -74,9 +112,9 @@ export class StudentsService {
   }
 
   async getEnrollmentsById(studentId: string): Promise<IStudentEnrollment[]> {
-    if (!studentId) throw new ApiError(400, "Student ID is required");
+    if (!studentId) throw new ApiErrorV2("Student ID is required");
     const student = await this.repository.getEnrollmentsById(studentId);
-    if (!student) throw new ApiError(404, "Student not found");
+    if (!student) throw new ApiErrorV2("Student not found");
     return student.enrollments.map((en) => ({
       ...en,
       subjects: en.subjects.map((sub) => ({
@@ -86,5 +124,76 @@ export class StudentsService {
         medium: sub.medium?.name ?? null,
       })),
     }));
+  }
+
+  async create(data: z.infer<typeof studentSchema>) {
+    const parsedData = studentSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    try {
+      await this.repository.create(parsedData.data);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ApiErrorV2("Admission number is already exists");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async update(studentId: string, data: z.infer<typeof studentSchema>) {
+    if (!studentId) throw new ApiErrorV2("Student id is required");
+
+    const parsedData = studentSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    try {
+      await this.repository.update(studentId, {
+        ...parsedData.data,
+        dob: parsedData.data.dob ? new Date(parsedData.data.dob) : undefined,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ApiErrorV2("Admission number is already exists");
+        }
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async delete(studentId: string) {
+    if (!studentId) throw new ApiErrorV2("Student id is required");
+
+    const student = await this.repository.getRelations(studentId);
+    if (!student) throw new ApiErrorV2("Student not found");
+
+    const hasRelations = student.enrollments.length > 0;
+
+    if (hasRelations) {
+      throw new ApiErrorV2("This student is currently in use");
+    }
+
+    try {
+      await this.repository.delete(studentId);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This Student is currently in use");
+        }
+      }
+      throw error;
+    }
   }
 }

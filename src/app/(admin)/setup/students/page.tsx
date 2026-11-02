@@ -7,7 +7,7 @@ import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
 import StudentsTable from "@/components/setup/students/students-table";
 import StudentFilters from "@/components/setup/students/student-filters";
-import StudentsNewBtn from "@/components/setup/students/students-new-btn";
+import StudentsNewBtn from "@/components/setup/students/buttons/students-new-btn";
 
 export default async function page({ searchParams }: PageProps<"/setup/students">) {
   await filterCache.parse(searchParams);

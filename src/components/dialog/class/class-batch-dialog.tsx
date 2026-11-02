@@ -9,32 +9,32 @@ import { BackpackIcon, PencilIcon, XIcon } from "lucide-react";
 import { IBatchListItem } from "@/features/batch";
 import EmptyState from "@/components/ui/empty-state";
 import BatchPickerDialog from "../batch-picker-dialog";
-
-export interface IClassBatchDialogData {
-  batchId: string | null;
-  classIds: string[];
-}
+import { updateClassBatchAction } from "@/features/class/class.actions";
+import { toast } from "react-toastify";
 
 export default function ClassBatchDialog({
   grade,
   open,
   onOpenChange,
-  onSave,
 }: {
   grade: IGradeWithClassesItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: IClassBatchDialogData) => void;
 }) {
   const [batch, setBatch] = useState<IBatchListItem | null>(
     () => grade.classes.find((cls) => cls.batch)?.batch || null,
   );
   const [isBatchPickerOpen, setIsBatchPickerOpen] = useState(false);
 
-  function continueAssignment() {
+  async function continueAssignment() {
     const classIds = grade.classes.map((cls) => cls.id);
-    onSave({ batchId: batch?.id ?? null, classIds });
-    onOpenChange(false);
+    const res = await updateClassBatchAction(batch?.id ?? null, classIds);
+    if (res.success) {
+      toast.success(res.message);
+      onOpenChange(false);
+    } else {
+      toast.error(res.message);
+    }
   }
 
   const assignDisabled = grade.classes.length === 0;

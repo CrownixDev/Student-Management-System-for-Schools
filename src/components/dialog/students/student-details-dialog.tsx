@@ -2,15 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/dialog";
-import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/shadcn/field";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
@@ -18,14 +11,18 @@ import { IStudentProfile } from "@/features/students";
 import { genderSelectOptions, studentStatusSelectOptions } from "@/lib/select-options";
 import { getHtmlDateString } from "@/lib/utils";
 import { PencilIcon, Trash2Icon, XIcon } from "lucide-react";
+import { studentSchema } from "@/features/students/student.schema";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createStudentAction, deleteStudentAction, updateStudentAction } from "@/features/students/students.actions";
+import { toast } from "react-toastify";
 import DeleteConfirmationDialog from "@/components/dialog/delete-confirmation-dialog";
+import z from "zod";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: IStudentProfile) => void | Promise<void>;
   data?: IStudentProfile;
-  onDelete?: (studentId: string) => void | Promise<void>;
 }
 
 function ReadOnlyValue({ label, value }: { label: string; value: string }) {
@@ -37,12 +34,11 @@ function ReadOnlyValue({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function StudentDetailsDialog({ open, onOpenChange, data, onSave, onDelete }: Props) {
+export default function StudentDetailsDialog({ open, onOpenChange, data }: Props) {
   const INITIAL_DATA = {
-    id: data?.id ?? "",
     admissionNo: data?.admissionNo ?? "",
     fullName: data?.fullName ?? "",
-    dob: data?.dob ?? new Date(),
+    dob: data?.dob ? getHtmlDateString(data.dob) : "",
     gender: data?.gender ?? "male",
     nic: data?.nic ?? "",
     phone: data?.phone ?? "",
@@ -51,50 +47,70 @@ export default function StudentDetailsDialog({ open, onOpenChange, data, onSave,
     guardianPhone: data?.guardianPhone ?? "",
     status: data?.status ?? "active",
   };
-  const [formData, setFormData] = useState<IStudentProfile>(INITIAL_DATA);
+
+  const form = useForm({
+    defaultValues: INITIAL_DATA,
+    resolver: zodResolver(studentSchema),
+  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  function handleEdit() {
-    setFormData(INITIAL_DATA);
-    setIsEditing(true);
-  }
-
   function handleDiscard() {
     if (confirm("Are you sure you want to discard changes?")) {
-      setFormData(INITIAL_DATA);
+      form.setValues(INITIAL_DATA);
       setIsEditing(false);
     }
   }
 
-  const isCreatingStudent = !data;
-
-  async function handleSave() {
-    await onSave(formData);
-    setIsEditing(false);
-    if (isCreatingStudent) {
+  async function handleCreate(formData: z.infer<typeof studentSchema>) {
+    const res = await createStudentAction(formData);
+    if (res.success) {
       onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
     }
   }
 
+  async function handleUpdate(formData: z.infer<typeof studentSchema>) {
+    if (!data?.id) return;
+    const res = await updateStudentAction(data.id, formData);
+    if (res.success) {
+      setIsEditing(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!data?.id) return;
+    const res = await deleteStudentAction(data.id);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  const isCreatingStudent = !data;
   const isViewingStudent = data && !isEditing;
   const isEditingStudent = data && isEditing;
+  const isSubmitting = form.formState.isSubmitting;
+
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={isSubmitting ? undefined : onOpenChange}>
         <DialogContent className="max-h-[90vh] min-w-xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit student" : data ? data.fullName : "Student"}</DialogTitle>
-            <DialogDescription>
-              {isEditing ? "Update the student and guardian details." : "Student and guardian information."}
-            </DialogDescription>
+            <DialogTitle>Student details</DialogTitle>
           </DialogHeader>
           <div className="min-h-0 overflow-y-auto py-1 pr-2 scrollbar-thin">
             {isViewingStudent && (
               <div className="space-y-6">
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Student details</h3>
                   <dl className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
                       <ReadOnlyValue label="Full name" value={data.fullName} />
@@ -134,146 +150,214 @@ export default function StudentDetailsDialog({ open, onOpenChange, data, onSave,
             )}
 
             {(isCreatingStudent || isEditingStudent) && (
-              <FieldGroup>
-                <FieldSet>
-                  <FieldLegend>Student Details</FieldLegend>
-                  <FieldGroup className="grid grid-cols-2 gap-4">
-                    <Field className="col-span-2">
-                      <FieldLabel htmlFor="student-full-name">Full name</FieldLabel>
-                      <Textarea
-                        id="student-full-name"
-                        placeholder="Enter full name"
-                        value={formData.fullName}
-                        onChange={(event) => setFormData((previous) => ({ ...previous, fullName: event.target.value }))}
+              <form id="student-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+                <FieldGroup>
+                  <FieldSet>
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                      <Controller
+                        name="fullName"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field className="col-span-2" data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-full-name">Full name</FieldLabel>
+                            <Textarea
+                              {...field}
+                              id="student-full-name"
+                              placeholder="Enter full name"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-admission-no">Admission number</FieldLabel>
-                      <Input
-                        id="student-admission-no"
-                        placeholder="Enter admission number"
-                        value={formData.admissionNo}
-                        onChange={(event) =>
-                          setFormData((previous) => ({ ...previous, admissionNo: event.target.value }))
-                        }
+                      <Controller
+                        name="admissionNo"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-admission-no">Admission number</FieldLabel>
+                            <Input
+                              {...field}
+                              id="student-admission-no"
+                              placeholder="Enter admission number"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-dob">Date of birth</FieldLabel>
-                      <Input
-                        id="student-dob"
-                        type="date"
-                        value={formData.dob ? getHtmlDateString(formData.dob) : undefined}
-                        onChange={(event) =>
-                          setFormData((previous) => ({ ...previous, dob: new Date(event.target.value) }))
-                        }
+                      <Controller
+                        name="dob"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-dob">Date of birth</FieldLabel>
+                            <Input
+                              {...field}
+                              id="student-dob"
+                              type="date"
+                              value={typeof field.value === "string" ? field.value : ""}
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-nic">NIC</FieldLabel>
-                      <Input
-                        id="student-nic"
-                        placeholder="Enter student NIC"
-                        value={formData.nic ?? ""}
-                        onChange={(event) => setFormData((previous) => ({ ...previous, nic: event.target.value }))}
+                      <Controller
+                        name="nic"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-nic">NIC</FieldLabel>
+                            <Input
+                              {...field}
+                              id="student-nic"
+                              placeholder="Enter student NIC"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-phone">Phone</FieldLabel>
-                      <Input
-                        id="student-phone"
-                        placeholder="Enter student phone"
-                        type="tel"
-                        value={formData.phone ?? ""}
-                        onChange={(event) => setFormData((previous) => ({ ...previous, phone: event.target.value }))}
+                      <Controller
+                        name="phone"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-phone">Phone</FieldLabel>
+                            <Input
+                              {...field}
+                              id="student-phone"
+                              placeholder="Enter student phone"
+                              type="tel"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-gender">Gender</FieldLabel>
-                      <Select
-                        items={genderSelectOptions}
-                        value={formData.gender}
-                        onValueChange={(value) => {
-                          if (value === null || value === "male" || value === "female") {
-                            setFormData((previous) => ({ ...previous, gender: value }));
-                          }
-                        }}
-                      >
-                        <SelectTrigger id="student-gender" className="w-full">
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {genderSelectOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-status">Student status</FieldLabel>
-                      <Select
-                        items={studentStatusSelectOptions}
-                        value={formData.status}
-                        onValueChange={(value) => {
-                          if (value !== null) {
-                            setFormData((previous) => ({ ...previous, status: value }));
-                          }
-                        }}
-                      >
-                        <SelectTrigger id="student-status" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {studentStatusSelectOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field className="col-span-2">
-                      <FieldLabel htmlFor="student-address">Address</FieldLabel>
-                      <Textarea
-                        id="student-address"
-                        placeholder="Enter student address"
-                        value={formData.address ?? ""}
-                        onChange={(event) => setFormData((previous) => ({ ...previous, address: event.target.value }))}
+                      <Controller
+                        name="gender"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-gender">Gender</FieldLabel>
+                            <Select
+                              items={genderSelectOptions}
+                              value={field.value}
+                              onValueChange={(value) => field.onChange(value)}
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            >
+                              <SelectTrigger id="student-gender" className="w-full">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {genderSelectOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                  </FieldGroup>
-                </FieldSet>
-                <FieldSet>
-                  <FieldLegend>Guardian Information</FieldLegend>
-                  <FieldGroup className="grid grid-cols-2 gap-4">
-                    <Field className="col-span-2">
-                      <FieldLabel htmlFor="student-guardian-name">Name</FieldLabel>
-                      <Textarea
-                        id="student-guardian-name"
-                        placeholder="Enter guardian name"
-                        value={formData.guardianName ?? ""}
-                        onChange={(event) =>
-                          setFormData((previous) => ({ ...previous, guardianName: event.target.value }))
-                        }
+                      <Controller
+                        name="status"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-status">Student status</FieldLabel>
+                            <Select
+                              items={studentStatusSelectOptions}
+                              value={field.value}
+                              onValueChange={(value) => field.onChange(value)}
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            >
+                              <SelectTrigger id="student-status" className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {studentStatusSelectOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="student-guardian-phone">Phone</FieldLabel>
-                      <Input
-                        id="student-guardian-phone"
-                        type="tel"
-                        placeholder="Enter guardian phone"
-                        value={formData.guardianPhone ?? ""}
-                        onChange={(event) =>
-                          setFormData((previous) => ({ ...previous, guardianPhone: event.target.value }))
-                        }
+                      <Controller
+                        name="address"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field className="col-span-2" data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-address">Address</FieldLabel>
+                            <Textarea
+                              {...field}
+                              id="student-address"
+                              placeholder="Enter student address"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
                       />
-                    </Field>
-                  </FieldGroup>
-                </FieldSet>
-              </FieldGroup>
+                    </FieldGroup>
+                  </FieldSet>
+                  <FieldSet>
+                    <FieldLegend>Guardian Information</FieldLegend>
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                      <Controller
+                        name="guardianName"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field className="col-span-2" data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-guardian-name">Name</FieldLabel>
+                            <Textarea
+                              {...field}
+                              id="student-guardian-name"
+                              placeholder="Enter guardian name"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
+                      />
+                      <Controller
+                        name="guardianPhone"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="student-guardian-phone">Phone</FieldLabel>
+                            <Input
+                              {...field}
+                              id="student-guardian-phone"
+                              type="tel"
+                              placeholder="Enter guardian phone"
+                              aria-invalid={fieldState.invalid}
+                              disabled={isSubmitting}
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
+                      />
+                    </FieldGroup>
+                  </FieldSet>
+                </FieldGroup>
+              </form>
             )}
           </div>
           <DialogFooter>
@@ -284,7 +368,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data, onSave,
                     <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                       Close
                     </Button>
-                    <Button type="button" onClick={handleSave}>
+                    <Button type="submit" form="student-form">
                       Save
                     </Button>
                   </div>
@@ -297,7 +381,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data, onSave,
                     Discard changes
                   </Button>
                   <div className="flex items-center gap-2">
-                    <Button type="button" onClick={handleSave}>
+                    <Button type="submit" form="student-form">
                       Save changes
                     </Button>
                   </div>
@@ -313,7 +397,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data, onSave,
                     <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                       Close
                     </Button>
-                    <Button type="button" onClick={handleEdit}>
+                    <Button type="button" onClick={() => setIsEditing(true)}>
                       <PencilIcon />
                       Edit student
                     </Button>
@@ -325,15 +409,13 @@ export default function StudentDetailsDialog({ open, onOpenChange, data, onSave,
         </DialogContent>
       </Dialog>
 
-      {data && onDelete && (
+      {data && (
         <DeleteConfirmationDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
-          title="Delete student"
+          title={`Delete student '${data.fullName}'`}
           description="Are you sure you want to delete this student?"
-          itemIdentifier={`${data.fullName} (${data.admissionNo})`}
-          confirmationPhrase="Yes i wanted to delete"
-          onConfirm={() => onDelete(data.id)}
+          onConfirm={handleDelete}
         />
       )}
     </>

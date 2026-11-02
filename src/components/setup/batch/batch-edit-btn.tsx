@@ -6,13 +6,14 @@ import { PencilIcon } from "lucide-react";
 import { useState } from "react";
 
 export default function BatchEditBtn({ batch }: { batch: IBatchListItem }) {
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <>
-      <TooltipButton tooltip="Edit batch" size="icon-sm" variant="ghost" onClick={() => setOpen(true)}>
+      <TooltipButton tooltip="Edit batch" size="icon-sm" variant="ghost" onClick={() => setIsOpen(true)}>
         <PencilIcon />
       </TooltipButton>
-      <BatchDialog open={open} onOpenChange={setOpen} data={batch} />
+      {isOpen && <BatchDialog open={isOpen} onOpenChange={setIsOpen} data={batch} />}
     </>
   );
 }

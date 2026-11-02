@@ -1,5 +1,8 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { classSelect } from "./class.types";
+import { ClassCreateInput, ClassUpdateInput } from "@/generated/prisma/models";
 
 export class ClassRepository {
   async getById(id: string) {
@@ -64,5 +67,34 @@ export class ClassRepository {
         },
       },
     });
+  }
+
+  async getRelations(id: string) {
+    return await prisma.class.findUnique({
+      where: { id },
+      select: {
+        enrollments: { select: { id: true } },
+      },
+    });
+  }
+
+  async getRelationsForClassSubject(classId: string, subjectId: string) {
+    return await prisma.class.findUnique({
+      where: { id: classId },
+      select: {
+        enrollments: {
+          where: { subjects: { some: { subject: { id: subjectId } } } },
+          select: { id: true, subjects: { select: { id: true } } },
+        },
+      },
+    });
+  }
+
+  async create(data: ClassCreateInput) {
+    return await prisma.class.create({ data });
+  }
+
+  async update(id: string, data: ClassUpdateInput) {
+    return await prisma.class.update({ where: { id }, data });
   }
 }

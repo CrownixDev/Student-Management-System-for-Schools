@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { userSelect } from "./user.types";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";

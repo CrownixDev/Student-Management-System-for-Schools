@@ -1,22 +1,34 @@
 "use client";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { IClass } from "@/features/class";
-import { BookOpenIcon, Loader2Icon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { AlertTriangleIcon, BookOpenIcon, Loader2Icon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { toast } from "react-toastify";
 import { MEDIUM_OPTIONS } from "@/lib/query-keys";
 import { ISubjectListItem } from "@/features/subjects";
+import { classSubjectsSchema } from "@/features/class/class.schema";
+import { deleteClassSubjectAction, updateClassSubjectsAction } from "@/features/class/class.actions";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 import SubjectPickerDialog from "@/components/dialog/subject-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import DialogErrors from "@/components/ui/dialog/dialog-errors";
+import TooltipButton from "@/components/ui/tooltip-button";
 
 interface ClassSubject {
   id: string;
@@ -29,31 +41,24 @@ interface ClassSubject {
   mediumId: string | null;
 }
 
-export interface IClassSubjectsDialogData {
-  classId: string;
-  subjects: {
-    subjectId: string;
-    teacherId: string;
-    mediumId: string | null;
-  }[];
-}
-
 export default function ClassSubjectsDialog({
   open,
   onOpenChange,
   data,
-  onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: IClass;
-  onSave: (data: IClassSubjectsDialogData) => void;
 }) {
   const [subjects, setSubjects] = useState<ClassSubject[]>(
     data.subjects.map((sub) => ({ ...sub, mediumId: sub.medium?.id ?? null })),
   );
   const [teacherSubjectIndex, setTeacherSubjectIndex] = useState<number | null>(null);
   const [choosingSubjects, setChoosingSubjects] = useState(false);
+  const [isSubjectDeleting, setIsSubjectDeleting] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  });
   const [errors, setErrors] = useState<string[]>([]);
 
   const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
@@ -96,20 +101,56 @@ export default function ClassSubjectsDialog({
     });
   }
 
-  function saveSubjects() {
+  function handleCancelDeleteSubject() {
+    setIsSubjectDeleting({ open: false, id: null });
+  }
+
+  function handleRequestDeleteSubject(subjectId: string) {
+    const isExistingSubject = Boolean(data?.subjects.find((s) => s.id === subjectId));
+    if (isExistingSubject) {
+      setIsSubjectDeleting({ open: true, id: subjectId });
+    } else {
+      setSubjects((prev) => prev.filter((sub) => sub.id !== subjectId));
+    }
+  }
+
+  async function handleConfirmDeleteSubject() {
+    if (isSubjectDeleting.id === null) return;
+    const res = await deleteClassSubjectAction(data.id, isSubjectDeleting.id);
+    if (res.success) {
+      setSubjects((prev) => prev.filter((sub) => sub.id !== isSubjectDeleting.id));
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+    handleCancelDeleteSubject();
+  }
+
+  async function saveSubjects() {
     if (subjects.some((subject) => !subject.teacher?.id)) {
       setErrors(["Select a teacher for each subject."]);
       return;
     }
 
-    onSave({
-      classId: data.id,
-      subjects: subjects.map((sub) => ({
+    const parsedRes = classSubjectsSchema.safeParse(
+      subjects.map((sub) => ({
         subjectId: sub.id,
         teacherId: sub.teacher!.id,
         mediumId: sub.mediumId,
       })),
-    });
+    );
+
+    if (!parsedRes.success) {
+      toast.error("Invalid data provided");
+      return;
+    }
+
+    const res = await updateClassSubjectsAction(data.id, parsedRes.data);
+    if (res.success) {
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
 
     onOpenChange(false);
   }
@@ -188,15 +229,21 @@ export default function ClassSubjectsDialog({
                         </span>
                         <PencilIcon className="size-4 shrink-0" />
                       </Button>
-                      <Button
-                        type="button"
+                      <TooltipButton
+                        tooltip="Delete subject"
                         size="icon"
-                        variant="ghost"
-                        className="shrink-0"
-                        onClick={() => setSubjects((current) => current.filter((item) => item.id !== subject.id))}
+                        variant={(function () {
+                          const isExistingSubject = Boolean(data?.subjects.find((s) => s.id === subject.id));
+                          if (isExistingSubject) {
+                            return "destructive";
+                          } else {
+                            return "ghost";
+                          }
+                        })()}
+                        onClick={() => handleRequestDeleteSubject(subject.id)}
                       >
                         <Trash2Icon />
-                      </Button>
+                      </TooltipButton>
                     </CardContent>
                   </Card>
                 ))}
@@ -233,6 +280,29 @@ export default function ClassSubjectsDialog({
           selectedSubjectIds={subjects.map((subject) => subject.id)}
           onAdd={addSubjects}
         />
+      )}
+
+      {isSubjectDeleting.open && (
+        <AlertDialog open={isSubjectDeleting.open}>
+          <AlertDialogContent className="min-w-sm">
+            <AlertDialogHeader>
+              <div className="flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20">
+                <AlertTriangleIcon className="size-5" />
+              </div>
+              <AlertDialogTitle className="text-lg font-semibold">{`Remove '${subjects.find((s) => s.id === isSubjectDeleting.id)!.name}'?`}</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove this subject from this class?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelDeleteSubject}>Keep Subject</AlertDialogCancel>
+              <AlertDialogAction variant={"destructive"} onClick={handleConfirmDeleteSubject}>
+                Remove Subject
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
       {teacherSubjectIndex !== null && (

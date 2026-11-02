@@ -12,280 +12,344 @@ import {
 } from "@/components/shadcn/alert-dialog";
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/shadcn/field";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { IExamListItem, IExamSubject } from "@/features/exams";
+import { IExamListItem } from "@/features/exams";
 import { ISubjectListItem } from "@/features/subjects";
 import { AlertTriangleIcon, BookPlusIcon, Trash2Icon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 import { subjectCategories } from "@/features/subjects/subject.enums";
-import DialogErrors from "@/components/ui/dialog/dialog-errors";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { examDialogSchema, examSchema } from "@/features/exams/exams.schema";
+import {
+  createExamAction,
+  deleteExamAction,
+  deleteExamSubjectAction,
+  updateExamAction,
+} from "@/features/exams/exams.actions";
+import { toast } from "react-toastify";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import SubjectPickerDialog from "../subject-picker-dialog";
-
-export interface IExamDialogData {
-  id?: string;
-  name: string;
-  academicYearId: string;
-  gradeLevelId: string;
-  examSubjects: Pick<IExamSubject, "id" | "passMark" | "maxMarks">[];
-}
+import TooltipButton from "@/components/ui/tooltip-button";
+import z from "zod";
 
 interface ExamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  academicYear: { id: string; name: string };
-  gradeLevel: { id: string; name: string };
-  initialData?: IExamListItem | null;
-  onSave?: (data: IExamDialogData) => void;
-  onDeleteExam?: (examId: string) => void;
+  year: { id: string; name: string };
+  grade: { id: string; name: string };
+  data?: IExamListItem | null;
 }
 
-function getExamSubjects(exam?: IExamListItem | null): IExamSubject[] {
-  return exam?.examSubjects ?? [];
-}
-
-export default function ExamDialog({
-  open,
-  onOpenChange,
-  academicYear,
-  gradeLevel,
-  initialData,
-  onSave,
-  onDeleteExam,
-}: ExamDialogProps) {
-  const isEditing = Boolean(initialData?.id);
-  const [name, setName] = useState(initialData?.name ?? "");
-  const [subjects, setSubjects] = useState<IExamSubject[]>(() => getExamSubjects(initialData));
-  const [errors, setErrors] = useState<string[]>([]);
+export default function ExamDialog({ open, onOpenChange, year, grade, data }: ExamDialogProps) {
   const [isSelectSubjectsOpen, setIsSelectSubjectsOpen] = useState(false);
-  const [subjectToDelete, setSubjectToDelete] = useState<IExamSubject | null>(null);
+  const [isSubjectDeleting, setIsSubjectDeleting] = useState<{ open: boolean; index: number | null }>({
+    open: false,
+    index: null,
+  });
   const [isDeletingExam, setIsDeletingExam] = useState(false);
-  const [dialogSession, setDialogSession] = useState({ open, initialData });
 
-  if (dialogSession.open !== open || (open && dialogSession.initialData !== initialData)) {
-    setDialogSession({ open, initialData });
-    if (open) {
-      setName(initialData?.name ?? "");
-      setSubjects(getExamSubjects(initialData));
-      setErrors([]);
-      setIsSelectSubjectsOpen(false);
-      setSubjectToDelete(null);
-      setIsDeletingExam(false);
-    }
-  }
+  const form = useForm({
+    defaultValues: {
+      name: data?.name ?? "",
+      examSubjects: data?.examSubjects ?? [],
+    },
+    resolver: zodResolver(examDialogSchema),
+  });
+
+  const {
+    fields: examSubjects,
+    append,
+    remove,
+  } = useFieldArray({
+    control: form.control,
+    name: "examSubjects",
+    keyName: "keyId",
+  });
+
+  const isSubmitting = form.formState.isSubmitting;
+  const isEditing = Boolean(data?.id);
 
   function handleAddSubjects(chosen: ISubjectListItem[]) {
-    const newItems: IExamSubject[] = chosen
-      .filter((c) => !subjects.some((s) => s.id === c.id))
+    const newItems: IExamListItem["examSubjects"][number][] = chosen
+      .filter((c) => !form.getValues("examSubjects").some((es) => es.subject.id === c.id))
       .map((c) => ({
-        id: c.id,
-        name: c.name,
-        code: c.code,
-        category: c.category,
+        id: "",
         maxMarks: 100,
         passMark: 35,
+        ignoreRanking: false,
+        subject: {
+          id: c.id,
+          name: c.name,
+          code: c.code,
+          category: c.category,
+        },
       }));
 
-    setSubjects((prev) => [...prev, ...newItems]);
+    newItems.forEach((sub) => {
+      append(sub);
+    });
   }
 
-  function handleUpdateSubject(subjectId: string, updates: Partial<IExamSubject>) {
-    setSubjects((prev) => prev.map((s) => (s.id === subjectId ? { ...s, ...updates } : s)));
+  function handleCancelDeleteSubject() {
+    setIsSubjectDeleting({ open: false, index: null });
   }
 
-  function handleRequestDeleteSubject(subject: IExamSubject) {
-    if (isEditing) {
-      setSubjectToDelete(subject);
+  function handleRequestDeleteSubject(index: number) {
+    const isExistingSubject = Boolean(
+      data?.examSubjects.find((s) => s.subject.id === form.getValues("examSubjects")[index].subject.id),
+    );
+    if (isEditing && isExistingSubject) {
+      setIsSubjectDeleting({ open: true, index });
     } else {
-      setSubjects((prev) => prev.filter((s) => s.id !== subject.id));
+      remove(index);
     }
   }
 
-  function handleConfirmDeleteSubject() {
-    if (!subjectToDelete) return;
-    setSubjects((prev) => prev.filter((s) => s.id !== subjectToDelete.id));
-    setSubjectToDelete(null);
+  async function handleConfirmDeleteSubject() {
+    if (isSubjectDeleting.index === null) return;
+    const res = await deleteExamSubjectAction(examSubjects[isSubjectDeleting.index!].id);
+    if (res.success) {
+      remove(isSubjectDeleting.index);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+    handleCancelDeleteSubject();
   }
 
-  function handleSubmit() {
-    const newErrors: string[] = [];
-
-    if (!name.trim()) {
-      newErrors.push("Exam name is required (e.g. '1st Term Test').");
-    }
-
-    if (subjects.length === 0) {
-      newErrors.push("At least one subject must be added to the exam.");
-    }
-
-    for (const sub of subjects) {
-      if (Number(sub.maxMarks) <= 0) {
-        newErrors.push(`Max marks for ${sub.name} must be greater than 0.`);
-      }
-      if (Number(sub.passMark) < 0 || Number(sub.passMark) > Number(sub.maxMarks)) {
-        newErrors.push(`Pass mark for ${sub.name} must be between 0 and max marks (${sub.maxMarks}).`);
-      }
-    }
-
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
+  async function handleCreate(formData: z.infer<typeof examDialogSchema>) {
+    const parsedRes = examSchema.safeParse(formData);
+    if (!parsedRes.success) {
+      toast.error("Data validation failed");
       return;
     }
 
-    const payload: IExamDialogData = {
-      id: initialData?.id,
-      name: name.trim(),
-      academicYearId: academicYear.id,
-      gradeLevelId: gradeLevel.id,
-      examSubjects: subjects.map((subject) => ({
-        id: subject.id,
-        maxMarks: Number(subject.maxMarks),
-        passMark: Number(subject.passMark),
-      })),
-    };
+    const res = await createExamAction(year.id, grade.id, parsedRes.data);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  }
 
-    if (onSave) {
-      onSave(payload);
+  async function handleUpdate(formData: z.infer<typeof examDialogSchema>) {
+    const parsedRes = examSchema.safeParse(formData);
+    if (!parsedRes.success) {
+      toast.error("Data validation failed");
+      return;
     }
 
-    onOpenChange(false);
+    if (!data?.id) return;
+    const res = await updateExamAction(data.id, parsedRes.data);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!data?.id) return;
+    const res = await deleteExamAction(data.id);
+    if (res.success) {
+      onOpenChange(false);
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
   }
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="min-w-2xl max-h-[90vh]">
+        <DialogContent className="max-h-[90vh] min-w-3xl">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit Exam" : "Create Exam"}</DialogTitle>
           </DialogHeader>
 
-          <FieldGroup>
-            <FieldSet>
-              <DialogErrors errors={errors} />
-              <Field>
-                <FieldLabel htmlFor="exam-name">Exam Name</FieldLabel>
-                <Input
-                  id="exam-name"
-                  placeholder="e.g. 1st Term Test"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus
+          <form id="exam-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+            <FieldGroup className="min-w-0">
+              <FieldSet className="min-w-0">
+                <Controller
+                  name="name"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="exam-name">Exam Name</FieldLabel>
+                      <Input
+                        {...field}
+                        id="exam-name"
+                        placeholder="e.g. 1st Term Test"
+                        aria-invalid={fieldState.invalid}
+                        disabled={isSubmitting}
+                      />
+                      <FieldError errors={[fieldState.error]} />
+                    </Field>
+                  )}
                 />
-              </Field>
-            </FieldSet>
+              </FieldSet>
 
-            <FieldSet>
-              <Field orientation="horizontal">
-                <FieldLabel>Exam Subjects</FieldLabel>
-                <Button variant="outline" onClick={() => setIsSelectSubjectsOpen(true)}>
-                  <BookPlusIcon />
-                  Add Subjects
-                </Button>
-              </Field>
-              <div className="h-fit max-h-[min(20rem,40vh)] overflow-auto rounded-lg border bg-card">
-                <Table containerClassName="overflow-visible">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky top-0 z-10 w-50 bg-background">Subject</TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-background">Category</TableHead>
-                      <TableHead className="sticky top-0 z-10 w-25 bg-background">Pass Mark</TableHead>
-                      <TableHead className="sticky top-0 z-10 w-25 bg-background">Max Marks</TableHead>
-                      <TableHead className="sticky top-0 z-10 w-15 bg-background text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((sub) => {
-                      const category = subjectCategories.find((cat) => cat.value === sub.category);
-                      return (
-                        <TableRow key={sub.id}>
-                          <TableCell className="flex gap-2">
-                            <span className="truncate">{sub.name}</span>
-                            {sub.code && <span className="text-muted-foreground">({sub.code})</span>}
-                          </TableCell>
+              <FieldSet className="min-w-0">
+                <Field orientation="horizontal">
+                  <FieldLabel>Exam Subjects</FieldLabel>
+                  <Button variant="outline" onClick={() => setIsSelectSubjectsOpen(true)}>
+                    <BookPlusIcon />
+                    Add Subjects
+                  </Button>
+                </Field>
+                <div className="min-w-0 max-w-full h-fit max-h-[min(20rem,40vh)] overflow-auto rounded-lg border bg-card">
+                  <Table containerClassName="overflow-visible" className="min-w-max">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="sticky top-0 z-10 w-50 bg-background">Subject</TableHead>
+                        <TableHead className="sticky top-0 z-10 bg-background">Category</TableHead>
+                        <TableHead className="sticky top-0 z-10 w-25 bg-background">Pass Mark</TableHead>
+                        <TableHead className="sticky top-0 z-10 w-25 bg-background">Max Marks</TableHead>
+                        <TableHead className="sticky top-0 z-10 w-25 bg-background">Ignore Ranking</TableHead>
+                        <TableHead className="sticky top-0 z-10 w-15 bg-background text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {examSubjects.map((esub, index) => {
+                        const category = subjectCategories.find((cat) => cat.value === esub.subject.category);
+                        return (
+                          <TableRow key={esub.keyId}>
+                            <TableCell className="flex flex-col w-50">
+                              <span className="truncate" title={esub.subject.name}>
+                                {esub.subject.name}
+                              </span>
+                              {esub.subject.code && (
+                                <span className="text-sm text-muted-foreground truncate">({esub.subject.code})</span>
+                              )}
+                            </TableCell>
 
-                          <TableCell className="">
-                            <span className="truncate">{category?.label ?? "Other"}</span>
-                          </TableCell>
+                            <TableCell>
+                              <span className="truncate">{category?.label ?? "Other"}</span>
+                            </TableCell>
 
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={sub.maxMarks}
-                              value={sub.passMark}
-                              onChange={(e) =>
-                                handleUpdateSubject(sub.id, {
-                                  passMark: Number(e.target.value),
-                                })
-                              }
-                              className="h-7 text-xs font-mono"
-                            />
-                          </TableCell>
+                            <TableCell>
+                              <Controller
+                                name={`examSubjects.${index}.passMark`}
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                  <Field data-invalid={fieldState.invalid}>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      min={0}
+                                      aria-invalid={fieldState.invalid}
+                                      disabled={isSubmitting}
+                                      onChange={(event) => {
+                                        const val = event.target.value;
+                                        field.onChange(val === "" ? "" : Number(val));
+                                      }}
+                                    />
+                                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                  </Field>
+                                )}
+                              />
+                            </TableCell>
 
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min={1}
-                              value={sub.maxMarks}
-                              onChange={(e) =>
-                                handleUpdateSubject(sub.id, {
-                                  maxMarks: Number(e.target.value),
-                                })
-                              }
-                              className="h-7 text-xs font-mono"
-                            />
-                          </TableCell>
+                            <TableCell>
+                              <Controller
+                                name={`examSubjects.${index}.maxMarks`}
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                  <Field data-invalid={fieldState.invalid}>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      min={0}
+                                      aria-invalid={fieldState.invalid}
+                                      disabled={isSubmitting}
+                                      onChange={(event) => {
+                                        const val = event.target.value;
+                                        field.onChange(val === "" ? "" : Number(val));
+                                      }}
+                                    />
+                                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                  </Field>
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell className="flex justify-center items-center">
+                              <Controller
+                                name={`examSubjects.${index}.ignoreRanking`}
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                  <Checkbox
+                                    checked={Boolean(field.value)}
+                                    onCheckedChange={(value) => field.onChange(value)}
+                                    className={"cursor-pointer"}
+                                    aria-invalid={fieldState.invalid}
+                                  />
+                                )}
+                              />
+                            </TableCell>
 
-                          <TableCell className="py-2 text-right">
-                            <Button
-                              type="button"
-                              size="icon-xs"
-                              variant="ghost"
-                              className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              title="Remove subject"
-                              onClick={() => handleRequestDeleteSubject(sub)}
-                            >
-                              <Trash2Icon className="size-3.5" />
-                            </Button>
+                            <TableCell className="py-2 text-right">
+                              <TooltipButton
+                                tooltip="Remove subject"
+                                size="icon"
+                                variant={(function () {
+                                  const isExistingSubject = Boolean(
+                                    data?.examSubjects.find(
+                                      (s) => s.subject.id === form.getValues("examSubjects")[index].subject.id,
+                                    ),
+                                  );
+                                  if (isEditing && isExistingSubject) {
+                                    return "destructive";
+                                  } else {
+                                    return "ghost";
+                                  }
+                                })()}
+                                onClick={() => handleRequestDeleteSubject(index)}
+                              >
+                                <Trash2Icon className="size-3.5" />
+                              </TooltipButton>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+
+                      {examSubjects.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-6 text-xs text-muted-foreground">
+                            No subjects added yet. Click &ldquo;Add Subjects&rdquo; to select curriculum subjects for
+                            this exam.
                           </TableCell>
                         </TableRow>
-                      );
-                    })}
-
-                    {subjects.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-6 text-xs text-muted-foreground">
-                          No subjects added yet. Click &ldquo;Add Subjects&rdquo; to select curriculum subjects for this
-                          exam.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </FieldSet>
-          </FieldGroup>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </FieldSet>
+            </FieldGroup>
+          </form>
 
           <DialogFooter>
             <div className="flex min-w-full items-center justify-between">
-              {initialData && (
+              {data && (
                 <Button
                   variant="destructive"
-                  size="icon"
-                  title="Delete exam"
                   type="button"
                   onClick={() => setIsDeletingExam(true)}
+                  disabled={isSubmitting}
                 >
-                  <TrashIcon />
+                  <TrashIcon /> Delete Exam
                 </Button>
               )}
               <div className="flex flex-1 gap-3 justify-end">
-                <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                   Cancel
                 </Button>
-                <Button type="button" onClick={handleSubmit}>
+                <Button type="submit" form="exam-form" disabled={isSubmitting}>
                   {isEditing ? "Save Changes" : "Create Exam"}
                 </Button>
               </div>
@@ -298,48 +362,44 @@ export default function ExamDialog({
         <SubjectPickerDialog
           open={isSelectSubjectsOpen}
           onOpenChange={setIsSelectSubjectsOpen}
-          selectedSubjectIds={subjects.map((subject) => subject.id)}
+          selectedSubjectIds={form.getValues("examSubjects").map((esub) => esub.subject.id)}
           onAdd={handleAddSubjects}
           title="Add subjects to exam"
         />
       )}
 
-      <AlertDialog open={Boolean(subjectToDelete)} onOpenChange={(isOpen) => !isOpen && setSubjectToDelete(null)}>
-        <AlertDialogContent className="max-w-md gap-4">
-          <AlertDialogHeader className="gap-2 text-left">
-            <div className="flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20">
-              <AlertTriangleIcon className="size-5" />
-            </div>
-            <AlertDialogTitle className="text-lg font-semibold">Remove Subject from Exam?</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm leading-relaxed text-muted-foreground">
-              Are you sure you want to remove &ldquo;{subjectToDelete?.name}&rdquo; from this exam? Deleting this will
-              fail if there are any student marks recorded for this subject in this exam.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+      {isSubjectDeleting.open && (
+        <AlertDialog open={isSubjectDeleting.open}>
+          <AlertDialogContent className="min-w-sm">
+            <AlertDialogHeader>
+              <div className="flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20">
+                <AlertTriangleIcon className="size-5" />
+              </div>
+              <AlertDialogTitle className="text-lg font-semibold">{`Remove '${examSubjects[isSubjectDeleting.index!].subject.name}'?`}</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove this subject from this exam?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel onClick={() => setSubjectToDelete(null)}>Keep Subject</AlertDialogCancel>
-            <AlertDialogAction variant={"destructive"} onClick={handleConfirmDeleteSubject}>
-              Remove Subject
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelDeleteSubject}>Keep Subject</AlertDialogCancel>
+              <AlertDialogAction variant={"destructive"} onClick={handleConfirmDeleteSubject}>
+                Remove Subject
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
-      <DeleteConfirmationDialog
-        open={isDeletingExam}
-        onOpenChange={setIsDeletingExam}
-        title="Delete Exam"
-        description="Are you sure you want to delete this exam? Deleting an exam permanently clears all student marks and results recorded for it."
-        itemIdentifier={initialData ? initialData.name : undefined}
-        confirmationPhrase="Yes i wanted to delete"
-        onConfirm={() => {
-          if (initialData?.id && onDeleteExam) {
-            onDeleteExam(initialData.id);
-          }
-          onOpenChange(false);
-        }}
-      />
+      {data && (
+        <DeleteConfirmationDialog
+          open={isDeletingExam}
+          onOpenChange={setIsDeletingExam}
+          title={`Delete '${data.name}'`}
+          description="Are you sure you want to delete this exam?"
+          onConfirm={handleDelete}
+        />
+      )}
     </>
   );
 }

@@ -1,7 +1,9 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { batchClassSelect, batchListSelect, IBatchListItem } from "./batch.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
-import { BatchWhereInput } from "@/generated/prisma/models";
+import { BatchCreateInput, BatchUpdateInput, BatchWhereInput } from "@/generated/prisma/models";
 import { BatchType } from "@/generated/prisma/enums";
 
 export class BatchRepository {
@@ -43,5 +45,17 @@ export class BatchRepository {
         classes: { select: batchClassSelect },
       },
     });
+  }
+
+  async create(data: BatchCreateInput) {
+    return await prisma.batch.create({ data });
+  }
+
+  async update(id: string, data: BatchUpdateInput) {
+    return await prisma.batch.update({ where: { id }, data });
+  }
+
+  async delete(id: string) {
+    return await prisma.batch.delete({ where: { id } });
   }
 }

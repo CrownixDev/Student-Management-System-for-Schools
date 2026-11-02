@@ -1,7 +1,9 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { gradeListSelect, gradesSelect } from "./grades.types";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";
-import { GradeLevelWhereInput } from "@/generated/prisma/models";
+import { GradeLevelCreateInput, GradeLevelUpdateInput, GradeLevelWhereInput } from "@/generated/prisma/models";
 
 export class GradesRepository {
   async getList({ search }: Pick<IQueryParams, "search">) {
@@ -29,6 +31,7 @@ export class GradesRepository {
           select: { id: true },
         },
       },
+      orderBy: { number: "asc" },
     });
   }
 
@@ -57,7 +60,7 @@ export class GradesRepository {
                 student: { select: { id: true, fullName: true, admissionNo: true } },
                 subjects: {
                   select: {
-                    subject: { select: { id: true, name: true, ignoreRanking: true } },
+                    subject: { select: { id: true, name: true } },
                     medium: { select: { name: true } },
                   },
                 },
@@ -70,7 +73,6 @@ export class GradesRepository {
                       select: {
                         id: true,
                         name: true,
-                        ignoreRanking: true,
                       },
                     },
                   },
@@ -97,5 +99,17 @@ export class GradesRepository {
       },
       orderBy: { number: "asc" },
     });
+  }
+
+  async create(data: GradeLevelCreateInput) {
+    return await prisma.gradeLevel.create({ data });
+  }
+
+  async update(id: string, data: GradeLevelUpdateInput) {
+    return await prisma.gradeLevel.update({ where: { id }, data });
+  }
+
+  async delete(id: string) {
+    return await prisma.gradeLevel.delete({ where: { id } });
   }
 }

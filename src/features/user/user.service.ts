@@ -1,3 +1,5 @@
+import "server-only";
+
 import { IQueryParams } from "@/lib/filter";
 import { UserRepository } from "./user.repository";
 import { IUser } from "./user.types";

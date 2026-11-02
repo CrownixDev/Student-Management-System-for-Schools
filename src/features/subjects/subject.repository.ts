@@ -1,7 +1,9 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { ISubject, ISubjectListItem, subjectListSelect, subjectSelect } from "./subject.types";
 import { getCleanSearch, IQueryParams } from "@/lib/filter";
-import { SubjectWhereInput } from "@/generated/prisma/models";
+import { SubjectCreateInput, SubjectUpdateInput, SubjectWhereInput } from "@/generated/prisma/models";
 import { SubjectCategory } from "@/generated/prisma/enums";
 
 export class SubjectRepository {
@@ -36,5 +38,31 @@ export class SubjectRepository {
       where: { id: subId },
       select: subjectSelect,
     });
+  }
+
+  async getRelations(id: string) {
+    return await prisma.subject.findUnique({
+      where: { id },
+      select: {
+        streams: { select: { id: true } },
+        classSubjects: { select: { id: true } },
+        enrollmentSubjects: { select: { id: true } },
+        examSubjects: { select: { id: true } },
+        marks: { select: { id: true } },
+        userSubjects: { select: { id: true } },
+      },
+    });
+  }
+
+  async create(data: SubjectCreateInput) {
+    return await prisma.subject.create({ data });
+  }
+
+  async update(id: string, data: SubjectUpdateInput) {
+    return await prisma.subject.update({ where: { id }, data });
+  }
+
+  async delete(id: string) {
+    return await prisma.subject.delete({ where: { id } });
   }
 }

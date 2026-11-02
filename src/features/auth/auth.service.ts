@@ -1,3 +1,5 @@
+import "server-only";
+
 import { AuthRepository } from "./auth.repository";
 import { ILoginData } from "./auth.types";
 import { ApiError } from "@/lib/ApiError";

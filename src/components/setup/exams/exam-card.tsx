@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/ca
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { IExamListItem } from "@/features/exams";
 import { subjectCategories } from "@/features/subjects/subject.enums";
-import ExamEditBtn from "./button/exam-edit-btn";
 import { IGradeListItem } from "@/features/grades";
 import { IAcademicYear } from "@/features/academic-years";
+import { Badge } from "@/components/shadcn/badge";
+import ExamEditBtn from "./button/exam-edit-btn";
 
 export interface ExamCardProps {
   year: IAcademicYear;
@@ -34,28 +35,40 @@ export default function ExamCard({ year, grade, exam }: ExamCardProps) {
             <TableRow>
               <TableHead>Subject</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead className="text-right">Ranking ignored</TableHead>
               <TableHead className="text-right">Pass mark</TableHead>
               <TableHead className="text-right">Maximum mark</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {exam.examSubjects.map((subject) => {
-              const category = subjectCategories.find((cat) => cat.value === subject.category);
+            {exam.examSubjects.map((esub) => {
+              const category = subjectCategories.find((cat) => cat.value === esub.subject.category);
               return (
-                <TableRow key={subject.id}>
-                  <TableCell>
-                    {subject.name}
-                    {subject.code && <span className="ml-2 text-sm text-muted-foreground">({subject.code})</span>}
+                <TableRow key={esub.subject.id}>
+                  <TableCell className="flex flex-col w-50">
+                    <span className="truncate" title={esub.subject.name}>
+                      {esub.subject.name}
+                    </span>
+                    {esub.subject.code && (
+                      <span className="text-sm text-muted-foreground truncate">({esub.subject.code})</span>
+                    )}
                   </TableCell>
-                  <TableCell>{category?.label ?? "Other"}</TableCell>
-                  <TableCell className="text-right tabular-nums font-mono">{subject.passMark}</TableCell>
-                  <TableCell className="text-right tabular-nums font-mono">{subject.maxMarks}</TableCell>
+                  <TableCell className="w-25">{category?.label ?? "Other"}</TableCell>
+                  <TableCell className="text-center">
+                    {esub.ignoreRanking ? (
+                      <Badge variant="destructive">Yes</Badge>
+                    ) : (
+                      <Badge variant="success">No</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">{esub.passMark}</TableCell>
+                  <TableCell className="text-right font-mono">{esub.maxMarks}</TableCell>
                 </TableRow>
               );
             })}
             {exam.examSubjects.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   No subjects added.
                 </TableCell>
               </TableRow>

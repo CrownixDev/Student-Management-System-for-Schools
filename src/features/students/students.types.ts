@@ -134,8 +134,6 @@ export const studentEnrollmentSelect = {
           medium: { select: { name: true } },
         },
       },
-      previousEnrollment: { select: { id: true } },
-      nextEnrollment: { select: { id: true } },
     },
   },
 } satisfies StudentSelect;
@@ -143,7 +141,7 @@ export const studentEnrollmentSelect = {
 export interface IStudentEnrollment {
   id: string;
   status: EnrollmentStatus;
-  classIndex: number;
+  classIndex: number | null;
   joinedOn: Date;
   endedOn: Date | null;
   academicYear: { id: string; name: string };
@@ -152,8 +150,6 @@ export interface IStudentEnrollment {
     name: string;
     gradeLevel: { id: string; name: string };
   };
-  previousEnrollment: { id: string } | null;
-  nextEnrollment: { id: string } | null;
   subjects: {
     name: string;
     category: SubjectCategory;

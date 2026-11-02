@@ -228,20 +228,15 @@ model Enrollment {
   studentId      String
   classId        String
   academicYearId String
-  classIndex     Int
+  classIndex     Int?
   status         EnrollmentStatus @default(active)
 
   joinedOn DateTime  @default(now())
   endedOn  DateTime?
 
-  // helps with completed / repeat chain
-  previousEnrollmentId String? @unique
-
-  student            Student      @relation(fields: [studentId], references: [id])
-  class              Class        @relation(fields: [classId], references: [id])
-  academicYear       AcademicYear @relation(fields: [academicYearId], references: [id])
-  previousEnrollment Enrollment?  @relation("PromotionChain", fields: [previousEnrollmentId], references: [id])
-  nextEnrollment     Enrollment?  @relation("PromotionChain")
+  student      Student      @relation(fields: [studentId], references: [id])
+  class        Class        @relation(fields: [classId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
 
   subjects EnrollmentSubject[]
   marks    Mark[]

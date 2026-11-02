@@ -25,7 +25,9 @@ export class StudentsService {
     if (!yearId || !gradeId || !classId) throw new ApiErrorV2("Year, grade and class ids are required");
 
     const itemList = await this.repository.getListForClass(yearId, gradeId, classId);
-    const sortedItemList = itemList.sort((a, b) => a.enrollments[0].classIndex - b.enrollments[0].classIndex);
+    const sortedItemList = itemList.sort(
+      (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
+    );
     return sortedItemList;
   }
 

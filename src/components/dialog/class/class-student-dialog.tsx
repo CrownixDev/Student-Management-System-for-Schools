@@ -1,59 +1,90 @@
 "use client";
 
-import StudentPickerDialog, { SelectedStudent } from "@/components/dialog/student-picker-dialog";
 import { Button } from "@/components/shadcn/button";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import EmptyState from "@/components/ui/empty-state";
-import LoadingIndicator from "@/components/ui/loading-indicator";
 import { IClass } from "@/features/class";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { MEDIUM_OPTIONS } from "@/lib/query-keys";
-import { getStudentListForClassAction } from "@/features/students/students.actions";
-import { IStudentsListItem } from "@/features/students";
+import { getStudentListForClassWithSubjectsAction } from "@/features/students/students.actions";
+import { IStudentsListItem, IStudentsListWithSubjectsItem } from "@/features/students";
 import { useQuery } from "@tanstack/react-query";
-import { Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangleIcon, Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "react-toastify";
+import StudentPickerDialog, { SelectedStudent } from "@/components/dialog/student-picker-dialog";
+import EmptyState from "@/components/ui/empty-state";
+import LoadingIndicator from "@/components/ui/loading-indicator";
+import {
+  createEnrollmentsAction,
+  deleteEnrollmentAction,
+  updateStudentIndexAction,
+  updateStudentSubjectEnrollmentAction,
+  updateSubjectMediumAction,
+} from "@/features/enrollment/enrollment.actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
+import TooltipButton from "@/components/ui/tooltip-button";
 
 type SubjectColumnState = Record<string, boolean>;
 type StudentSubjectState = Record<string, Record<string, boolean>>;
 type StudentMediumState = Record<string, Record<string, string>>;
+type ClassStudent = IStudentsListItem & {
+  enrollment?: IStudentsListWithSubjectsItem["enrollment"];
+};
 
 export default function ClassStudentDialog({
   open,
   onOpenChange,
   classData,
-  onAddStudents,
-  onRemoveStudent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   classData: IClass;
-  onAddStudents?: (students: IStudentsListItem[]) => void;
   onRemoveStudent?: (studentId: string) => void;
 }) {
   const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
-  const [addedStudents, setAddedStudents] = useState<IStudentsListItem[]>([]);
+  const [addedStudents, setAddedStudents] = useState<ClassStudent[]>([]);
   const [removedStudentIds, setRemovedStudentIds] = useState<string[]>([]);
-  const [classIndexes, setClassIndexes] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      classData.enrollments.map((enrollment) => [enrollment.student.id, String(enrollment.classIndex)]),
-    ),
-  );
+  const [classIndexes, setClassIndexes] = useState<Record<string, string>>({});
   const [disabledSubjectColumns, setDisabledSubjectColumns] = useState<SubjectColumnState>(() =>
     Object.fromEntries(classData.subjects.map((subject) => [subject.id, false])),
   );
   const [studentSubjectState, setStudentSubjectState] = useState<StudentSubjectState>({});
   const [studentMediumState, setStudentMediumState] = useState<StudentMediumState>({});
+  const [isStudentDeleting, setIsStudentDeleting] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  });
+
+  const indexInputRef = useRef<(HTMLInputElement | null)[]>([]);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    console.log(e.key);
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const nextInput = indexInputRef.current[index + 1];
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
+      }
+    }
+  };
 
   const { data: enrolledStudents = [], isPending } = useQuery({
     enabled: open,
     queryFn: async () => {
-      const result = await getStudentListForClassAction(
+      const result = await getStudentListForClassWithSubjectsAction(
         classData.academicYear.id,
         classData.gradeLevel.id,
         classData.id,
@@ -80,7 +111,7 @@ export default function ClassStudentDialog({
     queryKey: [MEDIUM_OPTIONS],
   });
 
-  const studentsById = new Map<string, IStudentsListItem>();
+  const studentsById = new Map<string, ClassStudent>();
   for (const student of enrolledStudents) {
     if (!removedStudentIds.includes(student.id)) studentsById.set(student.id, student);
   }
@@ -89,17 +120,17 @@ export default function ClassStudentDialog({
   }
   const students = Array.from(studentsById.values());
 
-  function addStudents(selectedStudents: SelectedStudent[]) {
+  async function addStudents(selectedStudents: SelectedStudent[]) {
     const existingIds = new Set(students.map((student) => student.id));
     const newSelections = selectedStudents.filter(({ student }) => !existingIds.has(student.id));
     if (newSelections.length === 0) return;
 
     let nextIndex = Math.max(
       students.length,
-      ...students.map((student, index) => Number(classIndexes[student.id]) || index + 1),
+      ...students.map((student, index) => Number(getClassIndex(student, index)) || index + 1),
       ...newSelections.map(({ previousClassIndex }) => previousClassIndex ?? 0),
     );
-    const newStudents: IStudentsListItem[] = [];
+    const newStudents: ClassStudent[] = [];
     const nextIndexes: Record<string, string> = {};
     for (const { student, previousClassIndex } of newSelections) {
       newStudents.push(student);
@@ -110,44 +141,66 @@ export default function ClassStudentDialog({
       }
     }
 
-    setRemovedStudentIds((current) => current.filter((id) => !newStudents.some((student) => student.id === id)));
-    setClassIndexes((current) => ({ ...current, ...nextIndexes }));
-    setAddedStudents((current) => {
-      const knownIds = new Set(current.map((student) => student.id));
-      return [...current, ...newStudents.filter((student) => !knownIds.has(student.id))];
-    });
-    setStudentSubjectState((current) => {
-      const next = { ...current };
-      for (const student of newStudents) {
-        next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, true]));
-      }
-      return next;
-    });
-    setStudentMediumState((current) => {
-      const next = { ...current };
-      for (const student of newStudents) {
-        next[student.id] = Object.fromEntries(
-          classData.subjects.map((subject) => [subject.id, subject.medium?.id ?? classData.defaultMedium?.id ?? ""]),
-        );
-      }
-      return next;
-    });
-    onAddStudents?.(newStudents);
+    const subjects = classData.subjects.map((subject) => ({
+      subjectId: subject.id,
+      mediumId: subject.medium?.id ?? classData.defaultMedium?.id ?? null,
+    }));
+    const studentsData = newStudents.map((st, index) => ({ studentId: st.id, subjects, classIndex: index + 1 }));
+
+    const res = await createEnrollmentsAction(classData.academicYear.id, classData.id, studentsData);
+
+    if (res.success) {
+      setRemovedStudentIds((current) => current.filter((id) => !newStudents.some((student) => student.id === id)));
+      setClassIndexes((current) => ({ ...current, ...nextIndexes }));
+      setAddedStudents((current) => {
+        const knownIds = new Set(current.map((student) => student.id));
+        return [...current, ...newStudents.filter((student) => !knownIds.has(student.id))];
+      });
+      setStudentSubjectState((current) => {
+        const next = { ...current };
+        for (const student of newStudents) {
+          next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, true]));
+        }
+        return next;
+      });
+      setStudentMediumState((current) => {
+        const next = { ...current };
+        for (const student of newStudents) {
+          next[student.id] = Object.fromEntries(
+            classData.subjects.map((subject) => [subject.id, subject.medium?.id ?? classData.defaultMedium?.id ?? ""]),
+          );
+        }
+        return next;
+      });
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
   }
 
-  function removeStudent(studentId: string) {
-    setRemovedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]));
-    setAddedStudents((current) => current.filter((student) => student.id !== studentId));
-    onRemoveStudent?.(studentId);
+  function getStudent(studentId: string) {
+    return students.find((student) => student.id === studentId);
+  }
+
+  function getClassIndex(student: ClassStudent, fallbackIndex: number) {
+    return classIndexes[student.id] ?? student.enrollment?.classIndex?.toString() ?? String(fallbackIndex + 1);
   }
 
   function isEnrolledInSubject(studentId: string, subjectId: string) {
-    return studentSubjectState[studentId]?.[subjectId] ?? true;
+    const state = studentSubjectState[studentId];
+    if (state && subjectId in state) return state[subjectId];
+
+    const student = getStudent(studentId);
+    return student?.enrollment?.subjects.some((subject) => subject.subjectId === subjectId) ?? true;
   }
 
   function getStudentMedium(studentId: string, subjectId: string) {
-    const subject = classData.subjects.find((item) => item.id === subjectId);
-    return studentMediumState[studentId]?.[subjectId] ?? subject?.medium?.id ?? classData.defaultMedium?.id ?? null;
+    const state = studentMediumState[studentId];
+    if (state && subjectId in state) return state[subjectId] || null;
+
+    return (
+      getStudent(studentId)?.enrollment?.subjects.find((subject) => subject.subjectId === subjectId)?.mediumId ?? null
+    );
   }
 
   async function toggleStudentSubject(
@@ -160,12 +213,19 @@ export default function ClassStudentDialog({
       setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     }
     try {
-      setStudentSubjectState((current) => ({
-        ...current,
-        [studentId]: { ...current[studentId], [subjectId]: enrolled },
-      }));
-      // Add the subject enrollment mutation here.
-      await Promise.resolve();
+      const res = await updateStudentSubjectEnrollmentAction(studentId, classData.academicYear.id, {
+        subjectId,
+        enrolled,
+      });
+
+      if (res.success) {
+        setStudentSubjectState((current) => ({
+          ...current,
+          [studentId]: { ...current[studentId], [subjectId]: enrolled },
+        }));
+      } else {
+        toast.error(res.message);
+      }
     } finally {
       if (!columnAlreadyDisabled) {
         setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
@@ -175,9 +235,13 @@ export default function ClassStudentDialog({
 
   async function toggleAllForSubject(subjectId: string) {
     const nextValue = !students.every((student) => isEnrolledInSubject(student.id, subjectId));
+    const studentsToUpdate = students.filter((student) => isEnrolledInSubject(student.id, subjectId) !== nextValue);
+
+    if (studentsToUpdate.length === 0) return;
+
     setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     try {
-      for (const student of students) {
+      for (const student of studentsToUpdate) {
         await toggleStudentSubject(student.id, subjectId, nextValue, true);
       }
     } finally {
@@ -188,16 +252,52 @@ export default function ClassStudentDialog({
   async function changeStudentMedium(studentId: string, subjectId: string, mediumId: string | null) {
     setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     try {
-      setStudentMediumState((current) => ({
-        ...current,
-        [studentId]: { ...current[studentId], [subjectId]: mediumId ?? "" },
-      }));
-      // Add the student subject medium mutation here.
-      await Promise.resolve();
+      const res = await updateSubjectMediumAction(studentId, classData.academicYear.id, { subjectId, mediumId });
+      if (res.success) {
+        setStudentMediumState((current) => ({
+          ...current,
+          [studentId]: { ...current[studentId], [subjectId]: mediumId ?? "" },
+        }));
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
     } finally {
       setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
     }
   }
+
+  async function changeStudentClassIndex(studentId: string, classIndex: string) {
+    if (typeof classIndex === "string" && classIndex !== "") {
+      try {
+        await updateStudentIndexAction(studentId, classData.academicYear.id, {
+          classIndex: Number.parseInt(classIndex),
+        });
+      } catch {
+        toast.error("Please enter a number as class index");
+      }
+    }
+  }
+
+  function handleCancelDeleteStudent() {
+    setIsStudentDeleting({ open: false, id: null });
+  }
+
+  async function handleConfirmDeleteStudent() {
+    if (isStudentDeleting.id === null) return;
+    const studentId = isStudentDeleting.id;
+    const res = await deleteEnrollmentAction(studentId, classData.academicYear.id);
+    if (res.success) {
+      setRemovedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]));
+      setAddedStudents((current) => current.filter((student) => student.id !== studentId));
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+    handleCancelDeleteStudent();
+  }
+
+  const isActionButtonsDisabled = Object.values(disabledSubjectColumns).some(Boolean);
 
   return (
     <>
@@ -211,17 +311,14 @@ export default function ClassStudentDialog({
               Students · {classData.name}
             </DialogTitle>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setIsStudentPickerOpen(true)}>
+              <Button disabled={isActionButtonsDisabled} variant="outline" onClick={() => setIsStudentPickerOpen(true)}>
                 <UserPlusIcon />
                 Add students
               </Button>
               <Button
+                disabled={isActionButtonsDisabled}
                 size={"default"}
-                onClick={() => {
-                  if (confirm("Are you sure you want to close this dialog? Unsaved changes will be lost.")) {
-                    onOpenChange(false);
-                  }
-                }}
+                onClick={() => onOpenChange(false)}
                 variant="secondary"
               >
                 Close
@@ -238,7 +335,7 @@ export default function ClassStudentDialog({
                   <TableRow>
                     <TableHead className="w-24">Class index</TableHead>
                     <TableHead className="w-48">Admission number</TableHead>
-                    <TableHead className="w-72">Student name</TableHead>
+                    <TableHead className="sticky left-0 z-20 w-72 bg-background">Student name</TableHead>
                     {classData.subjects.map((subject) => (
                       <TableHead key={subject.id} className="w-60">
                         <div className="flex min-w-0 flex-col gap-1.5 py-1">
@@ -266,20 +363,26 @@ export default function ClassStudentDialog({
                     <TableRow key={student.id}>
                       <TableCell>
                         <Input
-                          type="number"
-                          min={1}
-                          step={1}
                           className="h-8 w-20"
-                          value={classIndexes[student.id] ?? String(index + 1)}
+                          ref={(el) => {
+                            indexInputRef.current[index] = el;
+                          }}
+                          value={getClassIndex(student, index)}
                           onChange={(event) =>
                             setClassIndexes((current) => ({ ...current, [student.id]: event.target.value }))
                           }
+                          onBlur={(e) => changeStudentClassIndex(student.id, e.target.value)}
+                          disabled={isActionButtonsDisabled}
+                          onKeyDown={(e) => handleKeyDown(e, index)}
                         />
                       </TableCell>
                       <TableCell className="max-w-48 truncate font-mono" title={student.admissionNo}>
                         {student.admissionNo}
                       </TableCell>
-                      <TableCell className="max-w-72 truncate" title={student.fullName}>
+                      <TableCell
+                        className="sticky left-0 z-10 max-w-72 truncate bg-background"
+                        title={student.fullName}
+                      >
                         {student.fullName}
                       </TableCell>
                       {classData.subjects.map((subject) => {
@@ -293,9 +396,11 @@ export default function ClassStudentDialog({
                               <Checkbox
                                 checked={enrolled}
                                 disabled={columnDisabled}
+                                aria-disabled={columnDisabled}
                                 onCheckedChange={(checked) =>
                                   void toggleStudentSubject(student.id, subject.id, checked === true)
                                 }
+                                className="aria-disabled:opacity-50"
                               />
                               <Select
                                 items={mediumOptions}
@@ -323,16 +428,16 @@ export default function ClassStudentDialog({
                         );
                       })}
                       <TableCell className="text-center">
-                        <Button
+                        <TooltipButton
+                          tooltip="Remove student"
                           type="button"
                           size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          title="Remove student"
-                          onClick={() => removeStudent(student.id)}
+                          variant="destructive"
+                          onClick={() => setIsStudentDeleting({ open: true, id: student.id })}
+                          disabled={isActionButtonsDisabled}
                         >
                           <Trash2Icon />
-                        </Button>
+                        </TooltipButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -362,6 +467,29 @@ export default function ClassStudentDialog({
           selectedStudentIds={students.map((student) => student.id)}
           onAdd={addStudents}
         />
+      )}
+
+      {isStudentDeleting.open && (
+        <AlertDialog open={isStudentDeleting.open}>
+          <AlertDialogContent className="min-w-sm">
+            <AlertDialogHeader>
+              <div className="flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20">
+                <AlertTriangleIcon className="size-5" />
+              </div>
+              <AlertDialogTitle className="text-lg font-semibold">{`Remove '${students.find((st) => st.id === isStudentDeleting.id)!.fullName}'?`}</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove this student from this class?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelDeleteStudent}>Keep Subject</AlertDialogCancel>
+              <AlertDialogAction variant={"destructive"} onClick={handleConfirmDeleteStudent}>
+                Remove Student
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

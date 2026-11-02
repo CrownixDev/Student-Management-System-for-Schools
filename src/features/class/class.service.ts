@@ -1,16 +1,20 @@
 import "server-only";
 
-import { ApiError } from "@/lib/ApiError";
+import { ApiErrorV2 } from "@/lib/ApiError";
 import { ClassRepository } from "./class.repository";
 import { IClass, IClassList, IClassOption } from "./class.types";
+import { classDetailsSchema, classSubjectsSchema } from "./class.schema";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { prisma } from "@/lib/prisma";
+import z from "zod";
 
 export class ClassService {
   constructor(private repository: ClassRepository) {}
 
   async getById(id: string): Promise<IClass> {
-    if (!id) throw new ApiError(400, "Class id is required");
+    if (!id) throw new ApiErrorV2("Class id is required");
     const classData = await this.repository.getById(id);
-    if (!classData) throw new ApiError(404, "Class Not Found");
+    if (!classData) throw new ApiErrorV2("Class Not Found");
     return {
       id: classData.id,
       name: classData.name,
@@ -32,7 +36,7 @@ export class ClassService {
   }
 
   async getList(yearId: string, gradeId: string): Promise<IClassList> {
-    if (!yearId || !gradeId) throw new ApiError(400, "Year and grade ids are required");
+    if (!yearId || !gradeId) throw new ApiErrorV2("Year and grade ids are required");
     const classList = await this.repository.getList(yearId, gradeId);
     return classList.map((classItem) => ({
       id: classItem.id,
@@ -42,8 +46,170 @@ export class ClassService {
   }
 
   async getAsOptions(yearId: string, gradeId: string): Promise<IClassOption[]> {
-    if (!yearId || !gradeId) throw new ApiError(400, "Year and grade ids are required");
+    if (!yearId || !gradeId) throw new ApiErrorV2("Year and grade ids are required");
     const classList = await this.repository.getList(yearId, gradeId);
     return classList.map((item) => ({ value: item.id, label: item.name }));
+  }
+
+  async create(yearId: string, gradeId: string, data: z.infer<typeof classDetailsSchema>) {
+    const parsedRes = classDetailsSchema.safeParse(data);
+    if (!parsedRes.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    try {
+      await this.repository.create({
+        name: parsedRes.data.name,
+        academicYear: { connect: { id: yearId } },
+        gradeLevel: { connect: { id: gradeId } },
+        classTeacher: parsedRes.data.teacherId ? { connect: { id: parsedRes.data.teacherId } } : undefined,
+        defaultMedium: parsedRes.data.mediumId ? { connect: { id: parsedRes.data.mediumId } } : undefined,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ApiErrorV2("Class name is already exists");
+        }
+      }
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async updateDetails(classId: string, data: z.infer<typeof classDetailsSchema>) {
+    if (!classId) throw new ApiErrorV2("Class id is required");
+
+    const parsedRes = classDetailsSchema.safeParse(data);
+    if (!parsedRes.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    try {
+      await this.repository.update(classId, {
+        name: parsedRes.data.name,
+        classTeacher: parsedRes.data.teacherId ? { connect: { id: parsedRes.data.teacherId } } : { disconnect: {} },
+        defaultMedium: parsedRes.data.mediumId ? { connect: { id: parsedRes.data.mediumId } } : { disconnect: {} },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ApiErrorV2("Class name is already exists");
+        }
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async delete(classId: string) {
+    if (!classId) throw new ApiErrorV2("Class id is required");
+
+    const classItem = await this.repository.getRelations(classId);
+    if (!classItem) throw new ApiErrorV2("Class not found");
+
+    const hasRelations = classItem.enrollments.length > 0;
+
+    if (hasRelations) {
+      throw new ApiErrorV2("This class is currently in use");
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.userClass.deleteMany({ where: { classId } });
+        await tx.classSubject.deleteMany({ where: { classId } });
+        await tx.class.delete({ where: { id: classId } });
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This class is currently in use");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async updateBatch(batchId: string | null, classIds: string[]) {
+    if (classIds.length === 0) throw new ApiErrorV2("Class ids are required");
+
+    try {
+      await prisma.class.updateMany({
+        where: { id: { in: classIds } },
+        data: { batchId },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateSubjects(classId: string, data: z.infer<typeof classSubjectsSchema>) {
+    if (!classId) {
+      throw new ApiErrorV2("Class id is required");
+    }
+
+    const parsedData = classSubjectsSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+    try {
+      await this.repository.update(classId, {
+        classSubjects: {
+          // This is used to update=> if where clause matched for existing record and, create=> if where does not match any of records
+          upsert: parsedData.data.map((csub) => ({
+            where: {
+              classId_subjectId: { classId, subjectId: csub.subjectId },
+            },
+            update: {
+              teacher: { connect: { id: csub.teacherId } },
+              medium: csub.mediumId ? { connect: { id: csub.mediumId } } : { disconnect: {} },
+            },
+            create: {
+              subject: { connect: { id: csub.subjectId } },
+              teacher: { connect: { id: csub.teacherId } },
+              medium: csub.mediumId ? { connect: { id: csub.mediumId } } : undefined,
+            },
+          })),
+        },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async deleteSubject(classId: string, subjectId: string) {
+    if (!classId || !subjectId) throw new ApiErrorV2("Class Id and Subject Id are required");
+
+    const classItem = await this.repository.getRelationsForClassSubject(classId, subjectId);
+    if (!classItem) throw new ApiErrorV2("Class not found");
+
+    // Do not delete the class subject if any of student doing it
+    const hasRelations = classItem.enrollments.length > 0;
+    if (hasRelations) {
+      throw new ApiErrorV2("This Class Subject is currently in use");
+    }
+
+    try {
+      await prisma.classSubject.delete({ where: { classId_subjectId: { classId, subjectId } } });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This Class Subject is currently in use");
+        }
+      }
+      throw error;
+    }
   }
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { IQueryParams } from "@/lib/filter";
-import { IStudentEnrollment, IStudentList, IStudentsListItem } from "./students.types";
+import { IStudentEnrollment, IStudentList, IStudentsListItem, IStudentsListWithSubjectsItem } from "./students.types";
 import { studentsService } from ".";
 import { requireAuthServerAction } from "@/lib/auth/authenticate";
 import { IResponse } from "@/lib/types";
@@ -32,6 +32,22 @@ export async function getStudentListForClassAction(
 
   try {
     const result = await studentsService.getListForClass(yearId, gradeId, classId);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error fetching class student list:", error);
+    return { success: false, message: "Failed to fetch class student list." };
+  }
+}
+
+export async function getStudentListForClassWithSubjectsAction(
+  yearId: string,
+  gradeId: string,
+  classId: string,
+): Promise<IResponse<IStudentsListWithSubjectsItem[]>> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  try {
+    const result = await studentsService.getListForClassWithSubjects(yearId, gradeId, classId);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching class student list:", error);

@@ -11,6 +11,36 @@ import {
 import { StudentGetPayload, StudentSelect } from "@/generated/prisma/models";
 import { StrictOmit } from "@/lib/utils";
 
+export const studentListWithSubjectsSelect = {
+  id: true,
+  admissionNo: true,
+  fullName: true,
+  enrollments: {
+    select: {
+      classIndex: true,
+      subjects: {
+        select: {
+          medium: { select: { id: true } },
+          subject: { select: { id: true } },
+        },
+      },
+    },
+  },
+} satisfies StudentSelect;
+
+export type IStudentsListWithSubjectsItem = {
+  id: string;
+  admissionNo: string;
+  fullName: string;
+  enrollment: {
+    classIndex: number | null
+    subjects: {
+      subjectId: string;
+      mediumId: string | null;
+    }[];
+  };
+};
+
 // Student List types
 export const studentListSelect = {
   id: true,

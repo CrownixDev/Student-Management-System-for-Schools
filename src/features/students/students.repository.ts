@@ -1,7 +1,13 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { studentEnrollmentSelect, studentListSelect, studentProfuileSelect, studentSelect } from "./students.types";
+import {
+  studentEnrollmentSelect,
+  studentListSelect,
+  studentListWithSubjectsSelect,
+  studentProfuileSelect,
+  studentSelect,
+} from "./students.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
 import { StudentCreateInput, StudentUpdateInput, StudentWhereInput } from "@/generated/prisma/models";
 import { DOBFilter, GenderFilter } from "./student.cache";
@@ -94,6 +100,26 @@ export class StudentsRepository {
         enrollments: {
           where: { academicYearId: yearId, class: { id: classId, gradeLevelId: gradeId } },
           select: { classIndex: true },
+        },
+      },
+    });
+  }
+
+  async getListForClassWithSubjects(yearId: string, gradeId: string, classId: string) {
+    return await prisma.student.findMany({
+      where: {
+        enrollments: {
+          some: {
+            academicYearId: yearId,
+            class: { id: classId, gradeLevelId: gradeId },
+          },
+        },
+      },
+      select: {
+        ...studentListWithSubjectsSelect,
+        enrollments: {
+          where: { academicYearId: yearId, class: { id: classId, gradeLevelId: gradeId } },
+          ...studentListWithSubjectsSelect.enrollments,
         },
       },
     });

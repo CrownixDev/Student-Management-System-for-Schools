@@ -2,7 +2,13 @@ import "server-only";
 
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
-import { IStudent, IStudentEnrollment, IStudentList, IStudentsListItem } from "./students.types";
+import {
+  IStudent,
+  IStudentEnrollment,
+  IStudentList,
+  IStudentsListItem,
+  IStudentsListWithSubjectsItem,
+} from "./students.types";
 import { IQueryParams } from "@/lib/filter";
 import { studentSchema } from "./student.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
@@ -29,6 +35,31 @@ export class StudentsService {
       (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
     );
     return sortedItemList;
+  }
+
+  async getListForClassWithSubjects(
+    yearId: string,
+    gradeId: string,
+    classId: string,
+  ): Promise<IStudentsListWithSubjectsItem[]> {
+    if (!yearId || !gradeId || !classId) throw new ApiErrorV2("Year, grade and class ids are required");
+
+    const itemList = await this.repository.getListForClassWithSubjects(yearId, gradeId, classId);
+    const sortedItemList = itemList.sort(
+      (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
+    );
+    return sortedItemList.map((st) => ({
+      id: st.id,
+      admissionNo: st.admissionNo,
+      fullName: st.fullName,
+      enrollment: {
+        classIndex: st.enrollments[0].classIndex,
+        subjects: st.enrollments[0].subjects.map((sub) => ({
+          subjectId: sub.subject.id,
+          mediumId: sub.medium?.id ?? null,
+        })),
+      },
+    }));
   }
 
   async getById(studentId: string, yearId: string, gradeId: string, classId: string): Promise<IStudent> {

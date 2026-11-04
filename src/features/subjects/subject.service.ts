@@ -40,7 +40,11 @@ export class SubjectService {
     }
 
     try {
-      await this.repository.create({ ...parsedData.data, code: parsedData.data.code ? parsedData.data.code : null });
+      await this.repository.create({
+        name: parsedData.data.name,
+        category: parsedData.data.category,
+        code: parsedData.data.code ? parsedData.data.code : null,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -61,7 +65,8 @@ export class SubjectService {
 
     try {
       await this.repository.update(subjectId, {
-        ...parsedData.data,
+        name: parsedData.data.name,
+        category: parsedData.data.category,
         code: parsedData.data.code ? parsedData.data.code : null,
       });
     } catch (error) {
@@ -84,12 +89,7 @@ export class SubjectService {
     if (!subject) throw new ApiErrorV2("Subject not found");
 
     const hasRelations =
-      subject.streams.length > 0 ||
-      subject.classSubjects.length > 0 ||
-      subject.enrollmentSubjects.length > 0 ||
-      subject.examSubjects.length > 0 ||
-      subject.marks.length > 0 ||
-      subject.userSubjects.length > 0;
+      subject.classSubjects.length > 0 || subject.examSubjects.length > 0 || subject.userSubjects.length > 0;
 
     if (hasRelations) {
       throw new ApiErrorV2("This subject is currently in use");

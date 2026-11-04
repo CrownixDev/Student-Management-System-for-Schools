@@ -7,7 +7,7 @@ import SearchInput from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList } from "@/components/shadcn/tabs";
 import { subjectCategories } from "@/features/subjects/subject.enums";
 import SubjectTabBtn from "@/components/setup/subjects/buttons/subject-tab-btn";
-import { subjectTabCache } from "@/features/subjects/batch.cache";
+import { subjectTabCache } from "@/features/subjects/subject.cache";
 import SubjectTable from "@/components/setup/subjects/subject-table";
 import { PageLayout, PageLayoutContent, PageLayoutHeader } from "@/components/ui/page/page-layout";
 

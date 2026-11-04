@@ -21,7 +21,6 @@ export const subjectSelect = {
   name: true,
   code: true,
   category: true,
-  streams: { select: { id: true, name: true } },
 } satisfies SubjectSelect;
 
 export type ISubject = SubjectGetPayload<{

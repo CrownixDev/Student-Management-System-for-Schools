@@ -10,8 +10,12 @@ export class SubjectRepository {
   async getListByEnrollmentId(enrollmentId: string): Promise<ISubjectListItem[]> {
     return await prisma.subject.findMany({
       where: {
-        enrollmentSubjects: {
-          some: { enrollmentId },
+        classSubjects: {
+          some: {
+            enrollmentSubjects: {
+              some: { enrollmentId },
+            },
+          },
         },
       },
       select: subjectListSelect,

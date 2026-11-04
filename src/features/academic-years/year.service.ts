@@ -35,7 +35,7 @@ export class AcademicYearsService {
 
     try {
       await this.repository.create({
-        ...result.data,
+        name: result.data.name.trim(),
         startDate: new Date(result.data.startDate),
         endDate: new Date(result.data.endDate),
       });
@@ -56,7 +56,7 @@ export class AcademicYearsService {
 
     try {
       await this.repository.update(yearId, {
-        ...result.data,
+        name: result.data.name.trim(),
         startDate: new Date(result.data.startDate),
         endDate: new Date(result.data.endDate),
       });

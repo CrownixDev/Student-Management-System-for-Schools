@@ -16,8 +16,8 @@ export class UserRepository {
         { username: { contains: cleanSearch } },
         { teacher: { fullName: { contains: cleanSearch } } },
         { teacher: { phone: { contains: cleanSearch } } },
-        { classes: { some: { class: { name: { contains: cleanSearch } } } } },
-        { subjects: { some: { subject: { name: { contains: cleanSearch } } } } },
+        { userClasses: { some: { class: { name: { contains: cleanSearch } } } } },
+        { userSubjects: { some: { subject: { name: { contains: cleanSearch } } } } },
       ];
     }
 

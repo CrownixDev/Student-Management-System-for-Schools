@@ -377,7 +377,7 @@ export default function StudentPickerDialog({
           }}
         />
       )}
-      {isGradePickerOpen && (
+      {isGradePickerOpen && year && (
         <GradePickerDialog
           open
           onOpenChange={setIsGradePickerOpen}
@@ -387,6 +387,7 @@ export default function StudentPickerDialog({
             setClassId("");
             setSelectAllInClass(false);
           }}
+          year={year}
         />
       )}
     </>

@@ -6,18 +6,19 @@ import { IGradeListItem } from "./grades.types";
 import { requireAuthServerAction } from "@/lib/auth/authenticate";
 import { gradesService } from ".";
 import { gradeSchema } from "@/features/grades/grades.schema";
-import z from "zod";
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { revalidatePath } from "next/cache";
 import { Route } from "next";
+import z from "zod";
 
 export async function getGradesListAction({
+  yearId,
   search,
-}: Pick<IQueryParams, "search">): Promise<IResponse<IGradeListItem[]>> {
+}: Pick<IQueryParams, "search"> & { yearId: string }): Promise<IResponse<IGradeListItem[]>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   try {
-    const result = await gradesService.getList({ search });
+    const result = await gradesService.getListByYear({ yearId, search });
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching grades list:", error);
@@ -25,7 +26,7 @@ export async function getGradesListAction({
   }
 }
 
-export async function createGradeAction(data: z.infer<typeof gradeSchema>): Promise<IResponse> {
+export async function createGradeAction(yearId: string, data: z.infer<typeof gradeSchema>): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   const parsedData = gradeSchema.safeParse(data);
@@ -34,7 +35,7 @@ export async function createGradeAction(data: z.infer<typeof gradeSchema>): Prom
   }
 
   try {
-    await gradesService.create(parsedData.data);
+    await gradesService.create(yearId, parsedData.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Grade created" };
   } catch (error) {

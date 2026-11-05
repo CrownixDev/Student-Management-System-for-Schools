@@ -11,22 +11,22 @@ import z from "zod";
 export class GradesService {
   constructor(private repository: GradesRepository) {}
 
-  async getList({ search }: Pick<IQueryParams, "search">): Promise<IGradeListItem[]> {
-    return await this.repository.getList({ search });
-  }
-
-  async getListByYear(yearId: string): Promise<IGradeListItemForYear[]> {
+  async getListByYear({
+    search,
+    yearId,
+  }: Pick<IQueryParams, "search"> & { yearId: string }): Promise<IGradeListItemForYear[]> {
     if (!yearId) throw new ApiErrorV2("Year id is required");
 
-    const gradeData = await this.repository.getListByYear(yearId);
+    const gradeData = await this.repository.getListByYear({ search, yearId });
     if (!gradeData) throw new ApiErrorV2("Invalid year id");
 
-    return gradeData.map((grade) => ({
-      id: grade.id,
-      number: grade.number,
-      name: grade.name,
-      classCount: grade.classes.length,
-    }));
+    return gradeData
+      .map((grade) => ({
+        id: grade.id,
+        name: grade.name,
+        classCount: grade.classes.length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   }
 
   async getListItemById(gradeId: string): Promise<IGradeListItem> {
@@ -42,28 +42,32 @@ export class GradesService {
 
     const grades = await this.repository.getListWithClasses(yearId);
     return grades.map((grade) => ({
-      ...grade,
+      id: grade.id,
+      name: grade.name,
+      batch: grade.batch ? { id: grade.batch.id, name: grade.batch.name, type: grade.batch.type } : null,
       classes: grade.classes.map((classItem) => ({
         id: classItem.id,
         name: classItem.name,
-        batch: classItem.batch,
         studentCount: classItem.enrollments.length,
       })),
     }));
   }
 
-  async create(data: z.infer<typeof gradeSchema>) {
-    const parsedData = gradeSchema.safeParse(data);
-    if (!parsedData.success) {
+  async create(yearId: string, data: z.infer<typeof gradeSchema>) {
+    const parsedRes = gradeSchema.safeParse(data);
+    if (!parsedRes.success) {
       throw new ApiErrorV2("Data validation failed");
     }
 
     try {
-      await this.repository.create(parsedData.data);
+      await this.repository.create({
+        academicYear: { connect: { id: yearId } },
+        name: parsedRes.data.name,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Grade number is already exists");
+          throw new ApiErrorV2("Grade name is already exists");
         }
       }
       throw error;
@@ -73,13 +77,15 @@ export class GradesService {
   async update(gradeId: string, data: z.infer<typeof gradeSchema>) {
     if (!gradeId) throw new ApiErrorV2("Grade id is required");
 
-    const parsedData = gradeSchema.safeParse(data);
-    if (!parsedData.success) {
+    const parsedRes = gradeSchema.safeParse(data);
+    if (!parsedRes.success) {
       throw new ApiErrorV2("Data validation failed");
     }
 
     try {
-      await this.repository.update(gradeId, parsedData.data);
+      await this.repository.update(gradeId, {
+        name: parsedRes.data.name,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {

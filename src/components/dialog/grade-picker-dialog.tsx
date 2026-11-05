@@ -14,17 +14,20 @@ import { GRADE_OPTIONS } from "@/lib/query-keys";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
+import { IAcademicYear } from "@/features/academic-years";
 
 export default function GradePickerDialog({
   open,
   onOpenChange,
   selectedGradeId,
   onSelect,
+  year,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedGradeId?: string;
   onSelect: (grade: IGradeListItem) => void;
+  year: IAcademicYear;
 }) {
   const [search, setSearch] = useState("");
   const [gradeId, setGradeId] = useState(selectedGradeId ?? "");
@@ -33,7 +36,7 @@ export default function GradePickerDialog({
     enabled: open,
     queryKey: [GRADE_OPTIONS, search],
     queryFn: async () => {
-      const result = await getGradesListAction({ search: search.trim() || null });
+      const result = await getGradesListAction({ yearId: year.id, search: search.trim() || null });
       if (!result.success) {
         toast.error(result.message);
         throw new Error(result.message);

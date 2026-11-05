@@ -1,28 +1,20 @@
-import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
 import { GraduationCapIcon } from "lucide-react";
-import GradesEditBtn from "./buttons/grades-edit-btn";
-import EmptyState from "@/components/ui/empty-state";
 import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
+import EmptyState from "@/components/ui/empty-state";
 import PagePagination from "@/components/ui/page/page-pagination";
+import GradesEditBtn from "./buttons/grades-edit-btn";
+import { IAcademicYear } from "@/features/academic-years";
 
-function getGradeStage(num: number): string {
-  if (num >= 1 && num <= 5) return "Primary";
-  if (num >= 6 && num <= 9) return "Junior Secondary";
-  if (num >= 10 && num <= 11) return "Ordinary Level (O/L)";
-  if (num >= 12 && num <= 13) return "Advanced Level (A/L)";
-  return "Other";
-}
-
-export default async function GradesContent() {
+export default async function GradesContent({ year }: { year: IAcademicYear }) {
   let grades: IGradeListItem[] | null = null;
   const search = filterCache.get("search");
 
   try {
-    grades = await gradesService.getList({ search });
+    grades = await gradesService.getListByYear({ yearId: year.id, search });
   } catch (error) {
     console.error("Failed to load grades from service:", error);
     redirect("/setup");
@@ -36,8 +28,6 @@ export default async function GradesContent() {
             <TableHeader className="bg-muted/40">
               <TableRow>
                 <TableHead className="font-semibold">Name</TableHead>
-                <TableHead className="font-semibold">Grade</TableHead>
-                <TableHead className="font-semibold">Category</TableHead>
                 <TableHead className="text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -46,14 +36,6 @@ export default async function GradesContent() {
                 return (
                   <TableRow key={grade.id}>
                     <TableCell>{grade.name}</TableCell>
-
-                    <TableCell>{grade.number}</TableCell>
-
-                    <TableCell>
-                      <Badge variant="outline" className="text-muted-foreground">
-                        {getGradeStage(grade.number)}
-                      </Badge>
-                    </TableCell>
 
                     <TableCell className="text-right">
                       <GradesEditBtn grade={grade} />

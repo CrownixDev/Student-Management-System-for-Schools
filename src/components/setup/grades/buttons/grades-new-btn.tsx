@@ -1,11 +1,12 @@
 "use client";
 
-import GradeDialog from "@/components/dialog/grades/grade-dialog";
 import { Button } from "@/components/shadcn/button";
+import { IAcademicYear } from "@/features/academic-years";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
+import GradeDialog from "@/components/dialog/grades/grade-dialog";
 
-export default function GradesNewBtn() {
+export default function GradesNewBtn({ year }: { year: IAcademicYear }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -13,7 +14,7 @@ export default function GradesNewBtn() {
         <PlusIcon className="size-4" />
         Add Grade
       </Button>
-      {open && <GradeDialog open={open} onOpenChange={setOpen} />}
+      {open && <GradeDialog open={open} onOpenChange={setOpen} year={year} />}
     </>
   );
 }

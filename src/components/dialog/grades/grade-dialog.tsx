@@ -10,34 +10,37 @@ import { TrashIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { gradeSchema } from "@/features/grades/grades.schema";
-import DeleteConfirmationDialog from "../delete-confirmation-dialog";
-import z from "zod";
 import { createGradeAction, deleteGradeAction, updateGradeAction } from "@/features/grades/grades.actions";
 import { toast } from "react-toastify";
+import { IAcademicYear } from "@/features/academic-years";
+import DeleteConfirmationDialog from "../delete-confirmation-dialog";
+import z from "zod";
 
 export default function GradeDialog({
   open,
   onOpenChange,
   data,
+  year,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data?: Partial<IGradeListItem> | null;
   onSave?: Partial<IGradeListItem>;
+  year?: IAcademicYear;
 }) {
   const isEditing = Boolean(data?.id);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useForm<z.infer<typeof gradeSchema>>({
     defaultValues: {
-      number: data?.number ?? 1,
-      name: data?.name ?? (data?.number ? `Grade ${data.number}` : "Grade 1"),
+      name: data?.name ?? "Grade 1",
     },
     resolver: zodResolver(gradeSchema),
   });
 
   async function handleCreate(formData: z.infer<typeof gradeSchema>) {
-    const res = await createGradeAction(formData);
+    if (!year) return;
+    const res = await createGradeAction(year.id, formData);
     if (res.success) {
       onOpenChange(false);
       toast.success(res.message);
@@ -78,32 +81,6 @@ export default function GradeDialog({
 
           <form id="grade-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
             <FieldGroup className="space-y-3">
-              <Controller
-                name="number"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="number">Grade Number</FieldLabel>
-                    <Input
-                      {...field}
-                      id="number"
-                      type="number"
-                      placeholder="e.g. 13"
-                      autoComplete="off"
-                      aria-invalid={fieldState.invalid}
-                      onChange={(event) => {
-                        const val = event.target.value;
-                        field.onChange(val === "" ? "" : Number(val));
-                        if (!form.getValues("name") || form.getValues("name").startsWith("Grade ")) {
-                          form.setValue("name", `Grade ${form.getValues("number")}`);
-                        }
-                      }}
-                      disabled={form.formState.isSubmitting}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
               <Controller
                 name="name"
                 control={form.control}

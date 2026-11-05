@@ -13,7 +13,9 @@ export class AcademicYearsService {
   constructor(private repository: AcademicYearsRepository) {}
 
   async getList({ search }: Pick<IQueryParams, "search">): Promise<IAcademicYear[]> {
-    return await this.repository.getList({ search });
+    return (await this.repository.getList({ search })).sort((a, b) =>
+      b.name.localeCompare(a.name, undefined, { numeric: true }),
+    );
   }
 
   async getListItemById(yearId: string): Promise<IAcademicYear> {

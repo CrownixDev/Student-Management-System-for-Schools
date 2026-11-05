@@ -85,65 +85,43 @@ export class StudentsRepository {
     ]);
   }
 
-  async getListForClass(yearId: string, gradeId: string, classId: string) {
+  async getListForClass(classId: string) {
     return await prisma.student.findMany({
-      where: {
-        enrollments: {
-          some: {
-            academicYearId: yearId,
-            class: { id: classId, gradeLevelId: gradeId },
-          },
-        },
-      },
+      where: { enrollments: { some: { class: { id: classId } } } },
       select: {
         ...studentListSelect,
         enrollments: {
-          where: { academicYearId: yearId, class: { id: classId, gradeLevelId: gradeId } },
+          where: { class: { id: classId } },
           select: { classIndex: true },
         },
       },
     });
   }
 
-  async getListForClassWithSubjects(yearId: string, gradeId: string, classId: string) {
+  async getListForClassWithSubjects(classId: string) {
     return await prisma.student.findMany({
-      where: {
-        enrollments: {
-          some: {
-            academicYearId: yearId,
-            class: { id: classId, gradeLevelId: gradeId },
-          },
-        },
-      },
+      where: { enrollments: { some: { class: { id: classId } } } },
       select: {
         ...studentListWithSubjectsSelect,
         enrollments: {
-          where: { academicYearId: yearId, class: { id: classId, gradeLevelId: gradeId } },
+          where: { class: { id: classId } },
           ...studentListWithSubjectsSelect.enrollments,
         },
       },
     });
   }
 
-  async getById(studentId: string, yearId: string, gradeId: string, classId: string) {
+  async getById(classId: string, studentId: string) {
     return await prisma.student.findUnique({
       where: {
         id: studentId,
-        enrollments: {
-          some: {
-            academicYearId: yearId,
-            class: { id: classId, gradeLevelId: gradeId },
-          },
-        },
+        enrollments: { some: { class: { id: classId } } },
       },
       select: {
         ...studentSelect,
         enrollments: {
+          where: { class: { id: classId } },
           ...studentSelect.enrollments,
-          where: {
-            academicYearId: yearId,
-            class: { id: classId, gradeLevelId: gradeId },
-          },
         },
       },
     });

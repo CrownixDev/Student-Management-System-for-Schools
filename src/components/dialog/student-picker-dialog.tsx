@@ -94,10 +94,10 @@ export default function StudentPickerDialog({
   });
 
   const classStudentsQuery = useQuery({
-    enabled: open && activeTab === "by-class" && Boolean(year && grade && classId),
-    queryKey: ["student-picker-class-students", year?.id, grade?.id, classId],
+    enabled: open && activeTab === "by-class" && Boolean(classId),
+    queryKey: ["student-picker-class-students", classId],
     queryFn: async () => {
-      const result = await getStudentListForClassAction(year!.id, grade!.id, classId);
+      const result = await getStudentListForClassAction(classId);
       if (!result.success) {
         toast.error(result.message);
         throw new Error(result.message);

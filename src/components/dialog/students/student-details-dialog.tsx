@@ -10,7 +10,7 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { IStudentProfile } from "@/features/students";
 import { genderSelectOptions, studentStatusSelectOptions } from "@/lib/select-options";
 import { getHtmlDateString } from "@/lib/utils";
-import { PencilIcon, Trash2Icon, XIcon } from "lucide-react";
+import { EditIcon, Trash2Icon, XIcon } from "lucide-react";
 import { studentSchema } from "@/features/students/student.schema";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -398,7 +398,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                       Close
                     </Button>
                     <Button type="button" onClick={() => setIsEditing(true)}>
-                      <PencilIcon />
+                      <EditIcon />
                       Edit student
                     </Button>
                   </div>

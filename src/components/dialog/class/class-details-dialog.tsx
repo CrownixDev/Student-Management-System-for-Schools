@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { IClass } from "@/features/class";
-import { PencilIcon, TrashIcon, XIcon } from "lucide-react";
+import { EditIcon, TrashIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Controller, useForm } from "react-hook-form";
@@ -142,7 +142,7 @@ export default function ClassDetailsDialog({
                     </Button>
                   )}
                   <Button type="button" size="sm" variant="outline" onClick={() => setChangingTeacher(true)}>
-                    <PencilIcon />
+                    <EditIcon />
                     Change
                   </Button>
                 </div>

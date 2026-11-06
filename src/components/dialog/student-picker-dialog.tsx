@@ -18,7 +18,7 @@ import { IGradeListItem } from "@/features/grades";
 import { getStudentListAction, getStudentListForClassAction } from "@/features/students/students.actions";
 import { IStudentsListItem } from "@/features/students";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BookUserIcon, CheckIcon, PencilIcon, UsersIcon } from "lucide-react";
+import { BookUserIcon, CheckIcon, EditIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import EmptyState from "@/components/ui/empty-state";
@@ -245,7 +245,7 @@ export default function StudentPickerDialog({
                     onClick={() => setIsYearPickerOpen(true)}
                   >
                     <span className="truncate">{year?.name ?? "Select year"}</span>
-                    <PencilIcon className="size-4 shrink-0" />
+                    <EditIcon className="size-4 shrink-0" />
                   </Button>
                 </div>
                 <div className="space-y-2">
@@ -257,7 +257,7 @@ export default function StudentPickerDialog({
                     onClick={() => setIsGradePickerOpen(true)}
                   >
                     <span className="truncate">{grade?.name ?? "Select grade"}</span>
-                    <PencilIcon className="size-4 shrink-0" />
+                    <EditIcon className="size-4 shrink-0" />
                   </Button>
                 </div>
                 <div className="space-y-2">

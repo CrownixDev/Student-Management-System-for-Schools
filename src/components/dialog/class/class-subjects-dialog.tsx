@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/shadcn/card";
 import { FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { IClass } from "@/features/class";
-import { AlertTriangleIcon, BookOpenIcon, Loader2Icon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
+import { AlertTriangleIcon, BookOpenIcon, EditIcon, Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
@@ -241,7 +241,7 @@ export default function ClassSubjectsDialog({
                           </Button>
                         )}
                         <Button size="sm" variant="outline" onClick={() => setTeacherSubjectIndex(index)}>
-                          <PencilIcon />
+                          <EditIcon />
                           {subject.teacher ? "Change" : "Assign"}
                         </Button>
                       </div>

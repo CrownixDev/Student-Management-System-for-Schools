@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { useState } from "react";
 import { IGradeWithClassesItem } from "@/features/grades";
 import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/shadcn/field";
-import { PencilIcon, XIcon } from "lucide-react";
+import { EditIcon,  XIcon } from "lucide-react";
 import { IBatchListItem } from "@/features/batch";
 import { updateClassBatchAction } from "@/features/class/class.actions";
 import { toast } from "react-toastify";
@@ -53,7 +53,7 @@ export default function ClassBatchDialog({
                     </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => setIsBatchPickerOpen(true)}>
-                    <PencilIcon />
+                    <EditIcon />
                     {batch ? "Change" : "Assign"}
                   </Button>
                 </div>

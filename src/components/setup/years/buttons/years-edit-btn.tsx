@@ -3,7 +3,7 @@
 import AcademicYearDialog from "@/components/dialog/academic-years/year-dialog";
 import TooltipButton from "@/components/ui/tooltip-button";
 import { IAcademicYear } from "@/features/academic-years";
-import { PencilIcon } from "lucide-react";
+import { EditIcon } from "lucide-react";
 import { useState } from "react";
 
 export default function YearsEditBtn({ year }: { year: IAcademicYear }) {
@@ -11,7 +11,7 @@ export default function YearsEditBtn({ year }: { year: IAcademicYear }) {
   return (
     <>
       <TooltipButton tooltip="Edit academic year" size="icon-sm" variant="ghost" onClick={() => setOpen(true)}>
-        <PencilIcon />
+        <EditIcon />
       </TooltipButton>
       {open && <AcademicYearDialog open={open} onOpenChange={setOpen} data={year} />}
     </>

@@ -3,7 +3,7 @@
 import ClassDetailsDialog from "@/components/dialog/class/class-details-dialog";
 import { Button } from "@/components/shadcn/button";
 import { IClass } from "@/features/class";
-import { PencilIcon } from "lucide-react";
+import { EditIcon } from "lucide-react";
 import { useState } from "react";
 
 export default function ClassEditBtn({ classData }: { classData: IClass }) {
@@ -12,7 +12,7 @@ export default function ClassEditBtn({ classData }: { classData: IClass }) {
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        <PencilIcon />
+        <EditIcon />
         Edit class
       </Button>
       {isOpen && <ClassDetailsDialog open onOpenChange={setIsOpen} grade={classData.gradeLevel} data={classData} />}

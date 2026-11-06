@@ -48,11 +48,8 @@ export class SubjectRepository {
     return await prisma.subject.findUnique({
       where: { id },
       select: {
-        streams: { select: { id: true } },
         classSubjects: { select: { id: true } },
-        enrollmentSubjects: { select: { id: true } },
         examSubjects: { select: { id: true } },
-        marks: { select: { id: true } },
         userSubjects: { select: { id: true } },
       },
     });

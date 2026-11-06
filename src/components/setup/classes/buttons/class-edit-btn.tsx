@@ -15,15 +15,7 @@ export default function ClassEditBtn({ classData }: { classData: IClass }) {
         <PencilIcon />
         Edit class
       </Button>
-      {isOpen && (
-        <ClassDetailsDialog
-          open
-          onOpenChange={setIsOpen}
-          year={classData.academicYear}
-          grade={classData.gradeLevel}
-          data={classData}
-        />
-      )}
+      {isOpen && <ClassDetailsDialog open onOpenChange={setIsOpen} grade={classData.gradeLevel} data={classData} />}
     </>
   );
 }

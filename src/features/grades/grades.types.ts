@@ -17,6 +17,7 @@ export interface IGradeListItemForYear extends IGradeListItem {
 export const gradesSelect = {
   id: true,
   name: true,
+  academicYear: { select: { id: true, name: true, isCurrent: true } },
   batch: {
     select: {
       id: true,
@@ -35,6 +36,7 @@ export const gradesSelect = {
 export type IGradeWithClassesItem = {
   id: GradeLevel["id"];
   name: GradeLevel["name"];
+  academicYear: { id: string; name: string; isCurrent: boolean };
   batch: {
     id: Batch["id"];
     name: Batch["name"];

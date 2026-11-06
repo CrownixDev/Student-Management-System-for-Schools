@@ -38,7 +38,6 @@ export class GradesRepository {
       where: { academicYearId: yearId, id: gradeId },
       select: {
         id: true,
-        number: true,
         name: true,
         classes: {
           select: {
@@ -48,9 +47,9 @@ export class GradesRepository {
               select: {
                 id: true,
                 student: { select: { id: true, fullName: true, admissionNo: true } },
-                subjects: {
+                enrollmentSubjects: {
                   select: {
-                    subject: { select: { id: true, name: true } },
+                    classSubject: { select: { subject: { select: { id: true, name: true } } } },
                     medium: { select: { name: true } },
                   },
                 },
@@ -59,10 +58,9 @@ export class GradesRepository {
                   select: {
                     marks: true,
                     status: true,
-                    subject: {
+                    examSubject: {
                       select: {
-                        id: true,
-                        name: true,
+                        subject: { select: { id: true, name: true } },
                       },
                     },
                   },
@@ -87,7 +85,6 @@ export class GradesRepository {
           },
         },
       },
-      orderBy: { name: "asc" },
     });
   }
 

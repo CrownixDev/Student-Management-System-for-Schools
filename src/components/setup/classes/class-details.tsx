@@ -52,25 +52,19 @@ export default async function ClassDetails() {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Year</TableCell>
-                <TableCell>{classData.academicYear.name}</TableCell>
+                <TableCell>{classData.gradeLevel.academicYear.name}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Grade</TableCell>
                 <TableCell>{classData.gradeLevel.name}</TableCell>
               </TableRow>
-              {classData.batch && (
-                <TableRow>
-                  <TableCell className="font-medium">Batch</TableCell>
-                  <TableCell>{classData.batch.name}</TableCell>
-                </TableRow>
-              )}
               <TableRow>
-                <TableCell className="font-medium">Class Teacher</TableCell>
-                <TableCell>{classData.classTeacher?.fullName ?? "-"}</TableCell>
+                <TableCell className="font-medium">Batch</TableCell>
+                <TableCell>{classData.gradeLevel.batch?.name ?? "-"}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Medium</TableCell>
-                <TableCell>{classData.defaultMedium ? `${classData.defaultMedium.name}` : "-"}</TableCell>
+                <TableCell className="font-medium">Class Teacher</TableCell>
+                <TableCell>{classData.teacher?.fullName ?? "-"}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

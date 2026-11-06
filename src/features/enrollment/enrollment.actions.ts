@@ -15,7 +15,6 @@ import {
 import z from "zod";
 
 export async function createEnrollmentsAction(
-  academicYearId: string,
   classId: string,
   data: z.infer<typeof enrollmentCreateSchema>,
 ): Promise<IResponse> {
@@ -27,7 +26,7 @@ export async function createEnrollmentsAction(
   }
 
   try {
-    await enrollmentService.create(academicYearId, classId, parsedRes.data);
+    await enrollmentService.create(classId, parsedRes.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Enrollments created successfully" };
   } catch (error) {
@@ -39,14 +38,14 @@ export async function createEnrollmentsAction(
 }
 
 export async function updateStudentIndexAction(
+  classId: string,
   studentId: string,
-  academicYearId: string,
   data: z.infer<typeof enrollmentIndexUpdateSchema>,
 ): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
-  if (!studentId || !academicYearId) {
-    return { success: false, message: "Student and Academic Year ids are required" };
+  if (!studentId || !classId) {
+    return { success: false, message: "Class and Student ids are required" };
   }
 
   const parsedRes = enrollmentIndexUpdateSchema.safeParse(data);
@@ -55,7 +54,7 @@ export async function updateStudentIndexAction(
   }
 
   try {
-    await enrollmentService.updateIndex(studentId, academicYearId, parsedRes.data);
+    await enrollmentService.updateIndex(classId, studentId, parsedRes.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Medium Updated" };
   } catch (error) {
@@ -67,14 +66,14 @@ export async function updateStudentIndexAction(
 }
 
 export async function updateStudentSubjectEnrollmentAction(
+  classId: string,
   studentId: string,
-  academicYearId: string,
   data: z.infer<typeof enrollmentSubjectUpdateSchema>,
 ): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
-  if (!studentId || !academicYearId) {
-    return { success: false, message: "Student and Academic Year ids are required" };
+  if (!studentId || !classId) {
+    return { success: false, message: "Class and Student ids are required" };
   }
 
   const parsedRes = enrollmentSubjectUpdateSchema.safeParse(data);
@@ -83,7 +82,7 @@ export async function updateStudentSubjectEnrollmentAction(
   }
 
   try {
-    await enrollmentService.updateSubjectEnrollment(studentId, academicYearId, parsedRes.data);
+    await enrollmentService.updateSubjectEnrollment(classId, studentId, parsedRes.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Subject enrollment Updated" };
   } catch (error) {
@@ -93,15 +92,16 @@ export async function updateStudentSubjectEnrollmentAction(
     return { success: false, message: "Unknown error occured" };
   }
 }
+
 export async function updateSubjectMediumAction(
+  classId: string,
   studentId: string,
-  academicYearId: string,
   data: z.infer<typeof enrollmentSubjectMediumUpdateSchema>,
 ): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
-  if (!studentId || !academicYearId) {
-    return { success: false, message: "Student and Academic Year ids are required" };
+  if (!studentId || !classId) {
+    return { success: false, message: "Class and Student ids are required" };
   }
 
   const parsedRes = enrollmentSubjectMediumUpdateSchema.safeParse(data);
@@ -110,7 +110,7 @@ export async function updateSubjectMediumAction(
   }
 
   try {
-    await enrollmentService.updateSubjectMedium(studentId, academicYearId, parsedRes.data);
+    await enrollmentService.updateSubjectMedium(classId, studentId, parsedRes.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Subject Medium Updated" };
   } catch (error) {
@@ -121,15 +121,15 @@ export async function updateSubjectMediumAction(
   }
 }
 
-export async function deleteEnrollmentAction(studentId: string, academicYearId: string): Promise<IResponse> {
+export async function deleteEnrollmentAction(classId: string, studentId: string): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
-  if (!studentId || !academicYearId) {
-    return { success: false, message: "Student and Academic Year ids are required" };
+  if (!studentId || !classId) {
+    return { success: false, message: "Class and Student ids are required" };
   }
 
   try {
-    await enrollmentService.delete(studentId, academicYearId);
+    await enrollmentService.delete(classId, studentId);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Enrollment Deleted" };
   } catch (error) {

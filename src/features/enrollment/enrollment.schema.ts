@@ -7,7 +7,7 @@ export const enrollmentCreateSchema = z.array(
     subjects: z.array(
       z.object({
         subjectId: z.string(),
-        mediumId: z.string().nullable(),
+        mediumId: z.string(),
       }),
     ),
   }),
@@ -24,5 +24,5 @@ export const enrollmentSubjectUpdateSchema = z.object({
 
 export const enrollmentSubjectMediumUpdateSchema = z.object({
   subjectId: z.string(),
-  mediumId: z.string().nullable(),
+  mediumId: z.string(),
 });

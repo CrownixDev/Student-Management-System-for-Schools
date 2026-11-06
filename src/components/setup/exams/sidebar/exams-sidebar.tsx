@@ -10,12 +10,12 @@ import GradeSidebarItem from "./sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 
-async function SidebarContent() {
+async function SidebarContent({ year }: { year: IAcademicYear }) {
   const { search } = filterCache.all();
   let gradesList: IGradeListItem[] | null = null;
 
   try {
-    gradesList = await gradesService.getList({ search });
+    gradesList = await gradesService.getListByYear({ yearId: year.id, search });
   } catch (err) {
     console.error("Failed to load grades:", err);
     redirect("/setup");
@@ -61,7 +61,7 @@ export default async function ExamsSidebar() {
         search={{ placeholder: "Search grades..." }}
       />
       <Suspense fallback={<LoadingIndicator />}>
-        <SidebarContent />
+        <SidebarContent year={activeYear} />
       </Suspense>
     </PageSidebar>
   );

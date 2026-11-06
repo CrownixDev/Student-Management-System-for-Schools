@@ -13,16 +13,15 @@ export class ClassService {
 
   async getById(id: string): Promise<IClass> {
     if (!id) throw new ApiErrorV2("Class id is required");
+
     const classData = await this.repository.getById(id);
     if (!classData) throw new ApiErrorV2("Class Not Found");
+
     return {
       id: classData.id,
       name: classData.name,
-      academicYear: classData.academicYear,
+      teacher: classData.teacher,
       gradeLevel: classData.gradeLevel,
-      defaultMedium: classData.defaultMedium,
-      classTeacher: classData.classTeacher,
-      batch: classData.batch,
       enrollments: classData.enrollments,
       subjects: classData.classSubjects.map((sub) => ({
         id: sub.subject.id,
@@ -31,27 +30,29 @@ export class ClassService {
         category: sub.subject.category,
         medium: sub.medium,
         teacher: sub.teacher,
+        studentCount: sub.enrollmentSubjects.length,
       })),
     };
   }
 
-  async getList(yearId: string, gradeId: string): Promise<IClassList> {
-    if (!yearId || !gradeId) throw new ApiErrorV2("Year and grade ids are required");
-    const classList = await this.repository.getList(yearId, gradeId);
+  async getList(gradeId: string): Promise<IClassList> {
+    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    const classList = await this.repository.getList(gradeId);
     return classList.map((classItem) => ({
       id: classItem.id,
       name: classItem.name,
       studentCount: classItem.enrollments.length,
+      batch: classItem.gradeLevel.batch,
     }));
   }
 
-  async getAsOptions(yearId: string, gradeId: string): Promise<IClassOption[]> {
-    if (!yearId || !gradeId) throw new ApiErrorV2("Year and grade ids are required");
-    const classList = await this.repository.getList(yearId, gradeId);
+  async getAsOptions(gradeId: string): Promise<IClassOption[]> {
+    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    const classList = await this.repository.getList(gradeId);
     return classList.map((item) => ({ value: item.id, label: item.name }));
   }
 
-  async create(yearId: string, gradeId: string, data: z.infer<typeof classDetailsSchema>) {
+  async create(gradeId: string, data: z.infer<typeof classDetailsSchema>) {
     const parsedRes = classDetailsSchema.safeParse(data);
     if (!parsedRes.success) {
       throw new ApiErrorV2("Data validation failed");
@@ -60,10 +61,8 @@ export class ClassService {
     try {
       await this.repository.create({
         name: parsedRes.data.name,
-        academicYear: { connect: { id: yearId } },
         gradeLevel: { connect: { id: gradeId } },
-        classTeacher: parsedRes.data.teacherId ? { connect: { id: parsedRes.data.teacherId } } : undefined,
-        defaultMedium: parsedRes.data.mediumId ? { connect: { id: parsedRes.data.mediumId } } : undefined,
+        teacher: parsedRes.data.teacherId ? { connect: { id: parsedRes.data.teacherId } } : undefined,
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -87,8 +86,7 @@ export class ClassService {
     try {
       await this.repository.update(classId, {
         name: parsedRes.data.name,
-        classTeacher: parsedRes.data.teacherId ? { connect: { id: parsedRes.data.teacherId } } : { disconnect: {} },
-        defaultMedium: parsedRes.data.mediumId ? { connect: { id: parsedRes.data.mediumId } } : { disconnect: {} },
+        teacher: parsedRes.data.teacherId ? { connect: { id: parsedRes.data.teacherId } } : { disconnect: {} },
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -134,12 +132,12 @@ export class ClassService {
     }
   }
 
-  async updateBatch(batchId: string | null, classIds: string[]) {
-    if (classIds.length === 0) throw new ApiErrorV2("Class ids are required");
+  async updateBatch(batchId: string | null, gradeId: string) {
+    if (!gradeId) throw new ApiErrorV2("Grade id is required");
 
     try {
-      await prisma.class.updateMany({
-        where: { id: { in: classIds } },
+      await prisma.gradeLevel.updateMany({
+        where: { id: gradeId },
         data: { batchId },
       });
     } catch (error) {
@@ -160,20 +158,22 @@ export class ClassService {
       await this.repository.update(classId, {
         classSubjects: {
           // This is used to update=> if where clause matched for existing record and, create=> if where does not match any of records
-          upsert: parsedData.data.map((csub) => ({
-            where: {
-              classId_subjectId: { classId, subjectId: csub.subjectId },
-            },
-            update: {
-              teacher: { connect: { id: csub.teacherId } },
-              medium: csub.mediumId ? { connect: { id: csub.mediumId } } : { disconnect: {} },
-            },
-            create: {
-              subject: { connect: { id: csub.subjectId } },
-              teacher: { connect: { id: csub.teacherId } },
-              medium: csub.mediumId ? { connect: { id: csub.mediumId } } : undefined,
-            },
-          })),
+          upsert: parsedData.data.map((csub) => {
+            return {
+              where: {
+                classId_subjectId: { classId, subjectId: csub.subjectId },
+              },
+              update: {
+                medium: { connect: { id: csub.mediumId } },
+                teacher: csub.teacherId ? { connect: { id: csub.teacherId } } : { disconnect: {} },
+              },
+              create: {
+                subject: { connect: { id: csub.subjectId } },
+                medium: { connect: { id: csub.mediumId } },
+                teacher: csub.teacherId ? { connect: { id: csub.teacherId } } : undefined,
+              },
+            };
+          }),
         },
       });
     } catch (error) {

@@ -3,7 +3,6 @@
 import {
   SidebarListItem,
   SidebarListItemContent,
-  SidebarListItemIcon,
   SidebarListItemTitle,
 } from "@/components/ui/sidebar/sidebar-list-item";
 import { IGradeListItem } from "@/features/grades";
@@ -16,7 +15,6 @@ export default function GradeSidebarItem({ grade }: { grade: IGradeListItem }) {
 
   return (
     <SidebarListItem isActive={isSelected} onClick={() => setParsers({ gradeId: grade.id })}>
-      <SidebarListItemIcon>{grade.number}</SidebarListItemIcon>
       <SidebarListItemContent>
         <SidebarListItemTitle>{grade.name}</SidebarListItemTitle>
       </SidebarListItemContent>

@@ -40,7 +40,7 @@ export type IStudentsListWithSubjectsItem = {
     classIndex: number | null;
     subjects: {
       subjectId: string;
-      mediumId: string | null;
+      mediumId: string;
     }[];
   };
 };

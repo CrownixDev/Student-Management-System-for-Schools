@@ -5,8 +5,13 @@ import { ExamGetPayload, ExamSelect } from "@/generated/prisma/models";
 export const examListSelect = {
   id: true,
   name: true,
-  academicYear: { select: { id: true, name: true } },
-  gradeLevel: { select: { id: true, name: true } },
+  gradeLevel: {
+    select: {
+      id: true,
+      name: true,
+      academicYear: { select: { id: true, name: true } },
+    },
+  },
   examSubjects: {
     select: {
       id: true,
@@ -33,14 +38,13 @@ export const examSelect = {
           name: true,
         },
       },
-    },
-  },
-  marks: {
-    select: {
-      id: true,
-      subjectId: true,
-      marks: true,
-      status: true,
+      marks: {
+        select: {
+          id: true,
+          marks: true,
+          status: true,
+        },
+      },
     },
   },
 } satisfies ExamSelect;

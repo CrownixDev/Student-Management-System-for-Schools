@@ -41,16 +41,19 @@ export class GradesService {
     if (!yearId) throw new ApiErrorV2("Year id is required");
 
     const grades = await this.repository.getListWithClasses(yearId);
-    return grades.map((grade) => ({
-      id: grade.id,
-      name: grade.name,
-      batch: grade.batch ? { id: grade.batch.id, name: grade.batch.name, type: grade.batch.type } : null,
-      classes: grade.classes.map((classItem) => ({
-        id: classItem.id,
-        name: classItem.name,
-        studentCount: classItem.enrollments.length,
-      })),
-    }));
+    return grades
+      .map((grade) => ({
+        id: grade.id,
+        name: grade.name,
+        academicYear: grade.academicYear,
+        batch: grade.batch,
+        classes: grade.classes.map((classItem) => ({
+          id: classItem.id,
+          name: classItem.name,
+          studentCount: classItem.enrollments.length,
+        })),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   }
 
   async create(yearId: string, data: z.infer<typeof gradeSchema>) {
@@ -89,7 +92,7 @@ export class GradesService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Grade number is already exists");
+          throw new ApiErrorV2("Grade name is already exists");
         }
         if (error.code === "P2025") {
           throw new ApiErrorV2("Record not found");

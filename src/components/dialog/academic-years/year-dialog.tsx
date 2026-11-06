@@ -11,14 +11,17 @@ import { TrashIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { academicYearSchema } from "@/features/academic-years/year.schema";
-import DeleteConfirmationDialog from "../delete-confirmation-dialog";
-import z from "zod";
 import {
   createAcademicYearAction,
   deleteAcademicYearAction,
   updateAcademicYearAction,
 } from "@/features/academic-years/year.actions";
 import { toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
+import { ACTIVE_YEAR } from "@/lib/query-keys";
+import { useRouter } from "next/navigation";
+import DeleteConfirmationDialog from "../delete-confirmation-dialog";
+import z from "zod";
 
 export default function AcademicYearDialog({
   open,
@@ -30,6 +33,8 @@ export default function AcademicYearDialog({
   data?: Partial<IAcademicYear> | null;
   onSave?: Partial<IAcademicYear>;
 }) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const form = useForm<z.infer<typeof academicYearSchema>>({
     defaultValues: {
       name: data?.name ?? "",
@@ -45,6 +50,8 @@ export default function AcademicYearDialog({
   async function handleCreate(formData: z.infer<typeof academicYearSchema>) {
     const res = await createAcademicYearAction(formData);
     if (res.success) {
+      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
+      router.refresh();
       onOpenChange(false);
       toast.success(res.message);
     } else {
@@ -56,6 +63,8 @@ export default function AcademicYearDialog({
     if (!data?.id) return;
     const res = await updateAcademicYearAction(data.id, formData);
     if (res.success) {
+      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
+      router.refresh();
       onOpenChange(false);
       toast.success(res.message);
     } else {
@@ -67,6 +76,8 @@ export default function AcademicYearDialog({
     if (!data?.id) return;
     const res = await deleteAcademicYearAction(data.id);
     if (res.success) {
+      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
+      router.refresh();
       onOpenChange(false);
       toast.success(res.message);
     } else {

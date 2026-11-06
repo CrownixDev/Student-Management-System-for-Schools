@@ -16,7 +16,7 @@ import { IAcademicYear } from "@/features/academic-years";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
 
-export default function GradeDialog({
+export default function ClassGradeDialog({
   open,
   onOpenChange,
   data,

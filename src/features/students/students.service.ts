@@ -52,7 +52,7 @@ export class StudentsService {
         classIndex: st.enrollments[0].classIndex,
         subjects: st.enrollments[0].enrollmentSubjects.map((esub) => ({
           subjectId: esub.classSubject.subject.id,
-          mediumId: esub.medium?.id ?? null,
+          mediumId: esub.medium.id,
         })),
       },
     }));

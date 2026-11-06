@@ -12,11 +12,15 @@ export type IClassList = IClassListItem[];
 export const classSelect = {
   id: true,
   name: true,
-  academicYear: { select: { id: true, name: true, isCurrent: true } },
-  gradeLevel: { select: { id: true, name: true, number: true } },
-  defaultMedium: { select: { id: true, name: true } },
-  classTeacher: { select: { id: true, fullName: true, phone: true } },
-  batch: { select: { id: true, name: true } },
+  gradeLevel: {
+    select: {
+      id: true,
+      name: true,
+      academicYear: { select: { id: true, name: true, isCurrent: true } },
+      batch: { select: { id: true, name: true } },
+    },
+  },
+  teacher: { select: { id: true, fullName: true, phone: true } },
   enrollments: {
     select: {
       id: true,
@@ -36,15 +40,16 @@ export const classSelect = {
 } satisfies ClassSelect;
 
 export interface IClass extends ClassGetPayload<{
-  select: typeof classSelect;
+  select: Omit<typeof classSelect, "teacher"> & { teacher: typeof classSelect.teacher };
 }> {
   subjects: {
     id: Subject["id"];
     name: Subject["name"];
     code: Subject["code"];
     category: Subject["category"];
-    medium: { id: Medium["id"]; name: Medium["name"] } | null;
-    teacher: { id: Teacher["id"]; fullName: Teacher["fullName"] };
+    medium: { id: Medium["id"]; name: Medium["name"] };
+    teacher: { id: Teacher["id"]; fullName: Teacher["fullName"] } | null;
+    studentCount: number;
   }[];
 }
 

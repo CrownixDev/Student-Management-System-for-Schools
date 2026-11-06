@@ -2,12 +2,11 @@
 
 import ClassDetailsDialog from "@/components/dialog/class/class-details-dialog";
 import { Button } from "@/components/shadcn/button";
-import { IAcademicYear } from "@/features/academic-years";
 import { IGradeWithClassesItem } from "@/features/grades";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
-export default function ClassNewBtn({ year, grade }: { year: IAcademicYear; grade: IGradeWithClassesItem }) {
+export default function ClassNewBtn({ grade }: { grade: IGradeWithClassesItem }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -21,7 +20,7 @@ export default function ClassNewBtn({ year, grade }: { year: IAcademicYear; grad
         <PlusIcon />
         Add new class
       </Button>
-      {isOpen && <ClassDetailsDialog open onOpenChange={setIsOpen} year={year} grade={grade} />}
+      {isOpen && <ClassDetailsDialog open onOpenChange={setIsOpen} grade={grade} />}
     </>
   );
 }

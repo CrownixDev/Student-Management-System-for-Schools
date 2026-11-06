@@ -13,25 +13,34 @@ import z from "zod";
 export class EnrollmentService {
   constructor(private repository: EnrollmentRepository) {}
 
-  async create(academicYearId: string, classId: string, data: z.infer<typeof enrollmentCreateSchema>) {
+  async create(classId: string, data: z.infer<typeof enrollmentCreateSchema>) {
     const parsedRes = enrollmentCreateSchema.safeParse(data);
     if (!parsedRes.success) {
       throw new ApiErrorV2("Data validation failed");
     }
+
     try {
       await Promise.all(
-        parsedRes.data.map((st) => {
-          this.repository.create({
+        parsedRes.data.map(async (st) => {
+          return this.repository.updateMany({ studentId: st.studentId }, { endedOn: new Date() });
+        }),
+      );
+
+      await Promise.all(
+        parsedRes.data.map(async (st) => {
+          return this.repository.create({
             class: { connect: { id: classId } },
-            academicYear: { connect: { id: academicYearId } },
             student: { connect: { id: st.studentId } },
             classIndex: st.classIndex,
-            subjects: {
+            enrollmentSubjects: {
               createMany: {
-                data: st.subjects.map((s) => ({
-                  subjectId: s.subjectId,
-                  mediumId: s.mediumId,
-                })),
+                data: await Promise.all(
+                  st.subjects.map(async (s) => {
+                    const classSubject = await this.repository.getClassSubject(classId, s.subjectId);
+                    if (!classSubject) throw new ApiErrorV2("Class subject not found");
+                    return { classSubjectId: classSubject.id, mediumId: s.mediumId };
+                  }),
+                ),
               },
             },
           });
@@ -40,15 +49,15 @@ export class EnrollmentService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Student already enrolled for a class");
+          throw new ApiErrorV2("Student already enrolled this class");
         }
       }
       throw error;
     }
   }
 
-  async updateIndex(studentId: string, academicYearId: string, data: z.infer<typeof enrollmentIndexUpdateSchema>) {
-    if (!studentId || !academicYearId) throw new ApiErrorV2("Student and Academic Year ids are required");
+  async updateIndex(classId: string, studentId: string, data: z.infer<typeof enrollmentIndexUpdateSchema>) {
+    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
 
     const parsedRes = enrollmentIndexUpdateSchema.safeParse(data);
     if (!parsedRes.success) {
@@ -56,7 +65,10 @@ export class EnrollmentService {
     }
 
     try {
-      await this.repository.update(studentId, academicYearId, { classIndex: data.classIndex });
+      const enrollmentId = await this.repository.getId(classId, studentId);
+      if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+
+      await this.repository.update(enrollmentId, { classIndex: parsedRes.data.classIndex });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
@@ -68,11 +80,11 @@ export class EnrollmentService {
   }
 
   async updateSubjectEnrollment(
+    classId: string,
     studentId: string,
-    academicYearId: string,
     data: z.infer<typeof enrollmentSubjectUpdateSchema>,
   ) {
-    if (!studentId || !academicYearId) throw new ApiErrorV2("Student and Academic Year ids are required");
+    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
 
     const parsedRes = enrollmentSubjectUpdateSchema.safeParse(data);
     if (!parsedRes.success) {
@@ -81,27 +93,30 @@ export class EnrollmentService {
 
     try {
       if (parsedRes.data.enrolled) {
-        await this.repository.update(studentId, academicYearId, {
-          subjects: { create: { subject: { connect: { id: parsedRes.data.subjectId } } } },
-        });
+        const enrollmentId = await this.repository.getId(classId, studentId);
+        if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+
+        const classSubject = await this.repository.getClassSubject(classId, parsedRes.data.subjectId);
+        if (!classSubject) throw new ApiErrorV2("Class subject not found");
+
+        await this.repository.createSubject(enrollmentId, classSubject.id, classSubject.mediumId);
       } else {
-        const enrollmentRelations = await this.repository.getSubjectRelations(
-          studentId,
-          academicYearId,
-          parsedRes.data.subjectId,
-        );
+        const enrollmentId = await this.repository.getId(classId, studentId);
+        if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+
+        const enrollmentRelations = await this.repository.getSubjectRelations(enrollmentId, parsedRes.data.subjectId);
         if (!enrollmentRelations) throw new ApiErrorV2("Enrollment not found");
 
+        // Do not delete the enrolled subject if student has any marks related to that
         const hasRelations = enrollmentRelations.marks.length > 0;
         if (hasRelations) {
           throw new ApiErrorV2("This subject is currently in use");
         }
 
-        const enrollment = await this.repository.getId(studentId, academicYearId);
-        if (!enrollment) throw new ApiErrorV2("Enrollment not found");
-        await prisma.enrollmentSubject.delete({
-          where: { enrollmentId_subjectId: { enrollmentId: enrollment.id, subjectId: parsedRes.data.subjectId } },
-        });
+        const classSubject = await this.repository.getClassSubject(classId, parsedRes.data.subjectId);
+        if (!classSubject) throw new ApiErrorV2("Class subject not found");
+
+        await this.repository.deleteSubject(enrollmentId, classSubject.id);
       }
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -109,17 +124,16 @@ export class EnrollmentService {
           throw new ApiErrorV2("Record not found");
         }
       }
-      console.log(error);
       throw error;
     }
   }
 
   async updateSubjectMedium(
+    classId: string,
     studentId: string,
-    academicYearId: string,
     data: z.infer<typeof enrollmentSubjectMediumUpdateSchema>,
   ) {
-    if (!studentId || !academicYearId) throw new ApiErrorV2("Student and Academic Year ids are required");
+    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
 
     const parsedRes = enrollmentSubjectMediumUpdateSchema.safeParse(data);
     if (!parsedRes.success) {
@@ -127,11 +141,14 @@ export class EnrollmentService {
     }
 
     try {
-      const enrollment = await this.repository.getId(studentId, academicYearId);
-      if (!enrollment) throw new ApiErrorV2("Enrollment not found");
+      const enrollmentId = await this.repository.getId(classId, studentId);
+      if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
 
-      await this.repository.updateSubject(enrollment.id, parsedRes.data.subjectId, {
-        medium: parsedRes.data.mediumId ? { connect: { id: parsedRes.data.mediumId } } : { disconnect: {} },
+      const classSubject = await this.repository.getClassSubject(classId, parsedRes.data.subjectId);
+      if (!classSubject) throw new ApiErrorV2("Class subject not found");
+
+      await this.repository.updateSubject(enrollmentId, classSubject.id, {
+        medium: { connect: { id: parsedRes.data.mediumId } },
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -143,24 +160,24 @@ export class EnrollmentService {
     }
   }
 
-  async delete(studentId: string, academicYearId: string) {
-    if (!studentId || !academicYearId) throw new ApiErrorV2("Student and Academic Year ids are required");
+  async delete(classId: string, studentId: string) {
+    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
 
-    const enrollment = await this.repository.getRelations(studentId, academicYearId);
-    if (!enrollment) throw new ApiErrorV2("Enrollment not found");
+    const enrollmentId = await this.repository.getId(classId, studentId);
+    if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
 
-    const hasRelations = enrollment.marks.length > 0;
+    const relations = await this.repository.getRelations(enrollmentId);
+    if (!relations) throw new ApiErrorV2("Enrollment not found");
+
+    const hasRelations = relations.marks.length > 0;
     if (hasRelations) {
       throw new ApiErrorV2("This enrollment is currently in use");
     }
 
     try {
       await prisma.$transaction(async (tx) => {
-        const enrollment = await this.repository.getId(studentId, academicYearId);
-        if (!enrollment) throw new ApiErrorV2("Enrollment not found");
-
-        await tx.enrollmentSubject.deleteMany({ where: { enrollmentId: enrollment.id } });
-        await tx.enrollment.delete({ where: { studentId_academicYearId: { studentId, academicYearId } } });
+        await tx.enrollmentSubject.deleteMany({ where: { enrollmentId } });
+        await tx.enrollment.delete({ where: { id: enrollmentId } });
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

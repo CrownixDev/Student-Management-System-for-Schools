@@ -84,7 +84,7 @@ export default function StudentPickerDialog({
     enabled: open && activeTab === "by-class" && Boolean(year && grade),
     queryKey: ["student-picker-class-options", year?.id, grade?.id],
     queryFn: async () => {
-      const result = await getClassOptionsAction(year!.id, grade!.id);
+      const result = await getClassOptionsAction(grade!.id);
       if (!result.success) {
         toast.error(result.message);
         throw new Error(result.message);
@@ -161,7 +161,7 @@ export default function StudentPickerDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[90dvh] min-w-[42rem] flex-col overflow-hidden">
+        <DialogContent className="flex h-[70dvh] min-w-[42rem] flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle>Add students</DialogTitle>
           </DialogHeader>
@@ -264,13 +264,25 @@ export default function StudentPickerDialog({
                   <Label>Class</Label>
                   <Select
                     value={classId}
-                    disabled={!year || !grade || classOptionsQuery.isPending}
+                    disabled={
+                      !year || !grade || classOptionsQuery.isPending || (classOptionsQuery.data?.length ?? 0) === 0
+                    }
                     onValueChange={selectClass}
+                    items={classOptionsQuery.data ?? []}
                   >
                     <SelectTrigger className="w-full min-w-0">
-                      <SelectValue
-                        placeholder={classOptionsQuery.isPending ? "Loading classes..." : "Select a class"}
-                      />
+                      {!year || (!grade && <SelectValue placeholder={"Select year and grade first"} />)}
+                      {year && grade && (
+                        <SelectValue
+                          placeholder={
+                            classOptionsQuery.isPending
+                              ? "Loading classes..."
+                              : classOptionsQuery.data?.length === 0
+                                ? "No classes available"
+                                : "Select a class"
+                          }
+                        />
+                      )}
                     </SelectTrigger>
                     <SelectContent>
                       {(classOptionsQuery.data ?? []).map((classOption: IClassOption) => (
@@ -342,7 +354,7 @@ export default function StudentPickerDialog({
                   </ScrollArea>
                 </>
               ) : (
-                <div className="flex h-48 items-center justify-center rounded-md border text-sm text-muted-foreground">
+                <div className="flex h-full items-center justify-center rounded-md border text-sm text-muted-foreground">
                   Select an academic year and grade, then choose a class.
                 </div>
               )}

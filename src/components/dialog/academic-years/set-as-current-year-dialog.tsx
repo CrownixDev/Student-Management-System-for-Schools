@@ -19,6 +19,9 @@ import { Loader2, StarIcon } from "lucide-react";
 import { useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
+import { ACTIVE_YEAR } from "@/lib/query-keys";
+import { useRouter } from "next/navigation";
 
 function FormButtons() {
   const { pending } = useFormStatus();
@@ -38,12 +41,16 @@ function FormButtons() {
 
 export default function SetAsCurrentYearDialog({ year }: { year: IAcademicYear }) {
   const ref = useRef<DialogRootActions | null>(null);
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   async function handleOnSet(e: React.SubmitEvent) {
     e.preventDefault();
     if (!year?.id) return;
     const res = await setCurrentAcademicYearAction(year.id);
     if (res.success) {
+      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
+      router.refresh();
       ref.current?.close();
       toast.success(res.message);
     } else {

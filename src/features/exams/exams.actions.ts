@@ -9,11 +9,7 @@ import { examService } from ".";
 import { Route } from "next";
 import z from "zod";
 
-export async function createExamAction(
-  yearId: string,
-  gradeId: string,
-  data: z.infer<typeof examSchema>,
-): Promise<IResponse> {
+export async function createExamAction(gradeId: string, data: z.infer<typeof examSchema>): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   const parsedData = examSchema.safeParse(data);
@@ -22,7 +18,7 @@ export async function createExamAction(
   }
 
   try {
-    await examService.create(yearId, gradeId, parsedData.data);
+    await examService.create(gradeId, parsedData.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Exam Created" };
   } catch (error) {

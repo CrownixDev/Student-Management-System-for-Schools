@@ -15,11 +15,13 @@ import {
 } from "@/components/shadcn/sidebar";
 import SidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 import { TypographyH1 } from "@/components/ui/typography";
+import { getActiveAcademicYearAction } from "@/features/academic-years/year.actions";
+import { ACTIVE_YEAR } from "@/lib/query-keys";
+import { useQuery } from "@tanstack/react-query";
 import {
-  BackpackIcon,
   CalendarsIcon,
   CircleUserIcon,
-  GraduationCapIcon,
+  HousesIcon,
   KeyRoundIcon,
   Languages,
   LibraryBigIcon,
@@ -30,28 +32,42 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { Route } from "next";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { toast } from "react-toastify";
+import Link from "next/link";
 
-export default function SetupLayout({ children }: { children: React.ReactNode }) {
+export default function SetupLayout({ children }: LayoutProps<"/setup">) {
   const pathname = usePathname();
 
+  const { data: activeYear = null, isPending: isLoadingYear } = useQuery({
+    queryFn: async () => {
+      const res = await getActiveAcademicYearAction();
+      if (res.success) {
+        return res.data;
+      } else {
+        toast.error(res.message);
+        return null;
+      }
+    },
+    queryKey: [ACTIVE_YEAR],
+  });
+
   const sidebarItems = [
-    { name: "Years", icon: CalendarsIcon, link: "/setup/years" },
-    { name: "Grades", icon: GraduationCapIcon, link: "/setup/grades" },
-    { name: "Classes", icon: BackpackIcon, link: "/setup/classes" },
-    { name: "Students", icon: CircleUserIcon, link: "/setup/students" },
-    { name: "Subjects", icon: LibraryBigIcon, link: "/setup/subjects" },
-    { name: "Exams", icon: NotebookPenIcon, link: "/setup/exams" },
-    { name: "Batch", icon: LinkIcon, link: "/setup/batch" },
-    { name: "Teachers", icon: UsersIcon, link: "/setup/teachers" },
-    { name: "Medium", icon: Languages, link: "/setup/medium" },
-    { name: "Users", icon: KeyRoundIcon, link: "/setup/users" },
-    { name: "Settings", icon: SettingsIcon, link: "/setup/settings" },
+    { name: "Years", icon: CalendarsIcon, link: "/setup/years", disabled: isLoadingYear },
+    { name: "Classes", icon: HousesIcon, link: "/setup/classes", disabled: isLoadingYear || !activeYear },
+    { name: "Exams", icon: NotebookPenIcon, link: "/setup/exams", disabled: isLoadingYear || !activeYear },
+    { name: "Students", icon: CircleUserIcon, link: "/setup/students", disabled: isLoadingYear },
+    { name: "Batch", icon: LinkIcon, link: "/setup/batch", disabled: isLoadingYear },
+    { name: "Subjects", icon: LibraryBigIcon, link: "/setup/subjects", disabled: isLoadingYear },
+    { name: "Teachers", icon: UsersIcon, link: "/setup/teachers", disabled: isLoadingYear },
+    { name: "Medium", icon: Languages, link: "/setup/medium", disabled: isLoadingYear },
+    { name: "Users", icon: KeyRoundIcon, link: "/setup/users", disabled: isLoadingYear },
+    { name: "Settings", icon: SettingsIcon, link: "/setup/settings", disabled: isLoadingYear },
   ] as {
     name: string;
     icon: LucideIcon;
     link: Route;
+    disabled?: boolean;
   }[];
 
   return (
@@ -70,7 +86,12 @@ export default function SetupLayout({ children }: { children: React.ReactNode })
                   const isActive = pathname.startsWith(item.link);
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton isActive={isActive} render={<Link href={item.link} />}>
+                      <SidebarMenuButton
+                        disabled={item.disabled}
+                        aria-disabled={item.disabled}
+                        isActive={isActive}
+                        render={<Link href={item.link} />}
+                      >
                         <Icon />
                         <span>{item.name}</span>
                       </SidebarMenuButton>

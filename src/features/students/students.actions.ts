@@ -23,15 +23,15 @@ export async function getStudentListAction({ search, page, limit }: IQueryParams
   }
 }
 
-export async function getStudentListForClassAction(
-  yearId: string,
-  gradeId: string,
-  classId: string,
-): Promise<IResponse<IStudentsListItem[]>> {
+export async function getStudentListForClassAction(classId: string): Promise<IResponse<IStudentsListItem[]>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
+  if (!classId) {
+    return { success: false, message: "Class id is required" };
+  }
+
   try {
-    const result = await studentsService.getListForClass(yearId, gradeId, classId);
+    const result = await studentsService.getListForClass(classId);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching class student list:", error);
@@ -40,14 +40,16 @@ export async function getStudentListForClassAction(
 }
 
 export async function getStudentListForClassWithSubjectsAction(
-  yearId: string,
-  gradeId: string,
   classId: string,
 ): Promise<IResponse<IStudentsListWithSubjectsItem[]>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
+  if (!classId) {
+    return { success: false, message: "Class id is required" };
+  }
+
   try {
-    const result = await studentsService.getListForClassWithSubjects(yearId, gradeId, classId);
+    const result = await studentsService.getListForClassWithSubjects(classId);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching class student list:", error);
@@ -57,6 +59,10 @@ export async function getStudentListForClassWithSubjectsAction(
 
 export async function getStudentEnrollmentsAction(studentId: string): Promise<IResponse<IStudentEnrollment[]>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  if (!studentId) {
+    return { success: false, message: "Student id is required" };
+  }
 
   try {
     const result = await studentsService.getEnrollmentsById(studentId);

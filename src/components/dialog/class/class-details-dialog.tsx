@@ -4,13 +4,9 @@ import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { IClass } from "@/features/class";
-import { Loader2Icon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
+import { EditIcon, TrashIcon, XIcon } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { MEDIUM_OPTIONS } from "@/lib/query-keys";
-import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { toast } from "react-toastify";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,13 +21,11 @@ export default function ClassDetailsDialog({
   open,
   onOpenChange,
   data,
-  year,
   grade,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data?: IClass;
-  year: IClass["academicYear"];
   grade: IClass["gradeLevel"];
 }) {
   const router = useRouter();
@@ -39,8 +33,7 @@ export default function ClassDetailsDialog({
   const form = useForm({
     defaultValues: {
       name: data?.name ?? "",
-      mediumId: data?.defaultMedium?.id ?? null,
-      teacher: data?.classTeacher ?? null,
+      teacher: data?.teacher ?? null,
     },
     resolver: zodResolver(classDetailsDialogSchema),
   });
@@ -51,20 +44,6 @@ export default function ClassDetailsDialog({
   const isEditing = Boolean(data?.id);
   const isSubmitting = form.formState.isSubmitting;
 
-  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getMediumOptionsAction();
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [MEDIUM_OPTIONS],
-  });
-
   async function handleCreate(formData: z.infer<typeof classDetailsDialogSchema>) {
     const parsedRes = classDetailsSchema.safeParse({ ...formData, teacherId: formData.teacher?.id ?? null });
     if (!parsedRes.success) {
@@ -72,7 +51,7 @@ export default function ClassDetailsDialog({
       return;
     }
 
-    const res = await createClassAction(year.id, grade.id, parsedRes.data);
+    const res = await createClassAction(grade.id, parsedRes.data);
     if (res.success) {
       onOpenChange(false);
       toast.success(res.message);
@@ -113,96 +92,45 @@ export default function ClassDetailsDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={isSubmitting ? undefined : onOpenChange}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto min-w-2xl">
+        <DialogContent className="max-h-[92dvh] overflow-y-auto min-w-md">
           <DialogHeader>
             <DialogTitle>{data ? `Edit class: ${data.name}` : "Create class"}</DialogTitle>
           </DialogHeader>
 
           <form id="class-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
             <FieldGroup className="gap-4">
-              <div className="grid gap-4 grid-cols-2">
+              <div className="grid grid-cols-2 gap-4">
                 <Field>
                   <FieldLabel>Academic year</FieldLabel>
-                  <Input value={year.name} disabled />
+                  <Input value={grade.academicYear.name} disabled />
                 </Field>
 
                 <Field>
                   <FieldLabel>Grade</FieldLabel>
                   <Input value={grade.name} disabled />
                 </Field>
-
-                <Controller
-                  name="name"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="class-name">Class name</FieldLabel>
-                      <Input
-                        {...field}
-                        id="class-name"
-                        placeholder="e.g. 10-A"
-                        aria-invalid={fieldState.invalid}
-                        disabled={isSubmitting}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
-
-                <Field>
-                  <FieldLabel htmlFor="medium-select">Default teaching medium</FieldLabel>
-                  {isMediumPending && (
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue>
-                          <Loader2Icon className="animate-spin" />
-                          Getting medium list...
-                        </SelectValue>
-                      </SelectTrigger>
-                    </Select>
-                  )}
-                  {!isMediumPending && (
-                    <Controller
-                      name="mediumId"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field>
-                          <Select
-                            id="medium-select"
-                            items={[{ value: "none", label: "Not set" }, ...mediumOptions]}
-                            value={field.value}
-                            onValueChange={(value) => {
-                              if (value !== null)
-                                if (value === "none") {
-                                  field.onChange(null);
-                                } else {
-                                  field.onChange(value);
-                                }
-                            }}
-                            disabled={isSubmitting}
-                          >
-                            <SelectTrigger aria-invalid={fieldState.invalid}>
-                              <SelectValue placeholder="Select a medium" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Not set</SelectItem>
-                              {mediumOptions.map((medium) => (
-                                <SelectItem key={medium.value} value={medium.value}>
-                                  {medium.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
-                  )}
-                </Field>
               </div>
 
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="class-name">Class name</FieldLabel>
+                    <Input
+                      {...field}
+                      id="class-name"
+                      placeholder="e.g. 10-D"
+                      aria-invalid={fieldState.invalid}
+                      disabled={isSubmitting}
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+
               <Field>
-                <FieldLabel>Class teacher</FieldLabel>
+                <FieldLabel>Class teacher (optional)</FieldLabel>
                 <div className="flex items-center gap-3 rounded-md border px-3 py-2">
                   <span className="min-w-0 flex-1 truncate text-sm">
                     {form.getValues("teacher.fullName") ?? "No teacher selected"}
@@ -214,7 +142,7 @@ export default function ClassDetailsDialog({
                     </Button>
                   )}
                   <Button type="button" size="sm" variant="outline" onClick={() => setChangingTeacher(true)}>
-                    <PencilIcon />
+                    <EditIcon />
                     Change
                   </Button>
                 </div>

@@ -53,7 +53,7 @@ export default function ClassPickerDialog({
     enabled: open && !!grade && !isLoadingYear && !!activeYear,
     queryFn: async () => {
       if (activeYear && grade) {
-        const res = await getClassListAction(activeYear.id, grade.id);
+        const res = await getClassListAction(grade.id);
         if (res.success) {
           return res.data;
         } else {
@@ -158,11 +158,12 @@ export default function ClassPickerDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {gradeDialogOpen && (
+      {gradeDialogOpen && activeYear && (
         <GradePickerDialog
           open={gradeDialogOpen}
           onOpenChange={setGradeDialogOpen}
           selectedGradeId={grade?.id}
+          year={activeYear}
           onSelect={(selectedGrade) => setGrade(selectedGrade)}
         />
       )}

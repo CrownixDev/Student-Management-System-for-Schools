@@ -10,11 +10,11 @@ import { Route } from "next";
 import { ApiErrorV2 } from "@/lib/ApiError";
 import z from "zod";
 
-export async function getClassOptionsAction(yearId: string, gradeId: string): Promise<IResponse<IClassOption[]>> {
+export async function getClassOptionsAction(gradeId: string): Promise<IResponse<IClassOption[]>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   try {
-    const result = await classService.getAsOptions(yearId, gradeId);
+    const result = await classService.getAsOptions(gradeId);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching class options:", error);
@@ -22,11 +22,11 @@ export async function getClassOptionsAction(yearId: string, gradeId: string): Pr
   }
 }
 
-export async function getClassListAction(yearId: string, gradeId: string): Promise<IResponse<IClassList>> {
+export async function getClassListAction(gradeId: string): Promise<IResponse<IClassList>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   try {
-    const result = await classService.getList(yearId, gradeId);
+    const result = await classService.getList(gradeId);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching class list:", error);
@@ -34,11 +34,7 @@ export async function getClassListAction(yearId: string, gradeId: string): Promi
   }
 }
 
-export async function createClassAction(
-  yearId: string,
-  gradeId: string,
-  data: z.infer<typeof classDetailsSchema>,
-): Promise<IResponse> {
+export async function createClassAction(gradeId: string, data: z.infer<typeof classDetailsSchema>): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   const parsedData = classDetailsSchema.safeParse(data);
@@ -47,7 +43,7 @@ export async function createClassAction(
   }
 
   try {
-    await classService.create(yearId, gradeId, parsedData.data);
+    await classService.create(gradeId, parsedData.data);
     revalidatePath("/setup" as Route);
     return { success: true, message: "Class Created" };
   } catch (error) {
@@ -104,15 +100,15 @@ export async function deleteClassAction(classId: string): Promise<IResponse> {
   }
 }
 
-export async function updateClassBatchAction(batchId: string | null, classIds: string[]): Promise<IResponse> {
+export async function updateClassBatchAction(batchId: string | null, gradeId: string): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
-  if (classIds.length === 0) {
-    return { success: false, message: "Class ids are required" };
+  if (!gradeId) {
+    return { success: false, message: "Grade id is required" };
   }
 
   try {
-    await classService.updateBatch(batchId, classIds);
+    await classService.updateBatch(batchId, gradeId);
     revalidatePath("/setup" as Route);
     return { success: true, message: batchId ? "Batch assigned successfully" : "Batch removed successfully" };
   } catch (error) {
@@ -161,7 +157,7 @@ export async function deleteClassSubjectAction(classId: string, subjectId: strin
   try {
     await classService.deleteSubject(classId, subjectId);
     revalidatePath("/setup" as Route);
-    return { success: true, message: "Subject deleted from class" };
+    return { success: true, message: "Subject removed from class" };
   } catch (error) {
     if (error instanceof ApiErrorV2) {
       return { success: false, message: error.message };

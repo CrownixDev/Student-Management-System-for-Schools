@@ -8,8 +8,8 @@ export const userSelect = {
   role: true,
   isActive: true,
   teacher: { select: { id: true, fullName: true, phone: true } },
-  classes: { select: { class: { select: { id: true, name: true } } } },
-  subjects: { select: { subject: { select: { id: true, name: true, code: true, category: true } } } },
+  userClasses: { select: { class: { select: { id: true, name: true } } } },
+  userSubjects: { select: { subject: { select: { id: true, name: true, code: true, category: true } } } },
 } satisfies UserSelect;
 
 type UserClass = {
@@ -28,7 +28,7 @@ export type IUser = StrictOmit<
   UserGetPayload<{
     select: typeof userSelect;
   }>,
-  "subjects" | "classes"
+  "userSubjects" | "userClasses"
 > & {
   classes: UserClass[];
   subjects: UserSubject[];

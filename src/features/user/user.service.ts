@@ -18,8 +18,8 @@ export class UserService {
     const users = await this.repository.getList({ search, role });
     return users.map((user) => ({
       ...user,
-      subjects: user.subjects.map((s) => ({ ...s.subject })),
-      classes: user.classes.map((c) => ({ ...c.class })),
+      subjects: user.userSubjects.map((s) => ({ ...s.subject })),
+      classes: user.userClasses.map((c) => ({ ...c.class })),
     }));
   }
 }

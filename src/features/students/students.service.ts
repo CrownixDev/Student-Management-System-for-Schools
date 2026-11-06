@@ -27,24 +27,20 @@ export class StudentsService {
     return { count, list };
   }
 
-  async getListForClass(yearId: string, gradeId: string, classId: string): Promise<IStudentsListItem[]> {
-    if (!yearId || !gradeId || !classId) throw new ApiErrorV2("Year, grade and class ids are required");
+  async getListForClass(classId: string): Promise<IStudentsListItem[]> {
+    if (!classId) throw new ApiErrorV2("Class id is required");
 
-    const itemList = await this.repository.getListForClass(yearId, gradeId, classId);
+    const itemList = await this.repository.getListForClass(classId);
     const sortedItemList = itemList.sort(
       (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
     );
     return sortedItemList;
   }
 
-  async getListForClassWithSubjects(
-    yearId: string,
-    gradeId: string,
-    classId: string,
-  ): Promise<IStudentsListWithSubjectsItem[]> {
-    if (!yearId || !gradeId || !classId) throw new ApiErrorV2("Year, grade and class ids are required");
+  async getListForClassWithSubjects(classId: string): Promise<IStudentsListWithSubjectsItem[]> {
+    if (!classId) throw new ApiErrorV2("Year, grade and class ids are required");
 
-    const itemList = await this.repository.getListForClassWithSubjects(yearId, gradeId, classId);
+    const itemList = await this.repository.getListForClassWithSubjects(classId);
     const sortedItemList = itemList.sort(
       (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
     );
@@ -54,35 +50,36 @@ export class StudentsService {
       fullName: st.fullName,
       enrollment: {
         classIndex: st.enrollments[0].classIndex,
-        subjects: st.enrollments[0].subjects.map((sub) => ({
-          subjectId: sub.subject.id,
-          mediumId: sub.medium?.id ?? null,
+        subjects: st.enrollments[0].enrollmentSubjects.map((esub) => ({
+          subjectId: esub.classSubject.subject.id,
+          mediumId: esub.medium.id,
         })),
       },
     }));
   }
 
-  async getById(studentId: string, yearId: string, gradeId: string, classId: string): Promise<IStudent> {
-    if (!yearId || !gradeId || !classId || !studentId) {
-      throw new ApiErrorV2("Year, grade, class and student ids are required");
+  async getById(classId: string, studentId: string): Promise<IStudent> {
+    if (!classId || !studentId) {
+      throw new ApiErrorV2("Class and student ids are required");
     }
 
-    const student = await this.repository.getById(studentId, yearId, gradeId, classId);
+    const student = await this.repository.getById(classId, studentId);
     if (!student) throw new ApiErrorV2("Student not found");
 
     const enrollment = student.enrollments[0];
     const examsByName = new Map<string, IStudent["enrollment"]["exams"][number]>();
 
     for (const mark of enrollment.marks) {
-      let exam = examsByName.get(mark.exam.name);
+      let exam = examsByName.get(mark.examSubject.exam.name);
+
       if (!exam) {
-        exam = { name: mark.exam.name, subjects: [] };
-        examsByName.set(mark.exam.name, exam);
+        exam = { name: mark.examSubject.exam.name, subjects: [] };
+        examsByName.set(mark.examSubject.exam.name, exam);
       }
 
       exam.subjects.push({
-        id: mark.subject.id,
-        name: mark.subject.name,
+        id: mark.examSubject.subject.id,
+        name: mark.examSubject.subject.name,
         result: {
           marks: mark.marks,
           status: mark.status,
@@ -115,13 +112,30 @@ export class StudentsService {
     if (!studentId) throw new ApiErrorV2("Student ID is required");
     const student = await this.repository.getEnrollmentsById(studentId);
     if (!student) throw new ApiErrorV2("Student not found");
+
     return student.enrollments.map((en) => ({
-      ...en,
-      subjects: en.subjects.map((sub) => ({
-        name: sub.subject.name,
-        category: sub.subject.category,
-        code: sub.subject.code,
-        medium: sub.medium?.name ?? null,
+      id: en.id,
+      status: en.status,
+      classIndex: en.classIndex,
+      joinedOn: en.joinedOn,
+      endedOn: en.endedOn,
+      academicYear: {
+        id: en.class.gradeLevel.academicYear.id,
+        name: en.class.gradeLevel.academicYear.name,
+      },
+      class: {
+        id: en.class.id,
+        name: en.class.name,
+        gradeLevel: {
+          id: en.class.gradeLevel.id,
+          name: en.class.gradeLevel.name,
+        },
+      },
+      subjects: en.enrollmentSubjects.map((esub) => ({
+        name: esub.classSubject.subject.name,
+        category: esub.classSubject.subject.category,
+        code: esub.classSubject.subject.code,
+        medium: esub.medium?.name ?? null,
       })),
     }));
   }

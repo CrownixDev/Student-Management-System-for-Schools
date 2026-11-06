@@ -32,9 +32,9 @@ export class ExamService {
     private classRepository: ClassRepository,
   ) {}
 
-  async getList(yearId: string, gradeId: string): Promise<IExamListItem[]> {
-    if (!yearId || !gradeId) throw new ApiErrorV2("Year and grade ids are required");
-    return await this.repository.getList(yearId, gradeId);
+  async getList(gradeId: string): Promise<IExamListItem[]> {
+    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    return await this.repository.getList(gradeId);
   }
 
   async getListItemById(examId: string): Promise<IExamListItem> {
@@ -52,14 +52,17 @@ export class ExamService {
       throw new ApiErrorV2("Enrollment not found");
     }
 
-    const exams = await this.repository.getList(enrollment.academicYearId, enrollment.class.gradeLevelId);
+    const exams = await this.repository.getList(enrollment.class.gradeLevelId);
 
-    const marksByExamAndSubject = new Map(enrollment.marks.map((mark) => [`${mark.examId}:${mark.subjectId}`, mark]));
+    const marksByExamAndSubject = new Map(
+      enrollment.marks.map((mark) => [`${mark.examSubject.examId}:${mark.examSubject.subjectId}`, mark]),
+    );
 
     return exams.map((exam) => ({
       id: exam.id,
       name: exam.name,
-      subjects: enrollment.subjects.map(({ subject, medium }) => {
+      subjects: enrollment.enrollmentSubjects.map(({ classSubject, medium }) => {
+        const { subject } = classSubject;
         const mark = marksByExamAndSubject.get(`${exam.id}:${subject.id}`);
 
         return {
@@ -81,7 +84,7 @@ export class ExamService {
     if (!yearId || !gradeId || !examId) throw new ApiErrorV2("Year, grade and exam ids are required");
 
     const exam = await this.getListItemById(examId);
-    if (exam.academicYear.id !== yearId || exam.gradeLevel.id !== gradeId) {
+    if (exam.gradeLevel.academicYear.id !== yearId || exam.gradeLevel.id !== gradeId) {
       throw new ApiErrorV2("Exam not found");
     }
 
@@ -92,7 +95,7 @@ export class ExamService {
     }
 
     const ignoredRankingSubjectIds = new Set(
-      exam.examSubjects.filter((examSubject) => examSubject.ignoreRanking).map((examSubject) => examSubject.id),
+      exam.examSubjects.filter((examSubject) => examSubject.ignoreRanking).map((examSubject) => examSubject.subject.id),
     );
 
     const byGrade = new Map<string, TopResultStudentWithClass>();
@@ -131,10 +134,11 @@ export class ExamService {
         };
         byGrade.set(enrollment.student.id, gradeStudent);
 
-        for (const { subject, medium } of enrollment.subjects) {
+        for (const { classSubject, medium } of enrollment.enrollmentSubjects) {
+          const { subject } = classSubject;
           if (ignoredRankingSubjectIds.has(subject.id)) continue;
 
-          const mark = enrollment.marks.find((result) => result.subject.id === subject.id);
+          const mark = enrollment.marks.find((result) => result.examSubject.subject.id === subject.id);
           const subjectResult = subjectResults.get(subject.id) ?? {
             id: subject.id,
             name: subject.name,
@@ -157,9 +161,9 @@ export class ExamService {
         }
 
         for (const mark of enrollment.marks) {
-          if (ignoredRankingSubjectIds.has(mark.subject.id)) continue;
+          if (ignoredRankingSubjectIds.has(mark.examSubject.subject.id)) continue;
 
-          const subjectResult = subjectResults.get(mark.subject.id);
+          const subjectResult = subjectResults.get(mark.examSubject.subject.id);
           const subjectStudent = subjectResult?.students.get(enrollment.student.id);
           const earnedMarks = mark.status === "absent" ? 0 : (mark.marks ?? 0);
 
@@ -201,7 +205,7 @@ export class ExamService {
       id: classData.id,
       name: classData.name,
       gradeLevel: classData.gradeLevel,
-      academicYear: classData.academicYear,
+      academicYear: classData.gradeLevel.academicYear,
       students: classData.enrollments.map((enrollment) => ({
         id: enrollment.student.id,
         admissionNo: enrollment.student.admissionNo,
@@ -209,9 +213,9 @@ export class ExamService {
         fullName: enrollment.student.fullName,
         classIndex: enrollment.classIndex,
         subjects: enrollment.marks.map((mark) => ({
-          id: mark.subject.id,
-          name: mark.subject.name,
-          code: mark.subject.code,
+          id: mark.examSubject.subject.id,
+          name: mark.examSubject.subject.name,
+          code: mark.examSubject.subject.code,
           result: {
             marks: mark.marks,
             status: mark.status,
@@ -221,7 +225,7 @@ export class ExamService {
     };
   }
 
-  async create(yearId: string, gradeId: string, data: z.infer<typeof examSchema>) {
+  async create(gradeId: string, data: z.infer<typeof examSchema>) {
     const parsedData = examSchema.safeParse(data);
     if (!parsedData.success) {
       throw new ApiErrorV2("Data validation failed");
@@ -230,7 +234,6 @@ export class ExamService {
     try {
       await this.repository.create({
         name: parsedData.data.name,
-        academicYear: { connect: { id: yearId } },
         gradeLevel: { connect: { id: gradeId } },
         examSubjects: {
           createMany: {
@@ -303,7 +306,7 @@ export class ExamService {
     const exam = await this.repository.getRelations(examId);
     if (!exam) throw new ApiErrorV2("Exam not found");
 
-    const hasRelations = exam.marks.length > 0;
+    const hasRelations = exam.examSubjects.some((subject) => subject.marks.length > 0);
     if (hasRelations) {
       throw new ApiErrorV2("This Exam is currently in use");
     }

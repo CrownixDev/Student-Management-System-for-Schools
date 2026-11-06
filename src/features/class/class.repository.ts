@@ -22,20 +22,21 @@ export class ClassRepository {
                 category: true,
               },
             },
+            enrollmentSubjects: { select: { id: true } },
           },
         },
       },
     });
   }
 
-  async getList(yearId: string, gradeId: string) {
+  async getList(gradeId: string) {
     return await prisma.class.findMany({
-      where: { academicYearId: yearId, gradeLevelId: gradeId },
+      where: { gradeLevelId: gradeId },
       select: {
         id: true,
         name: true,
+        gradeLevel: { select: { batch: { select: { id: true, name: true, type: true } } } },
         enrollments: {
-          where: { academicYearId: yearId },
           select: { id: true },
         },
       },
@@ -44,23 +45,28 @@ export class ClassRepository {
 
   async getStudentsWithExamData(yearId: string, gradeId: string, classId: string, examId: string) {
     return await prisma.class.findUnique({
-      where: { id: classId, academicYearId: yearId, gradeLevelId: gradeId },
+      where: { id: classId, gradeLevelId: gradeId, gradeLevel: { academicYearId: yearId } },
       select: {
         id: true,
         name: true,
-        gradeLevel: { select: { id: true, name: true } },
-        academicYear: { select: { id: true, name: true } },
+        gradeLevel: {
+          select: {
+            id: true,
+            name: true,
+            academicYear: { select: { id: true, name: true } },
+          },
+        },
         enrollments: {
           select: {
             id: true,
             classIndex: true,
             student: { select: { id: true, admissionNo: true, fullName: true } },
             marks: {
-              where: { examId },
+              where: { examSubject: { examId } },
               select: {
                 marks: true,
                 status: true,
-                subject: { select: { id: true, name: true, code: true } },
+                examSubject: { select: { subject: { select: { id: true, name: true, code: true } } } },
               },
             },
           },
@@ -83,8 +89,8 @@ export class ClassRepository {
       where: { id: classId },
       select: {
         enrollments: {
-          where: { subjects: { some: { subject: { id: subjectId } } } },
-          select: { id: true, subjects: { select: { id: true } } },
+          where: { enrollmentSubjects: { some: { classSubject: { subjectId } } } },
+          select: { id: true, enrollmentSubjects: { select: { id: true } } },
         },
       },
     });

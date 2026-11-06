@@ -31,9 +31,9 @@ export default async function ExamsDetails() {
     redirect("/setup");
   }
 
-  if (gradeId && activeYear) {
+  if (gradeId) {
     try {
-      exams = await examService.getList(activeYear.id, gradeId);
+      exams = await examService.getList(gradeId);
     } catch (err) {
       console.error("Failed to load exams list:", err);
       redirect("/setup");
@@ -64,7 +64,7 @@ export default async function ExamsDetails() {
         {exams.length > 0 && (
           <div className="space-y-4">
             {exams.map((exam) => (
-              <ExamCard key={exam.id} year={activeYear} grade={grade} exam={exam} />
+              <ExamCard key={exam.id} exam={exam} />
             ))}
           </div>
         )}

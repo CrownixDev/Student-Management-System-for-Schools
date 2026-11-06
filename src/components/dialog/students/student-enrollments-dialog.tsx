@@ -90,7 +90,7 @@ function EnrollmentCard({ enrollment, studentId }: { enrollment: IStudentEnrollm
 
 export default function StudentEnrollmentsDialog({ open, onOpenChange, student }: Props) {
   const {
-    data: enrollments,
+    data: enrollments = [],
     isPending,
     isError,
   } = useQuery({

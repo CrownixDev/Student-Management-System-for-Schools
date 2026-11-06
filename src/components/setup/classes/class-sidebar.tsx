@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeWithClassesItem } from "@/features/grades";
-import SetupSidebarHearder from "@/components/setup/setup-sidebar-hearder";
-import ClassSidebarItem from "./class-sidebar-item";
-import EmptyState from "@/components/ui/empty-state";
 import { GraduationCapIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
 import {
@@ -13,6 +10,9 @@ import {
   PageSidebarHearder,
 } from "@/components/ui/page/page-sidebar";
 import { Separator } from "@/components/shadcn/separator";
+import ClassSidebarItem from "./class-sidebar-item";
+import EmptyState from "@/components/ui/empty-state";
+import ClassSidebarHeader from "./class-sidebar-header";
 
 export default async function ClassSidebar() {
   const search = filterCache.get("search");
@@ -33,11 +33,11 @@ export default async function ClassSidebar() {
     <>
       <PageSidebar>
         <PageSidebarHearder>
-          <SetupSidebarHearder header={{ title: `All Classes (${activeYear.name})` }} />
+          <ClassSidebarHeader year={activeYear} />
         </PageSidebarHearder>
         <PageSidebarContent>
           {grades.map((grade) => {
-            return <ClassSidebarItem key={grade.id} year={activeYear} grade={grade} />;
+            return <ClassSidebarItem key={grade.id} grade={grade} />;
           })}
           {grades.length === 0 && (
             <EmptyState

@@ -8,3 +8,7 @@ export const subjectCategories = [
   { label: "Religion", value: "religion" },
   { label: "Other", value: "other" },
 ] satisfies { value: SubjectCategory; label: string }[];
+
+export function getSubjectCategory(category: SubjectCategory) {
+  return subjectCategories.find((cat) => cat.value === category)?.label ?? "Other";
+}

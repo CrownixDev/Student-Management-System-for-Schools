@@ -27,7 +27,9 @@ export class MediumService {
     }
 
     try {
-      await this.repository.create(parsedData.data);
+      await this.repository.create({
+        name: parsedData.data.name.trim(),
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -47,7 +49,9 @@ export class MediumService {
     }
 
     try {
-      await this.repository.update(mediumId, parsedData.data);
+      await this.repository.update(mediumId, {
+        name: parsedData.data.name.trim(),
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -67,8 +71,7 @@ export class MediumService {
     const medium = await this.repository.getRelations(mediumId);
     if (!medium) throw new ApiErrorV2("medium not found");
 
-    const hasRelations =
-      medium.classSubjects.length > 0 || medium.classesDefault.length > 0 || medium.enrollmentSubjects.length > 0;
+    const hasRelations = medium.classSubjects.length > 0 || medium.enrollmentSubjects.length > 0;
 
     if (hasRelations) {
       throw new ApiErrorV2("This medium is currently in use");

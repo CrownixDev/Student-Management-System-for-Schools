@@ -25,7 +25,6 @@ export class MediumRepository {
     return await prisma.medium.findUnique({
       where: { id },
       select: {
-        classesDefault: { select: { id: true } },
         classSubjects: { select: { id: true } },
         enrollmentSubjects: { select: { id: true } },
       },

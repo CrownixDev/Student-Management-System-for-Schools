@@ -3,19 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { IExamListItem } from "@/features/exams";
-import { subjectCategories } from "@/features/subjects/subject.enums";
-import { IGradeListItem } from "@/features/grades";
-import { IAcademicYear } from "@/features/academic-years";
+import { getSubjectCategory } from "@/features/subjects/subject.enums";
 import { Badge } from "@/components/shadcn/badge";
 import ExamEditBtn from "./button/exam-edit-btn";
 
-export interface ExamCardProps {
-  year: IAcademicYear;
-  grade: IGradeListItem;
-  exam: IExamListItem;
-}
-
-export default function ExamCard({ year, grade, exam }: ExamCardProps) {
+export default function ExamCard({ exam }: { exam: IExamListItem }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-4">
@@ -26,7 +18,7 @@ export default function ExamCard({ year, grade, exam }: ExamCardProps) {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <ExamEditBtn year={year} grade={grade} exam={exam} />
+          <ExamEditBtn exam={exam} />
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -42,7 +34,6 @@ export default function ExamCard({ year, grade, exam }: ExamCardProps) {
           </TableHeader>
           <TableBody>
             {exam.examSubjects.map((esub) => {
-              const category = subjectCategories.find((cat) => cat.value === esub.subject.category);
               return (
                 <TableRow key={esub.subject.id}>
                   <TableCell className="flex flex-col w-50">
@@ -53,7 +44,7 @@ export default function ExamCard({ year, grade, exam }: ExamCardProps) {
                       <span className="text-sm text-muted-foreground truncate">({esub.subject.code})</span>
                     )}
                   </TableCell>
-                  <TableCell className="w-25">{category?.label ?? "Other"}</TableCell>
+                  <TableCell className="w-25">{getSubjectCategory(esub.subject.category)}</TableCell>
                   <TableCell className="text-center">
                     {esub.ignoreRanking ? (
                       <Badge variant="destructive">Yes</Badge>

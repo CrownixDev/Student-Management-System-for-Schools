@@ -6,7 +6,7 @@ import { getCleanSearch, IQueryParams } from "@/lib/filter";
 import { GradeLevelCreateInput, GradeLevelUpdateInput, GradeLevelWhereInput } from "@/generated/prisma/models";
 
 export class GradesRepository {
-  async getList({ search }: Pick<IQueryParams, "search">) {
+  async getListByYear({ search, yearId }: Pick<IQueryParams, "search"> & { yearId: string }) {
     const cleanSearch = getCleanSearch(search);
 
     const where: GradeLevelWhereInput = {};
@@ -16,22 +16,13 @@ export class GradesRepository {
     }
 
     return await prisma.gradeLevel.findMany({
-      where,
-      select: gradeListSelect,
-      orderBy: { number: "asc" },
-    });
-  }
-
-  async getListByYear(yearId: string) {
-    return await prisma.gradeLevel.findMany({
+      where: { ...where, academicYearId: yearId },
       select: {
         ...gradeListSelect,
         classes: {
-          where: { academicYearId: yearId },
           select: { id: true },
         },
       },
-      orderBy: { number: "asc" },
     });
   }
 
@@ -44,13 +35,11 @@ export class GradesRepository {
 
   async getAllStudentsWithResults(yearId: string, gradeId: string, examId: string) {
     return await prisma.gradeLevel.findUnique({
-      where: { id: gradeId },
+      where: { academicYearId: yearId, id: gradeId },
       select: {
         id: true,
-        number: true,
         name: true,
         classes: {
-          where: { academicYearId: yearId },
           select: {
             id: true,
             name: true,
@@ -58,21 +47,20 @@ export class GradesRepository {
               select: {
                 id: true,
                 student: { select: { id: true, fullName: true, admissionNo: true } },
-                subjects: {
+                enrollmentSubjects: {
                   select: {
-                    subject: { select: { id: true, name: true } },
+                    classSubject: { select: { subject: { select: { id: true, name: true } } } },
                     medium: { select: { name: true } },
                   },
                 },
                 marks: {
-                  where: { examId },
+                  where: { examSubject: { examId } },
                   select: {
                     marks: true,
                     status: true,
-                    subject: {
+                    examSubject: {
                       select: {
-                        id: true,
-                        name: true,
+                        subject: { select: { id: true, name: true } },
                       },
                     },
                   },
@@ -87,6 +75,7 @@ export class GradesRepository {
 
   async getListWithClasses(yearId: string) {
     return await prisma.gradeLevel.findMany({
+      where: { academicYearId: yearId },
       select: {
         ...gradesSelect,
         classes: {
@@ -94,10 +83,8 @@ export class GradesRepository {
             ...gradesSelect.classes.select,
             enrollments: { select: { id: true } },
           },
-          where: { academicYearId: yearId },
         },
       },
-      orderBy: { number: "asc" },
     });
   }
 

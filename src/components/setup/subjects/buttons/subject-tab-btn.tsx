@@ -3,10 +3,10 @@
 import { SubjectCategory } from "@/generated/prisma/enums";
 import { useQueryStates } from "nuqs";
 import { TabsTrigger } from "@/components/shadcn/tabs";
-import { subjectTabParsers } from "@/features/subjects/batch.cache";
+import { subjectTabParsers } from "@/features/subjects/subject.cache";
 
 export default function SubjectTabBtn({ children, value }: { children: React.ReactNode; value: SubjectCategory }) {
-  const [_, setPartsers] = useQueryStates(subjectTabParsers);
+  const [, setPartsers] = useQueryStates(subjectTabParsers);
 
   return (
     <TabsTrigger onClick={() => setPartsers({ tab: value })} value={value}>

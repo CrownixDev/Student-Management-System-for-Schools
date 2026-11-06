@@ -18,10 +18,14 @@ export const studentListWithSubjectsSelect = {
   enrollments: {
     select: {
       classIndex: true,
-      subjects: {
+      enrollmentSubjects: {
         select: {
           medium: { select: { id: true } },
-          subject: { select: { id: true } },
+          classSubject: {
+            select: {
+              subject: { select: { id: true } },
+            },
+          },
         },
       },
     },
@@ -33,10 +37,10 @@ export type IStudentsListWithSubjectsItem = {
   admissionNo: string;
   fullName: string;
   enrollment: {
-    classIndex: number | null
+    classIndex: number | null;
     subjects: {
       subjectId: string;
-      mediumId: string | null;
+      mediumId: string;
     }[];
   };
 };
@@ -76,17 +80,12 @@ export const studentSelect = {
       classIndex: true,
       marks: {
         select: {
-          exam: {
-            select: {
-              name: true,
-            },
-          },
           marks: true,
           status: true,
-          subject: {
+          examSubject: {
             select: {
-              id: true,
-              name: true,
+              exam: { select: { id: true, name: true } },
+              subject: { select: { id: true, name: true } },
             },
           },
         },
@@ -156,11 +155,22 @@ export const studentEnrollmentSelect = {
       status: true,
       joinedOn: true,
       endedOn: true,
-      academicYear: { select: { id: true, name: true } },
-      class: { select: { id: true, name: true, gradeLevel: { select: { id: true, name: true } } } },
-      subjects: {
+      class: {
         select: {
-          subject: { select: { name: true, code: true, category: true } },
+          id: true,
+          name: true,
+          gradeLevel: {
+            select: {
+              id: true,
+              name: true,
+              academicYear: { select: { id: true, name: true } },
+            },
+          },
+        },
+      },
+      enrollmentSubjects: {
+        select: {
+          classSubject: { select: { subject: { select: { name: true, code: true, category: true } } } },
           medium: { select: { name: true } },
         },
       },

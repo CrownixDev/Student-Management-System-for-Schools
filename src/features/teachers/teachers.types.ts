@@ -34,7 +34,15 @@ export const teacherSelect = {
     select: {
       id: true,
       name: true,
-      academicYear: { select: { id: true, name: true } },
+      gradeLevel: {
+        select: {
+          id: true,
+          name: true,
+          academicYear: {
+            select: { id: true, name: true },
+          },
+        },
+      },
     },
   },
 } satisfies TeacherSelect;
@@ -43,11 +51,24 @@ export type ITeacher = StrictOmit<
   TeacherGetPayload<{
     select: typeof teacherSelect;
   }>,
-  "classSubjects"
+  "classSubjects" | "classesAsClassTeacher"
 > & {
   subjects: {
     name: Subject["name"];
     medium: Medium["name"] | null;
     class: Class["name"];
+  }[];
+
+  classesAsClassTeacher: {
+    id: string;
+    name: string;
+    gradeLevel: {
+      id: string;
+      name: string;
+    };
+    academicYear: {
+      id: string;
+      name: string;
+    };
   }[];
 };

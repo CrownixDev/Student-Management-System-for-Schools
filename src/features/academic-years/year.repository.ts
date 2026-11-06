@@ -23,7 +23,6 @@ export class AcademicYearsRepository {
     return await prisma.academicYear.findMany({
       where,
       select: academicYearSelect,
-      orderBy: { createdAt: "desc" },
     });
   }
 

@@ -19,7 +19,7 @@ import { IExamListItem } from "@/features/exams";
 import { ISubjectListItem } from "@/features/subjects";
 import { AlertTriangleIcon, BookPlusIcon, Trash2Icon, TrashIcon } from "lucide-react";
 import { useState } from "react";
-import { subjectCategories } from "@/features/subjects/subject.enums";
+import { getSubjectCategory } from "@/features/subjects/subject.enums";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,12 +39,11 @@ import z from "zod";
 interface ExamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  year: { id: string; name: string };
-  grade: { id: string; name: string };
+  grade?: { id: string; name: string };
   data?: IExamListItem | null;
 }
 
-export default function ExamDialog({ open, onOpenChange, year, grade, data }: ExamDialogProps) {
+export default function ExamDialog({ open, onOpenChange, grade, data }: ExamDialogProps) {
   const [isSelectSubjectsOpen, setIsSelectSubjectsOpen] = useState(false);
   const [isSubjectDeleting, setIsSubjectDeleting] = useState<{ open: boolean; index: number | null }>({
     open: false,
@@ -122,13 +121,14 @@ export default function ExamDialog({ open, onOpenChange, year, grade, data }: Ex
   }
 
   async function handleCreate(formData: z.infer<typeof examDialogSchema>) {
+    if (!grade) return;
     const parsedRes = examSchema.safeParse(formData);
     if (!parsedRes.success) {
       toast.error("Data validation failed");
       return;
     }
 
-    const res = await createExamAction(year.id, grade.id, parsedRes.data);
+    const res = await createExamAction(grade.id, parsedRes.data);
     if (res.success) {
       onOpenChange(false);
       toast.success(res.message);
@@ -217,7 +217,6 @@ export default function ExamDialog({ open, onOpenChange, year, grade, data }: Ex
                     </TableHeader>
                     <TableBody>
                       {examSubjects.map((esub, index) => {
-                        const category = subjectCategories.find((cat) => cat.value === esub.subject.category);
                         return (
                           <TableRow key={esub.keyId}>
                             <TableCell className="flex flex-col w-50">
@@ -230,7 +229,7 @@ export default function ExamDialog({ open, onOpenChange, year, grade, data }: Ex
                             </TableCell>
 
                             <TableCell>
-                              <span className="truncate">{category?.label ?? "Other"}</span>
+                              <span className="truncate">{getSubjectCategory(esub.subject.category)}</span>
                             </TableCell>
 
                             <TableCell>

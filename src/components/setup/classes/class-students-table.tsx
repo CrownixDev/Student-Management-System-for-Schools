@@ -1,10 +1,12 @@
 "use client";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import SearchInput from "@/components/ui/search-input";
 import { IClass } from "@/features/class";
 import Fuse from "fuse.js";
 import { useState } from "react";
+import SearchInput from "@/components/ui/search-input";
+import { Button } from "@/components/shadcn/button";
+import { DownloadIcon } from "lucide-react";
 export default function ClassStudentsTable({ enrollments }: { enrollments: IClass["enrollments"] }) {
   const [search, setSearch] = useState("");
 
@@ -16,12 +18,19 @@ export default function ClassStudentsTable({ enrollments }: { enrollments: IClas
 
   return (
     <div className="flex flex-col gap-5">
-      <SearchInput
-        placeholder="Search by student name, index or admission number"
-        value={search}
-        onChange={setSearch}
-        onClear={() => setSearch("")}
-      />
+      <div className="flex gap-2">
+        <SearchInput
+          placeholder="Search by student name, index or admission number"
+          value={search}
+          onChange={setSearch}
+          onClear={() => setSearch("")}
+        />
+        {/* TODO: Implement class students export functionality */}
+        <Button variant="outline">
+          Export
+          <DownloadIcon />
+        </Button>
+      </div>
       <div className="overflow-hidden rounded-md border">
         <div className="max-h-[65vh] overflow-auto">
           <Table containerClassName="overflow-visible">
@@ -37,7 +46,9 @@ export default function ClassStudentsTable({ enrollments }: { enrollments: IClas
                 <TableRow key={enrollment.student.id}>
                   <TableCell className="font-mono">{enrollment.classIndex}</TableCell>
                   <TableCell className="font-mono">{enrollment.student.admissionNo}</TableCell>
-                  <TableCell>{enrollment.student.fullName}</TableCell>
+                  <TableCell title={enrollment.student.fullName} className="max-w-25 truncate">
+                    {enrollment.student.fullName}
+                  </TableCell>
                 </TableRow>
               ))}
               {searchResult.length === 0 && (

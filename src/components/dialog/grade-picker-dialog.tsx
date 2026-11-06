@@ -11,6 +11,7 @@ import { CheckIcon, GraduationCapIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { GRADE_OPTIONS } from "@/lib/query-keys";
+import { IAcademicYear } from "@/features/academic-years";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
@@ -20,26 +21,28 @@ export default function GradePickerDialog({
   onOpenChange,
   selectedGradeId,
   onSelect,
+  year,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedGradeId?: string;
   onSelect: (grade: IGradeListItem) => void;
+  year: IAcademicYear;
 }) {
   const [search, setSearch] = useState("");
   const [gradeId, setGradeId] = useState(selectedGradeId ?? "");
 
   const { data: grades = [], isPending } = useQuery({
     enabled: open,
-    queryKey: [GRADE_OPTIONS, search],
     queryFn: async () => {
-      const result = await getGradesListAction({ search: search.trim() || null });
+      const result = await getGradesListAction({ yearId: year.id, search: search.trim() || null });
       if (!result.success) {
         toast.error(result.message);
         throw new Error(result.message);
       }
       return result.data;
     },
+    queryKey: [GRADE_OPTIONS, search, year.id],
   });
 
   function confirmSelection() {

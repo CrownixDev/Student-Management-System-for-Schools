@@ -10,9 +10,9 @@ export class ExamRepository {
     return client ?? prisma;
   }
 
-  async getList(yearId: string, gradeId: string) {
+  async getList(gradeId: string) {
     return await prisma.exam.findMany({
-      where: { academicYearId: yearId, gradeLevelId: gradeId },
+      where: { gradeLevelId: gradeId },
       select: examListSelect,
       orderBy: { createdAt: "asc" },
     });
@@ -27,7 +27,7 @@ export class ExamRepository {
 
   async getByEnrollmentId(enrollmentId: string) {
     return await prisma.exam.findMany({
-      where: { marks: { some: { enrollmentId } } },
+      where: { examSubjects: { some: { marks: { some: { enrollmentId } } } } },
       select: examSelect,
     });
   }
@@ -41,7 +41,7 @@ export class ExamRepository {
 
   async getRelationsForExamSubject(examId: string, subjectId: string) {
     return await prisma.mark.findMany({
-      where: { examId, subjectId },
+      where: { examSubject: { examId, subjectId } },
       select: { id: true },
     });
   }
@@ -50,8 +50,7 @@ export class ExamRepository {
     return await prisma.exam.findUnique({
       where: { id },
       select: {
-        examSubjects: { select: { id: true } },
-        marks: { select: { id: true } },
+        examSubjects: { select: { id: true, marks: { select: { id: true } } } },
       },
     });
   }

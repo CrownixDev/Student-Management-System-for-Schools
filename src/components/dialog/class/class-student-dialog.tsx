@@ -84,18 +84,14 @@ export default function ClassStudentDialog({
   const { data: enrolledStudents = [], isPending } = useQuery({
     enabled: open,
     queryFn: async () => {
-      const result = await getStudentListForClassWithSubjectsAction(
-        classData.academicYear.id,
-        classData.gradeLevel.id,
-        classData.id,
-      );
+      const result = await getStudentListForClassWithSubjectsAction(classData.id);
       if (!result.success) {
         toast.error(result.message);
         throw new Error(result.message);
       }
       return result.data;
     },
-    queryKey: ["class-students", classData.academicYear.id, classData.gradeLevel.id, classData.id],
+    queryKey: ["class-students", classData.gradeLevel.id, classData.id],
   });
 
   const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
@@ -143,11 +139,11 @@ export default function ClassStudentDialog({
 
     const subjects = classData.subjects.map((subject) => ({
       subjectId: subject.id,
-      mediumId: subject.medium?.id ?? classData.defaultMedium?.id ?? null,
+      mediumId: subject.medium.id,
     }));
     const studentsData = newStudents.map((st, index) => ({ studentId: st.id, subjects, classIndex: index + 1 }));
 
-    const res = await createEnrollmentsAction(classData.academicYear.id, classData.id, studentsData);
+    const res = await createEnrollmentsAction(classData.id, studentsData);
 
     if (res.success) {
       setRemovedStudentIds((current) => current.filter((id) => !newStudents.some((student) => student.id === id)));
@@ -166,9 +162,7 @@ export default function ClassStudentDialog({
       setStudentMediumState((current) => {
         const next = { ...current };
         for (const student of newStudents) {
-          next[student.id] = Object.fromEntries(
-            classData.subjects.map((subject) => [subject.id, subject.medium?.id ?? classData.defaultMedium?.id ?? ""]),
-          );
+          next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, subject.medium.id]));
         }
         return next;
       });
@@ -213,7 +207,7 @@ export default function ClassStudentDialog({
       setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     }
     try {
-      const res = await updateStudentSubjectEnrollmentAction(studentId, classData.academicYear.id, {
+      const res = await updateStudentSubjectEnrollmentAction(classData.id, studentId, {
         subjectId,
         enrolled,
       });
@@ -250,9 +244,13 @@ export default function ClassStudentDialog({
   }
 
   async function changeStudentMedium(studentId: string, subjectId: string, mediumId: string | null) {
+    if (!mediumId) {
+      toast.error("A medium is required");
+      return;
+    }
     setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     try {
-      const res = await updateSubjectMediumAction(studentId, classData.academicYear.id, { subjectId, mediumId });
+      const res = await updateSubjectMediumAction(classData.id, studentId, { subjectId, mediumId });
       if (res.success) {
         setStudentMediumState((current) => ({
           ...current,
@@ -270,7 +268,7 @@ export default function ClassStudentDialog({
   async function changeStudentClassIndex(studentId: string, classIndex: string) {
     if (typeof classIndex === "string" && classIndex !== "") {
       try {
-        await updateStudentIndexAction(studentId, classData.academicYear.id, {
+        await updateStudentIndexAction(classData.id, studentId, {
           classIndex: Number.parseInt(classIndex),
         });
       } catch {
@@ -286,7 +284,7 @@ export default function ClassStudentDialog({
   async function handleConfirmDeleteStudent() {
     if (isStudentDeleting.id === null) return;
     const studentId = isStudentDeleting.id;
-    const res = await deleteEnrollmentAction(studentId, classData.academicYear.id);
+    const res = await deleteEnrollmentAction(classData.id, studentId);
     if (res.success) {
       setRemovedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]));
       setAddedStudents((current) => current.filter((student) => student.id !== studentId));
@@ -339,7 +337,7 @@ export default function ClassStudentDialog({
                     {classData.subjects.map((subject) => (
                       <TableHead key={subject.id} className="w-60">
                         <div className="flex min-w-0 flex-col gap-1.5 py-1">
-                          <span className="truncate" title={subject.name}>
+                          <span className="truncate max-w-60" title={subject.name}>
                             {subject.name}
                           </span>
                           <Button

@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/shadcn/card";
 import { FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { IClass } from "@/features/class";
-import { AlertTriangleIcon, BookOpenIcon, Loader2Icon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { AlertTriangleIcon, BookOpenIcon, EditIcon, Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
@@ -29,16 +29,17 @@ import SubjectPickerDialog from "@/components/dialog/subject-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import TooltipButton from "@/components/ui/tooltip-button";
+import { cn } from "cn";
 
 interface ClassSubject {
   id: string;
   name: string;
   code: string | null;
+  mediumId: string | null;
   teacher: {
     id: string;
     fullName: string;
   } | null;
-  mediumId: string | null;
 }
 
 export default function ClassSubjectsDialog({
@@ -51,7 +52,7 @@ export default function ClassSubjectsDialog({
   data: IClass;
 }) {
   const [subjects, setSubjects] = useState<ClassSubject[]>(
-    data.subjects.map((sub) => ({ ...sub, mediumId: sub.medium?.id ?? null })),
+    data.subjects.map((sub) => ({ ...sub, mediumId: sub.medium.id })),
   );
   const [teacherSubjectIndex, setTeacherSubjectIndex] = useState<number | null>(null);
   const [choosingSubjects, setChoosingSubjects] = useState(false);
@@ -93,7 +94,7 @@ export default function ClassSubjectsDialog({
               id: sub.id,
               name: sub.name,
               code: sub?.code ?? null,
-              mediumId: data.defaultMedium?.id ?? null,
+              mediumId: null,
               teacher: null,
             };
           }),
@@ -127,16 +128,16 @@ export default function ClassSubjectsDialog({
   }
 
   async function saveSubjects() {
-    if (subjects.some((subject) => !subject.teacher?.id)) {
-      setErrors(["Select a teacher for each subject."]);
+    if (subjects.some((subject) => !subject.mediumId)) {
+      setErrors(["Select a medium for each subject."]);
       return;
     }
 
     const parsedRes = classSubjectsSchema.safeParse(
       subjects.map((sub) => ({
         subjectId: sub.id,
-        teacherId: sub.teacher!.id,
         mediumId: sub.mediumId,
+        teacherId: sub.teacher?.id ?? null,
       })),
     );
 
@@ -157,8 +158,11 @@ export default function ClassSubjectsDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[min(85vh,52rem)] max-h-[calc(100vh-2rem)] w-[min(64rem,calc(100vw-2rem))] max-w-none! flex-col overflow-hidden">
+      <Dialog open={open}>
+        <DialogContent
+          showCloseButton={false}
+          className="flex h-[min(85vh,52rem)] max-h-[calc(100vh-2rem)] w-[min(64rem,calc(100vw-2rem))] max-w-none! flex-col overflow-hidden"
+        >
           <DialogHeader className="min-w-0 shrink-0">
             <DialogTitle className="truncate" title={data.name}>
               Class {data.name}
@@ -197,18 +201,13 @@ export default function ClassSubjectsDialog({
                       ) : (
                         <Select
                           items={mediumOptions}
-                          value={subject.mediumId ?? null}
-                          onValueChange={(value) => {
-                            if (value !== null) {
-                              updateSubject(index, { mediumId: value === "none" ? null : value });
-                            }
-                          }}
+                          value={subject.mediumId}
+                          onValueChange={(value) => updateSubject(index, { mediumId: value })}
                         >
-                          <SelectTrigger className="w-full min-w-0">
+                          <SelectTrigger aria-invalid={!subject.mediumId} className="w-full min-w-0">
                             <SelectValue placeholder="Select a medium" className="truncate" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">Not set</SelectItem>
                             {mediumOptions.map((medium) => (
                               <SelectItem key={medium.value} value={medium.value}>
                                 {medium.label}
@@ -218,17 +217,35 @@ export default function ClassSubjectsDialog({
                         </Select>
                       )}
 
-                      <Button
-                        type="button"
-                        variant={subject.teacher?.fullName ? "outline" : "destructive"}
-                        className="w-full min-w-0 justify-between"
-                        onClick={() => setTeacherSubjectIndex(index)}
-                      >
-                        <span className="truncate" title={subject.teacher?.fullName ?? undefined}>
+                      <div className="flex items-center gap-3 rounded-md border px-3 py-0.5 max-w-md">
+                        <span
+                          className={cn(
+                            "min-w-0 flex-1 truncate text-sm",
+                            !subject.teacher?.fullName && "text-muted-foreground",
+                          )}
+                        >
                           {subject.teacher?.fullName ?? "Select subject teacher"}
                         </span>
-                        <PencilIcon className="size-4 shrink-0" />
-                      </Button>
+                        {subject.teacher && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setSubjects((prev) => [
+                                ...prev.map((sub) => (sub.id === subject.id ? { ...sub, teacher: null } : sub)),
+                              ])
+                            }
+                          >
+                            <XIcon />
+                            Remove
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" onClick={() => setTeacherSubjectIndex(index)}>
+                          <EditIcon />
+                          {subject.teacher ? "Change" : "Assign"}
+                        </Button>
+                      </div>
+
                       <TooltipButton
                         tooltip="Delete subject"
                         size="icon"
@@ -263,7 +280,19 @@ export default function ClassSubjectsDialog({
           </div>
 
           <DialogFooter className="shrink-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (subjects.length > 0) {
+                  if (confirm("Are you sure you want to cancel? All unsaved changes will be lost.")) {
+                    onOpenChange(false);
+                  }
+                } else {
+                  onOpenChange(false);
+                }
+              }}
+            >
               Cancel
             </Button>
             <Button type="button" onClick={saveSubjects}>

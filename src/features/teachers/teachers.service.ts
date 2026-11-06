@@ -22,7 +22,22 @@ export class TeachersService {
     const teacher = await this.repository.getById(teacherId);
     if (!teacher) throw new ApiErrorV2("Teacher Not Found");
     return {
-      ...teacher,
+      id: teacher.id,
+      fullName: teacher.fullName,
+      phone: teacher.phone,
+      isActive: teacher.isActive,
+      classesAsClassTeacher: teacher.classesAsClassTeacher.map((clases) => ({
+        id: clases.id,
+        name: clases.name,
+        gradeLevel: {
+          id: clases.gradeLevel.id,
+          name: clases.gradeLevel.name,
+        },
+        academicYear: {
+          id: clases.gradeLevel.academicYear.id,
+          name: clases.gradeLevel.academicYear.name,
+        },
+      })),
       subjects: teacher.classSubjects.map((sub) => ({
         name: sub.subject.name,
         medium: sub.medium?.name ?? null,

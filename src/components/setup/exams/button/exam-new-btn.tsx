@@ -7,7 +7,7 @@ import { IGradeListItem } from "@/features/grades";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
-export default function ExamNewBtn({ year, grade }: { year: IAcademicYear; grade: IGradeListItem }) {
+export default function ExamNewBtn({ grade }: { year: IAcademicYear; grade: IGradeListItem }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -16,7 +16,7 @@ export default function ExamNewBtn({ year, grade }: { year: IAcademicYear; grade
         <PlusIcon />
         Add exam
       </Button>
-      {isOpen && <ExamDialog open={isOpen} onOpenChange={setIsOpen} year={year} grade={grade} />}
+      {isOpen && <ExamDialog open={isOpen} onOpenChange={setIsOpen} grade={grade} />}
     </>
   );
 }

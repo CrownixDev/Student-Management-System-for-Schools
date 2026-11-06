@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { batchClassSelect, batchListSelect, IBatchListItem } from "./batch.types";
+import { batchListSelect, IBatchListItem } from "./batch.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
 import { BatchCreateInput, BatchUpdateInput, BatchWhereInput } from "@/generated/prisma/models";
 import { BatchType } from "@/generated/prisma/enums";
@@ -23,9 +23,9 @@ export class BatchRepository {
       prisma.batch.findMany({
         where: { ...where, type },
         select: batchListSelect,
-        orderBy: { createdAt: "desc" },
         take: limitNumber,
         skip: skipCount,
+        orderBy: { name: "desc" },
       }),
     ]);
   }
@@ -42,7 +42,14 @@ export class BatchRepository {
       where: { id: batchId },
       select: {
         ...batchListSelect,
-        classes: { select: batchClassSelect },
+        grades: {
+          select: {
+            id: true,
+            name: true,
+            classes: { select: { id: true } },
+            academicYear: { select: { id: true, name: true } },
+          },
+        },
       },
     });
   }

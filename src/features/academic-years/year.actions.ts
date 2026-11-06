@@ -32,7 +32,10 @@ export async function getActiveAcademicYearAction(): Promise<IResponse<IAcademic
     return { success: true, data: result };
   } catch (error) {
     console.error("Error fetching active academic year:", error);
-    return { success: false, message: "Failed to fetch active academic year list." };
+    if (error instanceof ApiErrorV2) {
+      return { success: false, message: error.message };
+    }
+    return { success: false, message: "Unknown error occured" };
   }
 }
 

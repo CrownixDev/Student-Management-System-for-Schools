@@ -8,11 +8,7 @@ export const APP_URLS = {
     forbidden: "/forbidden",
   } as Record<string, Route>,
   simpleNav: {
-    student: {
-      root: "/nav/student",
-      year: "/nav/student/year",
-      batch: "/nav/student/batch",
-    } as Record<string, Route>,
+    students: "/grades" as Route,
     exams: {
       root: "/nav/exams",
     } as Record<string, Route>,

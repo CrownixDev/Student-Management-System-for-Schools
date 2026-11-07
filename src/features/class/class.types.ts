@@ -1,6 +1,14 @@
 import { Class, Medium, Subject, Teacher } from "@/generated/prisma/client";
 import { ClassGetPayload, ClassSelect } from "@/generated/prisma/models";
 
+export const classListItemSelect = {
+  id: true,
+  name: true,
+  enrollments: {
+    select: { id: true },
+  },
+} satisfies ClassSelect;
+
 export type IClassListItem = {
   id: Class["id"];
   name: Class["name"];

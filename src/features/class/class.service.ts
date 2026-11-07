@@ -42,7 +42,6 @@ export class ClassService {
       id: classItem.id,
       name: classItem.name,
       studentCount: classItem.enrollments.length,
-      batch: classItem.gradeLevel.batch,
     }));
   }
 

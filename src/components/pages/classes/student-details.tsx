@@ -22,11 +22,11 @@ export default function StudentDetails({
   subjectList: ISubjectListItem[];
   examData: IExamByEnrollmentId[];
 }) {
-  const [examId, setExamId] = useState(examData[0].id);
-  const [subjectId, setSubjectId] = useState(subjectList[0].id);
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>();
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>();
 
-  const selectedExam = examData.find((exam) => exam.id === examId);
-  const selectedSubject = subjectList.find((subject) => subject.id === subjectId);
+  const selectedSubject = subjectList.find((subject) => subject.id === selectedSubjectId) || subjectList[0];
+  const selectedExam = examData.find((exam) => exam.id === selectedExamId) || examData[0];
 
   return (
     <div className="w-full space-y-7 overflow-x-hidden px-8 py-7">
@@ -90,7 +90,7 @@ export default function StudentDetails({
           </TabsList>
 
           <TabsContent value={"exam"}>
-            <NativeSelect className="w-full" onChange={(e) => setExamId(e.target.value)}>
+            <NativeSelect value={selectedExamId} className="w-full" onChange={(e) => setSelectedExamId(e.target.value)}>
               {examData.map((exam) => (
                 <NativeSelectOption key={exam.id} value={exam.id}>
                   {exam.name}
@@ -123,7 +123,11 @@ export default function StudentDetails({
           </TabsContent>
 
           <TabsContent value={"subject"}>
-            <NativeSelect className="w-full" onChange={(e) => setSubjectId(e.target.value)}>
+            <NativeSelect
+              value={selectedSubjectId}
+              className="w-full"
+              onChange={(e) => setSelectedSubjectId(e.target.value)}
+            >
               {subjectList.map((sub) => (
                 <NativeSelectOption key={sub.id} value={sub.id}>
                   {sub.name.length > 30 ? sub.name.substring(0, 50) + "..." : sub.name}

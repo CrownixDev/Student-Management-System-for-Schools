@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { classSelect } from "./class.types";
+import { classListItemSelect, classSelect } from "./class.types";
 import { ClassCreateInput, ClassUpdateInput } from "@/generated/prisma/models";
 
 export class ClassRepository {
@@ -32,14 +32,7 @@ export class ClassRepository {
   async getList(gradeId: string) {
     return await prisma.class.findMany({
       where: { gradeLevelId: gradeId },
-      select: {
-        id: true,
-        name: true,
-        gradeLevel: { select: { batch: { select: { id: true, name: true, type: true } } } },
-        enrollments: {
-          select: { id: true },
-        },
-      },
+      select: classListItemSelect,
     });
   }
 

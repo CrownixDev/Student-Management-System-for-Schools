@@ -22,13 +22,24 @@ import { TypographyH2 } from "@/components/ui/typography";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 
-export default function YearBatchSelectorDialog() {
+interface Props {
+  allow?: {
+    year?: boolean;
+    batch?: boolean;
+  };
+}
+
+export default function YearBatchSelectorDialog({ allow }: Props) {
+  const allowYear = allow?.year ?? true;
+  const allowBatch = allow?.batch ?? true;
+
   const [{ yearId, batchId }, setParsers] = useQueryStates(idParsers);
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<"years" | "batches">("years");
   const [batchType, setBatchType] = useState<BatchType>("al");
 
   const { data: yearList = [], isPending: isYearListPending } = useQuery<IAcademicYear[]>({
+    enabled: allowYear,
     queryFn: async () => {
       const result = await getAcademicYearListAction({});
       if (!result.success) {
@@ -47,6 +58,7 @@ export default function YearBatchSelectorDialog() {
     } as Record<BatchType, IBatchListItem[]>,
     isPending: isBatchListPending,
   } = useQuery<Record<BatchType, IBatchListItem[]>>({
+    enabled: allowBatch,
     queryFn: async () => {
       const results = await Promise.all(batchTypeOptions.map(({ value }) => getBatchListAction({ type: value })));
       const failedResult = results.find((result) => !result.success);
@@ -88,17 +100,15 @@ export default function YearBatchSelectorDialog() {
   async function handleSelectYear(yearId: string) {
     // Should set other to null, if noth UI may break trying to render both year and batch in sidebar
     await setParsers({ yearId, batchId: null });
-    // setOpen(false);
   }
 
   async function handleSelectBatch(batchId: string) {
     await setParsers({ batchId, yearId: null });
-    // setOpen(false);
   }
 
   return (
     <>
-      <Button size="lg" variant="outline" className="px-3 py-6" onClick={() => setOpen(true)}>
+      <Button size="lg" variant="outline" className="p-3" onClick={() => setOpen(true)}>
         <div className="grid flex-1 text-left">
           {selectedYear && <TypographyH2>Year {selectedYear.name}</TypographyH2>}
           {selectedBatch && (
@@ -116,8 +126,8 @@ export default function YearBatchSelectorDialog() {
           </DialogHeader>
           <Tabs value={section} onValueChange={setSection} className="min-h-0 flex-1">
             <TabsList className="w-full">
-              <TabsTrigger value="years">Academic years</TabsTrigger>
-              <TabsTrigger value="batches">Batches</TabsTrigger>
+              {allowYear && <TabsTrigger value="years">Academic years</TabsTrigger>}
+              {allowBatch && <TabsTrigger value="batches">Batches</TabsTrigger>}
             </TabsList>
             <TabsContent value="years">
               {isYearListPending ? (

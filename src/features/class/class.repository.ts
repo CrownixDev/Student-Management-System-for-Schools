@@ -29,10 +29,34 @@ export class ClassRepository {
     });
   }
 
+  async getSubjectsById(id: string) {
+    return await prisma.class.findUnique({
+      where: { id },
+      select: {
+        classSubjects: {
+          select: {
+            medium: { select: { id: true, name: true } },
+            teacher: { select: { id: true, fullName: true } },
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                category: true,
+              },
+            },
+            enrollmentSubjects: { select: { id: true } },
+          },
+        },
+      },
+    });
+  }
+
   async getList(gradeId: string) {
     return await prisma.class.findMany({
       where: { gradeLevelId: gradeId },
       select: classListItemSelect,
+      orderBy: { createdAt: "asc" },
     });
   }
 

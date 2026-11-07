@@ -5,6 +5,8 @@ import { idCache } from "@/lib/nuqs/id";
 import ExamResultsPage from "@/components/pages/exams/exam-results-page";
 import EmptyState from "@/components/ui/empty-state";
 import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
+import { classService, IClass } from "@/features/class";
+import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
@@ -53,7 +55,10 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
 
   let examResults: IExamTopResults | null = null;
   let examDetails: IExamListItem | null = null;
-  let examClassData: IExamClassData | null = null;
+
+  let examDataForClass: IExamClassData | null = null;
+  let studentsWithEnrolledSubjects: IStudentsListWithSubjectsItem[] | null = null;
+  let classSubjects: IClass["subjects"] | null = null;
 
   try {
     if (examId) {
@@ -63,7 +68,9 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
       examResults = await examService.getTopResults(yearId, gradeId, examId);
     }
     if (yearId && gradeId && classId && examId) {
-      examClassData = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
+      examDataForClass = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
+      studentsWithEnrolledSubjects = await studentsService.getListForClassWithSubjects(classId);
+      classSubjects = await classService.getSubjectsById(classId);
     }
   } catch {
     redirect("/exams", "replace");
@@ -85,8 +92,14 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
         <ExamResultsPage details={examDetails} results={examResults} />
       )}
 
-      {examId && !isViewing && examClassData && (
-        <ExamMarksPage examName={examDetails?.name ?? "Exam"} examData={examClassData} />
+      {examId && !isViewing && examDetails && examDataForClass && studentsWithEnrolledSubjects && classSubjects && (
+        <ExamMarksPage
+          key={examId}
+          exam={examDetails}
+          examData={examDataForClass}
+          studentsWithSubjects={studentsWithEnrolledSubjects}
+          classSubjects={classSubjects}
+        />
       )}
     </>
   );

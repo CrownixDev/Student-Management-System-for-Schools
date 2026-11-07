@@ -12,16 +12,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
-import { TypographyH1, TypographyH2, TypographyH3 } from "@/components/ui/typography";
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
-import { classService } from "@/features/class";
-import { gradesService, IGradeListItem } from "@/features/grades";
-import { idCache } from "@/lib/nuqs/id";
 import { ArrowLeftIcon, HomeIcon, HousesIcon } from "lucide-react";
-import { redirect } from "next/navigation";
-import Link from "next/link";
+import { gradesService, IGradeListItem } from "@/features/grades";
 import { batchService, IBatchListItem } from "@/features/batch";
+import { TypographyH2, TypographyP } from "@/components/ui/typography";
+import { classService } from "@/features/class";
+import { redirect } from "next/navigation";
+import { idCache } from "@/lib/nuqs/id";
 import EmptyState from "@/components/ui/empty-state";
+import Link from "next/link";
 
 export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
@@ -57,14 +57,14 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
           Back to {batchData ? "batch" : "grades"}
         </Link>
         <div className="flex w-full items-center gap-2">
-          <TypographyH1>{gradeData.name}</TypographyH1>
-          <TypographyH3>({yearData.name})</TypographyH3>
+          <TypographyH2>{gradeData.name}</TypographyH2>
+          <TypographyP>({yearData.name})</TypographyP>
         </div>
         <Separator />
-        <TypographyH2>All Classes</TypographyH2>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex-1">
+          <TypographyP>All Classes</TypographyP>
           <SidebarGroupContent>
             <SidebarMenu>
               {classList.map((classItem) => (

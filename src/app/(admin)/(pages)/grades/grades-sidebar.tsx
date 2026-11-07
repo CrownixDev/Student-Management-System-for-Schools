@@ -14,7 +14,7 @@ import { buttonVariants } from "@/components/shadcn/button";
 import { GraduationCapIcon, HomeIcon } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { IGradeListItemForYear } from "@/features/grades";
-import { TypographyP } from "@/components/ui/typography";
+import { TypographyH1, TypographyP } from "@/components/ui/typography";
 import { IAcademicYear } from "@/features/academic-years";
 import { Separator } from "@/components/shadcn/separator";
 import { IBatch } from "@/features/batch";
@@ -33,13 +33,14 @@ export default function GradesSidebar({
 }) {
   return (
     <Sidebar collapsible="none" className="sticky top-0 h-screen">
-      <YearBatchSelectorDialog />
       <SidebarHeader>
-        <TypographyP>All Grades</TypographyP>
+        <TypographyH1>Students</TypographyH1>
+        <YearBatchSelectorDialog />
       </SidebarHeader>
       <SidebarContent>
         {year && (
           <SidebarGroup className="flex-1">
+            <TypographyP>All Grades</TypographyP>
             {grades.length > 0 && (
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -80,6 +81,7 @@ export default function GradesSidebar({
           batch.academicYears.length > 0 &&
           batch.academicYears.map((year) => (
             <SidebarGroup key={year.id}>
+              <TypographyP>All Grades</TypographyP>
               <SidebarGroupLabel>{year.name}</SidebarGroupLabel>
               <SidebarGroupContent>
                 {year.grades.map((grade) => (

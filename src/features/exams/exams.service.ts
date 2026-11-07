@@ -15,7 +15,7 @@ import { ExamRepository } from "./exams.repository";
 import { GradesRepository } from "../grades/grades.repository";
 import { MarkStatus } from "@/generated/prisma/enums";
 import { ClassRepository } from "../class/class.repository";
-import { examSchema } from "./exams.schema";
+import { examMarksSchema, examSchema } from "./exams.schema";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
 
@@ -223,6 +223,39 @@ export class ExamService {
         })),
       })),
     };
+  }
+
+  async updateMarks(examId: string, data: z.infer<typeof examMarksSchema>) {
+    const parsedRes = examMarksSchema.safeParse(data);
+    if (!parsedRes.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    const subjectIds = [...new Set(parsedRes.data.map((mark) => mark.subjectId))];
+    const examSubjects = await this.repository.getExamSubjectsBySubjectIds(examId, subjectIds);
+    const examSubjectIds = new Map(examSubjects.map((examSubject) => [examSubject.subjectId, examSubject.id]));
+
+    if (examSubjects.length !== subjectIds.length) {
+      throw new ApiErrorV2("Exam subject not found");
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      for (const mark of parsedRes.data) {
+        const examSubjectId = examSubjectIds.get(mark.subjectId);
+        if (!examSubjectId) throw new ApiErrorV2("Exam subject not found");
+
+        await transaction.mark.upsert({
+          where: { enrollmentId_examSubjectId: { enrollmentId: mark.enrollmentId, examSubjectId } },
+          update: { marks: mark.marks, status: mark.status },
+          create: {
+            enrollment: { connect: { id: mark.enrollmentId } },
+            examSubject: { connect: { id: examSubjectId } },
+            marks: mark.marks,
+            status: mark.status,
+          },
+        });
+      }
+    });
   }
 
   async create(gradeId: string, data: z.infer<typeof examSchema>) {

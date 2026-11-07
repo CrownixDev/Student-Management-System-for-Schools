@@ -35,6 +35,23 @@ export class ClassService {
     };
   }
 
+  async getSubjectsById(id: string): Promise<IClass["subjects"]> {
+    if (!id) throw new ApiErrorV2("Class id is required");
+
+    const classData = await this.repository.getSubjectsById(id);
+    if (!classData) throw new ApiErrorV2("Class Not Found");
+
+    return classData.classSubjects.map((sub) => ({
+      id: sub.subject.id,
+      name: sub.subject.name,
+      code: sub.subject.code,
+      category: sub.subject.category,
+      medium: sub.medium,
+      teacher: sub.teacher,
+      studentCount: sub.enrollmentSubjects.length,
+    }));
+  }
+
   async getList(gradeId: string): Promise<IClassList> {
     if (!gradeId) throw new ApiErrorV2("Grade id is required");
     const classList = await this.repository.getList(gradeId);

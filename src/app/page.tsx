@@ -1,8 +1,7 @@
-import { APP_URLS } from "@/constraints";
 import { GraduationCapIcon, NotebookPenIcon, Wrench } from "lucide-react";
+import { academicYearsService } from "@/features/academic-years";
 import NavButton from "@/components/simple-nav/nav-button";
 import ButtonShell from "@/components/simple-nav/button-shell";
-import { academicYearsService } from "@/features/academic-years";
 
 export default async function page() {
   const yearList = await academicYearsService.getList({});
@@ -24,10 +23,10 @@ export default async function page() {
         <NavButton href={`/grades?yearId=${yearId}`} icon={GraduationCapIcon}>
           Students
         </NavButton>
-        <NavButton href={APP_URLS.simpleNav.exams.root} icon={NotebookPenIcon}>
+        <NavButton href={`/exams?yearId=${yearId}`} icon={NotebookPenIcon}>
           Exams
         </NavButton>
-        <NavButton href={APP_URLS.simpleNav.setup} icon={Wrench}>
+        <NavButton href={"/setup"} icon={Wrench}>
           Setup
         </NavButton>
       </ButtonShell>

@@ -39,6 +39,13 @@ export class ExamRepository {
     });
   }
 
+  async getExamSubjectsBySubjectIds(examId: string, subjectIds: string[]) {
+    return await prisma.examSubject.findMany({
+      where: { examId, subjectId: { in: subjectIds } },
+      select: { id: true, subjectId: true },
+    });
+  }
+
   async getRelationsForExamSubject(examId: string, subjectId: string) {
     return await prisma.mark.findMany({
       where: { examSubject: { examId, subjectId } },

@@ -20,7 +20,7 @@ export default function ExamResults({ details, results }: { details: IExamListIt
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden p-5">
       <div className="flex shrink-0 items-center gap-3 p-3">
         <TypographyH1>{details.name} Results</TypographyH1>
-        <TypographyP>({details.academicYear.name})</TypographyP>
+        <TypographyP>({details.gradeLevel.academicYear.name})</TypographyP>
       </div>
       <Separator className="shrink-0" />
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -56,7 +56,7 @@ export default function ExamResults({ details, results }: { details: IExamListIt
                       <TableCell>
                         <StudentDetailsViewButton
                           studentId={student.id}
-                          yearId={details.academicYear.id}
+                          yearId={details.gradeLevel.academicYear.id}
                           gradeId={details.gradeLevel.id}
                           classId={student.class.id}
                         />
@@ -104,7 +104,7 @@ export default function ExamResults({ details, results }: { details: IExamListIt
                               <TableCell>
                                 <StudentDetailsViewButton
                                   studentId={student.id}
-                                  yearId={details.academicYear.id}
+                                  yearId={details.gradeLevel.academicYear.id}
                                   gradeId={details.gradeLevel.id}
                                   classId={classItem.id}
                                 />
@@ -160,7 +160,7 @@ export default function ExamResults({ details, results }: { details: IExamListIt
                               <TableCell>
                                 <StudentDetailsViewButton
                                   studentId={student.id}
-                                  yearId={details.academicYear.id}
+                                  yearId={details.gradeLevel.academicYear.id}
                                   gradeId={details.gradeLevel.id}
                                   classId={student.class.id}
                                 />

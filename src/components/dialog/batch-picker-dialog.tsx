@@ -3,22 +3,20 @@
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { CheckIcon, LinkIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BATCH_LIST } from "@/lib/query-keys";
 import { toast } from "react-toastify";
-import LoadingIndicator from "@/components/ui/loading-indicator";
-import EmptyState from "@/components/ui/empty-state";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Label } from "@/components/shadcn/label";
 import { IBatchListItem } from "@/features/batch";
 import { getBatchListAction } from "@/features/batch/batch.action";
-import SearchInput from "../ui/search-input";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../shadcn/tabs";
 import { BatchType } from "@/generated/prisma/enums";
-import { RESULT_LIMIT } from "@/constraints";
-import DialogPagination from "../ui/dialog/dialog-pagination";
+import SearchInput from "../ui/search-input";
+import LoadingIndicator from "@/components/ui/loading-indicator";
+import EmptyState from "@/components/ui/empty-state";
 
 export default function BatchPickerDialog({
   open,
@@ -35,18 +33,12 @@ export default function BatchPickerDialog({
 }) {
   const [batchId, setBatchId] = useState<string>(selectedBatchId ?? "");
   const [batchType, setBatchType] = useState<BatchType>("al");
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const batchListDiv = useRef<HTMLDivElement>(null);
 
-  const {
-    data = { count: 0, list: [] },
-    isPending,
-    isPlaceholderData,
-  } = useQuery({
+  const { data = [], isPending } = useQuery({
     enabled: open,
     queryFn: async () => {
-      const res = await getBatchListAction({ search: search.trim(), page, limit: RESULT_LIMIT, type: batchType });
+      const res = await getBatchListAction({ search: search.trim(), type: batchType });
       if (res.success) {
         return res.data;
       } else {
@@ -55,11 +47,11 @@ export default function BatchPickerDialog({
       }
     },
     placeholderData: keepPreviousData,
-    queryKey: [BATCH_LIST, page, search, batchType],
+    queryKey: [BATCH_LIST, search, batchType],
   });
 
   function confirmSelection() {
-    const batch = data.list.find((batch) => batch.id === batchId);
+    const batch = data.find((batch) => batch.id === batchId);
     if (batch) {
       onSelect(batch);
       onOpenChange(false);
@@ -79,10 +71,7 @@ export default function BatchPickerDialog({
         <SearchInput
           placeholder="Search for a batch"
           value={search}
-          onChange={(search) => {
-            setSearch(search);
-            setPage(1);
-          }}
+          onChange={(search) => setSearch(search)}
           onClear={() => setSearch("")}
         />
 
@@ -99,9 +88,9 @@ export default function BatchPickerDialog({
           {batchTypeOptions.map((type) => (
             <TabsContent key={type.value} value={type.value}>
               {!isPending && (
-                <div ref={batchListDiv} className="h-[20dvh] flex-1 overflow-y-auto rounded-md border">
+                <div className="h-[20dvh] flex-1 overflow-y-auto rounded-md border">
                   <RadioGroup value={batchId} onValueChange={handleSelectBatch}>
-                    {data.list.map((item) => (
+                    {data.map((item) => (
                       <div key={item.id} className="flex w-full justify-between items-center gap-3 px-3 py-2.5">
                         <div className="flex w-full items-center gap-3 cursor-pointer">
                           <RadioGroupItem value={item.id} id={item.id} />
@@ -113,7 +102,7 @@ export default function BatchPickerDialog({
                       </div>
                     ))}
                   </RadioGroup>
-                  {data.list.length === 0 && (
+                  {data.length === 0 && (
                     <EmptyState
                       noBorder
                       icon={LinkIcon}
@@ -130,16 +119,6 @@ export default function BatchPickerDialog({
             </TabsContent>
           ))}
         </Tabs>
-
-        <DialogPagination
-          itemCount={data.count}
-          page={page}
-          onPageChange={(page) => {
-            setPage(page);
-            batchListDiv.current?.scrollTo({ top: 0, behavior: "auto" });
-          }}
-          disable={{ next: isPlaceholderData }}
-        />
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

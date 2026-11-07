@@ -5,7 +5,7 @@ export const TEACHERS_LIST = "teachers-list";
 export const BATCH_LIST = "batch-list";
 export const SUBJECT_LIST = "subject-list";
 export const CLASS_LIST = "class-list";
+export const YEAR_LIST = "academic-year-list";
 
 export const MEDIUM_OPTIONS = "medium-options";
 export const GRADE_OPTIONS = "grade-options";
-export const YEAR_OPTIONS = "academic-year-options";

@@ -1,3 +1,5 @@
+"use client";
+
 import { IStudent } from "@/features/students";
 import { TypographyH2 } from "@/components/ui/typography";
 import { Badge } from "@/components/shadcn/badge";
@@ -8,6 +10,8 @@ import { ISubjectListItem } from "@/features/subjects";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { StudentSubjectMarksChart } from "@/components/pages/classes/student-subject-marks-chart";
 import { StudentSubjectProgressChart } from "@/components/pages/classes/student-subject-progress-chart";
+import { useState } from "react";
+import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-select";
 
 export default function StudentDetails({
   student,
@@ -18,6 +22,12 @@ export default function StudentDetails({
   subjectList: ISubjectListItem[];
   examData: IExamByEnrollmentId[];
 }) {
+  const [examId, setExamId] = useState(examData[0].id);
+  const [subjectId, setSubjectId] = useState(subjectList[0].id);
+
+  const selectedExam = examData.find((exam) => exam.id === examId);
+  const selectedSubject = subjectList.find((subject) => subject.id === subjectId);
+
   return (
     <div className="w-full space-y-7 overflow-x-hidden px-8 py-7">
       {/* Student's School Details */}
@@ -48,7 +58,7 @@ export default function StudentDetails({
       <section className="grid grid-cols-2 gap-x-8 gap-y-3">
         <div>
           <p className="text-xs text-muted-foreground">Student phone</p>
-          <p className="mt-1 text-sm font-medium">{student.phone ?? "Not listed"}</p>
+          <p className="mt-1 text-sm font-medium">{student.phone ? student.phone : "Not listed"}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Date of birth</p>
@@ -56,15 +66,15 @@ export default function StudentDetails({
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Guardian</p>
-          <p className="mt-1 text-sm font-medium">{student.guardianName ?? "Not Added"}</p>
+          <p className="mt-1 text-sm font-medium">{student.guardianName ? student.guardianName : "Not Added"}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Guardian phone</p>
-          <p className="mt-1 text-sm font-medium">{student.guardianPhone ?? "Not Added"}</p>
+          <p className="mt-1 text-sm font-medium">{student.guardianPhone ? student.guardianPhone : "Not Added"}</p>
         </div>
         <div className="col-span-2">
           <p className="text-xs text-muted-foreground">Address</p>
-          <p className="mt-1 text-sm font-medium">{student.address ?? "Not Added"}</p>
+          <p className="mt-1 text-sm font-medium">{student.address ? student.address : "Not Added"}</p>
         </div>
       </section>
 
@@ -80,63 +90,60 @@ export default function StudentDetails({
           </TabsList>
 
           <TabsContent value={"exam"}>
-            <Tabs>
-              <TabsList className={"w-full overflow-x-auto "} variant={"line"}>
-                {examData.map((exam) => (
-                  <TabsTrigger key={exam.id} value={exam.id}>
-                    {exam.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <NativeSelect className="w-full" onChange={(e) => setExamId(e.target.value)}>
               {examData.map((exam) => (
-                <TabsContent key={exam.id} value={exam.id}>
-                  {/* TODO: Showt class highst and grade highst marks when hovering on marks chart */}
-                  <StudentSubjectMarksChart subjects={exam.subjects} examName={exam.name} />
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40">
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Student mark</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {exam.subjects.map((subject) => (
-                        <TableRow key={subject.id}>
-                          <TableCell className="font-medium">{subject.name}</TableCell>
-                          <TableCell className="tabular-nums">
-                            {subject.result.status === "present" ? subject.result.marks : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TabsContent>
+                <NativeSelectOption key={exam.id} value={exam.id}>
+                  {exam.name}
+                </NativeSelectOption>
               ))}
-            </Tabs>
+            </NativeSelect>
+            {selectedExam && (
+              <div>
+                <StudentSubjectMarksChart subjects={selectedExam.subjects} examName={selectedExam.name} />
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Student mark</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedExam.subjects.map((subject) => (
+                      <TableRow key={subject.id}>
+                        <TableCell className="font-medium">{subject.name}</TableCell>
+                        <TableCell className="tabular-nums">
+                          {subject.result.status === "present" ? subject.result.marks : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value={"subject"}>
-            <Tabs>
-              <TabsList className={"w-full overflow-x-auto "} variant={"line"}>
-                {subjectList.map((subject) => (
-                  <TabsTrigger key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {subjectList.map((subject) => {
+            <NativeSelect className="w-full" onChange={(e) => setSubjectId(e.target.value)}>
+              {subjectList.map((sub) => (
+                <NativeSelectOption key={sub.id} value={sub.id}>
+                  {sub.name.length > 30 ? sub.name.substring(0, 50) + "..." : sub.name}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            {selectedSubject &&
+              (() => {
                 const subjectMarks = examData.map((exam) => {
                   return {
                     exam: { id: exam.id, name: exam.name },
-                    subject: exam.subjects.filter((s) => s.id === subject.id)[0],
+                    subject: exam.subjects.filter((s) => s.id === selectedSubject.id)[0],
                   };
                 });
+
                 return (
-                  <TabsContent key={subject.id} value={subject.id}>
-                    {/* TODO: Showt class highst and grade highst marks when hovering on marks chart */}
+                  <div>
                     <StudentSubjectProgressChart
-                      subjectId={subject.id}
-                      subjectName={subject.name}
+                      subjectId={selectedSubject.id}
+                      subjectName={selectedSubject.name}
                       examData={examData}
                     />
                     <Table>
@@ -148,7 +155,7 @@ export default function StudentDetails({
                       </TableHeader>
                       <TableBody>
                         {subjectMarks.map((item) => (
-                          <TableRow key={item.exam.id + subject.id}>
+                          <TableRow key={item.exam.id + selectedSubject.id}>
                             <TableCell>{item.exam.name}</TableCell>
                             <TableCell>
                               {item.subject?.result.status === "present" && item.subject.result.marks !== null
@@ -159,10 +166,9 @@ export default function StudentDetails({
                         ))}
                       </TableBody>
                     </Table>
-                  </TabsContent>
+                  </div>
                 );
-              })}
-            </Tabs>
+              })()}
           </TabsContent>
         </Tabs>
       </section>

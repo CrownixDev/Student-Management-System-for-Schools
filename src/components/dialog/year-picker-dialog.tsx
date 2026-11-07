@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckIcon, CalendarDaysIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { YEAR_OPTIONS } from "@/lib/query-keys";
+import { YEAR_LIST } from "@/lib/query-keys";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
@@ -31,7 +31,7 @@ export default function YearPickerDialog({
 
   const { data: years = [], isPending } = useQuery({
     enabled: open,
-    queryKey: [YEAR_OPTIONS, search],
+    queryKey: [YEAR_LIST, search],
     queryFn: async () => {
       const result = await getAcademicYearListAction({ search: search.trim() || null });
       if (!result.success) {

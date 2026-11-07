@@ -2,32 +2,24 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { batchListSelect, IBatchListItem } from "./batch.types";
-import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
+import { getCleanSearch, IQueryParams } from "@/lib/filter";
 import { BatchCreateInput, BatchUpdateInput, BatchWhereInput } from "@/generated/prisma/models";
 import { BatchType } from "@/generated/prisma/enums";
 
 export class BatchRepository {
-  async getList({ search, page, limit, type }: IQueryParams & { type: BatchType }) {
+  async getList({ search, type }: Pick<IQueryParams, "search"> & { type: BatchType }) {
     const cleanSearch = getCleanSearch(search);
-    const { skipCount, limitNumber } = getPagination({ page, limit });
 
     const where: BatchWhereInput = {};
     if (cleanSearch) {
       where.OR = [{ name: { contains: cleanSearch } }];
     }
 
-    return await Promise.all([
-      prisma.batch.count({
-        where: { ...where, type },
-      }),
-      prisma.batch.findMany({
-        where: { ...where, type },
-        select: batchListSelect,
-        take: limitNumber,
-        skip: skipCount,
-        orderBy: { name: "desc" },
-      }),
-    ]);
+    return await prisma.batch.findMany({
+      where: { ...where, type },
+      select: batchListSelect,
+      orderBy: { name: "desc" },
+    });
   }
 
   async getListItemById(batchId: string): Promise<IBatchListItem | null> {

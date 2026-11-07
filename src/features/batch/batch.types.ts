@@ -11,11 +11,6 @@ export type IBatchListItem = BatchGetPayload<{
   select: typeof batchListSelect;
 }>;
 
-export type IBatchList = {
-  list: IBatchListItem[];
-  count: number;
-};
-
 export interface IBatch {
   id: Batch["id"];
   name: Batch["name"];

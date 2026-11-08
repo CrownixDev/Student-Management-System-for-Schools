@@ -5,7 +5,7 @@ import {
   SidebarHeader,
   SidebarMenu,
 } from "@/components/shadcn/sidebar";
-import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
+import { ArrowLeftIcon, GraduationCapIcon } from "lucide-react";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { Button, buttonVariants } from "@/components/shadcn/button";
 import { IClassListItem } from "@/features/class";
@@ -61,11 +61,11 @@ export default function SidebarExamContent({
             <SidebarGroupContent>
               <EmptyState
                 icon={GraduationCapIcon}
-                title="No grades found"
-                description="You don't have any grades yet. Start by adding a new grade."
+                title="No exams found"
+                description="You don't have any exams for this grade. Start by adding a new exam."
                 action={
                   <Button className={"w-full"} variant={"outline"}>
-                    <PlusIcon className="size-4" />
+                    <ArrowLeftIcon className="size-4" />
                     Take me to add a new exam
                   </Button>
                 }

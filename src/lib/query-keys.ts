@@ -1,5 +1,6 @@
 export const STUDENT_ENROLLMENTS = "student-enrollments";
 export const ACTIVE_YEAR = "active-year";
+export const STUDENT_DETAILS = "student-details";
 
 export const TEACHERS_LIST = "teachers-list";
 export const BATCH_LIST = "batch-list";

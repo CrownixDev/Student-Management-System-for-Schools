@@ -1,12 +1,12 @@
-import { examService, IExamClassData, IExamListItem, IExamTopResults } from "@/features/exams";
-import { ClipboardListIcon, MousePointerClickIcon } from "lucide-react";
+import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
+import { examService, IExamClassData, IExamListItem } from "@/features/exams";
+import { MousePointerClickIcon } from "lucide-react";
+import { classService, IClass } from "@/features/class";
+import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
 import ExamResultsPage from "@/components/pages/exams/exam-results-page";
 import EmptyState from "@/components/ui/empty-state";
-import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
-import { classService, IClass } from "@/features/class";
-import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
@@ -53,7 +53,6 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     }
   }
 
-  let examResults: IExamTopResults | null = null;
   let examDetails: IExamListItem | null = null;
 
   let examDataForClass: IExamClassData | null = null;
@@ -64,9 +63,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     if (examId) {
       examDetails = await examService.getListItemById(examId);
     }
-    if (yearId && gradeId && examId) {
-      examResults = await examService.getTopResults(yearId, gradeId, examId);
-    }
+
     if (yearId && gradeId && classId && examId) {
       examDataForClass = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
       studentsWithEnrolledSubjects = await studentsService.getListForClassWithSubjects(classId);
@@ -80,17 +77,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     <>
       {!examId && renderEmptyStateContent()}
 
-      {examId && isViewing && examDetails && !examResults && (
-        <EmptyState
-          icon={ClipboardListIcon}
-          title="No results available"
-          description="There are no results available for this exam."
-        />
-      )}
-
-      {examId && isViewing && examDetails && examResults && (
-        <ExamResultsPage details={examDetails} results={examResults} />
-      )}
+      {examId && isViewing && examDetails && <ExamResultsPage exam={examDetails} />}
 
       {examId && !isViewing && examDetails && examDataForClass && studentsWithEnrolledSubjects && classSubjects && (
         <ExamMarksPage

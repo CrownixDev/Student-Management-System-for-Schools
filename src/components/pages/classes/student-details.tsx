@@ -12,6 +12,8 @@ import { StudentSubjectMarksChart } from "@/components/pages/classes/student-sub
 import { StudentSubjectProgressChart } from "@/components/pages/classes/student-subject-progress-chart";
 import { useState } from "react";
 import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-select";
+import EmptyState from "@/components/ui/empty-state";
+import { NotebookPenIcon } from "lucide-react";
 
 export default function StudentDetails({
   student,
@@ -81,100 +83,114 @@ export default function StudentDetails({
       <Separator />
 
       {/* Student's Exam Results for current year, grade and class */}
-      <section className="">
+      <section>
         <TypographyH2>Exam results</TypographyH2>
-        <Tabs>
-          <TabsList className={"w-full overflow-x-auto "}>
-            <TabsTrigger value="exam">By Exam</TabsTrigger>
-            <TabsTrigger value="subject">By Subject</TabsTrigger>
-          </TabsList>
+        {examData.length > 0 ? (
+          <Tabs>
+            <TabsList className={"w-full overflow-x-auto "}>
+              <TabsTrigger value="exam">By Exam</TabsTrigger>
+              <TabsTrigger value="subject">By Subject</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value={"exam"}>
-            <NativeSelect value={selectedExamId} className="w-full" onChange={(e) => setSelectedExamId(e.target.value)}>
-              {examData.map((exam) => (
-                <NativeSelectOption key={exam.id} value={exam.id}>
-                  {exam.name}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-            {selectedExam && (
-              <div>
-                <StudentSubjectMarksChart subjects={selectedExam.subjects} examName={selectedExam.name} />
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Student mark</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedExam.subjects.map((subject) => (
-                      <TableRow key={subject.id}>
-                        <TableCell className="font-medium">{subject.name}</TableCell>
-                        <TableCell className="tabular-nums">
-                          {subject.result.status === "present" ? subject.result.marks : "-"}
-                        </TableCell>
+            <TabsContent value={"exam"}>
+              <NativeSelect
+                value={selectedExamId}
+                className="w-full"
+                onChange={(e) => setSelectedExamId(e.target.value)}
+              >
+                {examData.map((exam) => (
+                  <NativeSelectOption key={exam.id} value={exam.id}>
+                    {exam.name}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+              {selectedExam && (
+                <div>
+                  <StudentSubjectMarksChart subjects={selectedExam.subjects} examName={selectedExam.name} />
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/40 hover:bg-muted/40">
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Student mark</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value={"subject"}>
-            <NativeSelect
-              value={selectedSubjectId}
-              className="w-full"
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
-            >
-              {subjectList.map((sub) => (
-                <NativeSelectOption key={sub.id} value={sub.id}>
-                  {sub.name.length > 30 ? sub.name.substring(0, 50) + "..." : sub.name}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-            {selectedSubject &&
-              (() => {
-                const subjectMarks = examData.map((exam) => {
-                  return {
-                    exam: { id: exam.id, name: exam.name },
-                    subject: exam.subjects.filter((s) => s.id === selectedSubject.id)[0],
-                  };
-                });
-
-                return (
-                  <div>
-                    <StudentSubjectProgressChart
-                      subjectId={selectedSubject.id}
-                      subjectName={selectedSubject.name}
-                      examData={examData}
-                    />
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/40 hover:bg-muted/40">
-                          <TableHead>Exam</TableHead>
-                          <TableHead>Student mark</TableHead>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedExam.subjects.map((subject) => (
+                        <TableRow key={subject.id}>
+                          <TableCell className="font-medium">{subject.name}</TableCell>
+                          <TableCell className="tabular-nums">
+                            {subject.result.status === "present" ? subject.result.marks : "-"}
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {subjectMarks.map((item) => (
-                          <TableRow key={item.exam.id + selectedSubject.id}>
-                            <TableCell>{item.exam.name}</TableCell>
-                            <TableCell>
-                              {item.subject?.result.status === "present" && item.subject.result.marks !== null
-                                ? item.subject.result.marks
-                                : "-"}
-                            </TableCell>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value={"subject"}>
+              <NativeSelect
+                value={selectedSubjectId}
+                className="w-full"
+                onChange={(e) => setSelectedSubjectId(e.target.value)}
+              >
+                {subjectList.map((sub) => (
+                  <NativeSelectOption key={sub.id} value={sub.id}>
+                    {sub.name.length > 30 ? sub.name.substring(0, 50) + "..." : sub.name}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+              {selectedSubject &&
+                (() => {
+                  const subjectMarks = examData.map((exam) => {
+                    return {
+                      exam: { id: exam.id, name: exam.name },
+                      subject: exam.subjects.filter((s) => s.id === selectedSubject.id)[0],
+                    };
+                  });
+
+                  return (
+                    <div>
+                      <StudentSubjectProgressChart
+                        subjectId={selectedSubject.id}
+                        subjectName={selectedSubject.name}
+                        examData={examData}
+                      />
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/40 hover:bg-muted/40">
+                            <TableHead>Exam</TableHead>
+                            <TableHead>Student mark</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                );
-              })()}
-          </TabsContent>
-        </Tabs>
+                        </TableHeader>
+                        <TableBody>
+                          {subjectMarks.map((item) => (
+                            <TableRow key={item.exam.id + selectedSubject.id}>
+                              <TableCell>{item.exam.name}</TableCell>
+                              <TableCell>
+                                {item.subject?.result.status === "present" && item.subject.result.marks !== null
+                                  ? item.subject.result.marks
+                                  : "-"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="py-20">
+            <EmptyState
+              icon={NotebookPenIcon}
+              title="No exams found"
+              description="No exams added to this grade yet. "
+            />
+          </div>
+        )}
       </section>
     </div>
   );

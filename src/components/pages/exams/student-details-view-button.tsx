@@ -1,27 +1,45 @@
+"use client";
+
+import type { IExamByEnrollmentId } from "@/features/exams";
+import type { IStudent } from "@/features/students";
+import type { ISubjectListItem } from "@/features/subjects";
+import { CircleUserIcon, ExternalLinkIcon } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/shadcn/sheet";
-import { examService } from "@/features/exams";
-import { studentsService } from "@/features/students";
-import { subjectRepository } from "@/features/subjects";
-import { ExternalLinkIcon } from "lucide-react";
-import { redirect } from "next/navigation";
+import { getStudentDetailsAction } from "@/features/students/students.actions";
+import { toast } from "react-toastify";
+import { useQuery } from "@tanstack/react-query";
+import LoadingIndicator from "@/components/ui/loading-indicator";
 import StudentDetails from "@/components/pages/classes/student-details";
+import { STUDENT_DETAILS } from "@/lib/query-keys";
+import EmptyState from "@/components/ui/empty-state";
 
-export default async function StudentDetailsViewButton({
-  studentId,
-  yearId,
-  gradeId,
-  classId,
-}: {
-  studentId: string;
-  yearId: string;
-  gradeId: string;
-  classId: string;
-}) {
-  const details = await getStudentDetails(studentId, yearId, gradeId, classId);
+export interface IStudentDetailsData {
+  student: IStudent;
+  examData: IExamByEnrollmentId[];
+  subjectList: ISubjectListItem[];
+}
+
+export default function StudentDetailsViewButton({ studentId, classId }: { studentId: string; classId: string }) {
+  const [open, setOpen] = useState(false);
+
+  const { data, isPending } = useQuery({
+    enabled: open,
+    queryFn: async () => {
+      const res = await getStudentDetailsAction(studentId, classId);
+      if (res.success) {
+        return res.data;
+      } else {
+        toast.error(res.message);
+        throw new Error(res.message);
+      }
+    },
+    queryKey: [STUDENT_DETAILS, studentId, classId],
+  });
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={
           <Button variant="secondary">
@@ -30,23 +48,17 @@ export default async function StudentDetailsViewButton({
           </Button>
         }
       />
-      <SheetContent
-        className={"min-w-3xl"}
-        render={
-          <StudentDetails student={details.student} examData={details.examData} subjectList={details.subjectList} />
-        }
-      />
+      <SheetContent className="min-w-3xl">
+        {isPending && <LoadingIndicator />}
+        {!isPending && !data && (
+          <EmptyState
+            icon={CircleUserIcon}
+            title="Student data not found"
+            description="We could not get the student data "
+          />
+        )}
+        {data && <StudentDetails student={data.student} examData={data.examData} subjectList={data.subjectList} />}
+      </SheetContent>
     </Sheet>
   );
-}
-
-async function getStudentDetails(studentId: string, yearId: string, gradeId: string, classId: string) {
-  try {
-    const student = await studentsService.getById(studentId, yearId, gradeId, classId);
-    const examData = await examService.getDataByEnrollmentId(student.enrollment.id);
-    const subjectList = await subjectRepository.getListByEnrollmentId(student.enrollment.id);
-    return { student, examData, subjectList };
-  } catch {
-    redirect("/exams", "replace");
-  }
 }

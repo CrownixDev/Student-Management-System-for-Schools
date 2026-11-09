@@ -8,7 +8,6 @@ import { clearAuthCookies, setAuthCookies } from "./cookies";
 import { verifyAccessToken } from "./jwt";
 import { authService } from "@/features/auth";
 import { UserRole } from "@/generated/prisma/enums";
-import { APP_URLS } from "@/constraints";
 
 export type AuthPayload = {
   username: string;
@@ -65,11 +64,11 @@ export async function requireAuthRSC({ requiredRoles = [] }: RequireAuthType): P
   const user = await getAuthPayload();
 
   if (!user) {
-    return redirect(APP_URLS.auth.login);
+    return redirect("/login");
   }
 
   if (!checkRoles(user, requiredRoles)) {
-    return redirect(APP_URLS.auth.forbidden);
+    return redirect("/login");
   }
 
   return user;

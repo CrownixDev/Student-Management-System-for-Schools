@@ -3,7 +3,6 @@ import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth/constants"
 import { clearAuthCookiesOnResponse, setAuthCookiesOnResponse } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
 import { authService } from "@/features/auth";
-import { APP_URLS } from "@/constraints";
 
 const PUBLIC_PATHS = ["/login"];
 
@@ -14,7 +13,7 @@ function isPublicPath(pathname: string) {
 /**
  * Redirects the user to the specified pathname. Defaults to the login page.
  */
-function redirectTo(request: NextRequest, pathname: string = APP_URLS.auth.login) {
+function redirectTo(request: NextRequest, pathname: string = "/login") {
   return NextResponse.redirect(new URL(pathname, request.url));
 }
 
@@ -47,13 +46,13 @@ export async function proxy(request: NextRequest) {
     const result = await authService.refreshSession(refreshToken);
 
     if (!result.active) {
-      const response = redirectTo(request, APP_URLS.auth.deactivated);
+      const response = redirectTo(request, "/login");
       clearAuthCookiesOnResponse(response);
       return response;
     }
 
     if (!result.accessToken || !result.refreshToken) {
-      const response = redirectTo(request, APP_URLS.auth.login);
+      const response = redirectTo(request, "/login");
       clearAuthCookiesOnResponse(response);
       return response;
     }

@@ -1,9 +1,9 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
-import { examListSelect, examSelect } from "./exams.types";
+import { examListSelect, examSelect, examSubjectSelect } from "./exams.types";
 import { ExamCreateInput, ExamUpdateInput } from "@/generated/prisma/models";
 import { TransactionClient } from "@/generated/prisma/internal/prismaNamespace";
+import { prisma } from "@/lib/prisma";
 
 export class ExamRepository {
   private db(client?: TransactionClient) {
@@ -25,6 +25,13 @@ export class ExamRepository {
     });
   }
 
+  async getExamSubjects(examId: string) {
+    return await prisma.examSubject.findMany({
+      where: { examId },
+      select: examSubjectSelect,
+    });
+  }
+
   async getByEnrollmentId(enrollmentId: string) {
     return await prisma.exam.findMany({
       where: { examSubjects: { some: { marks: { some: { enrollmentId } } } } },
@@ -36,6 +43,13 @@ export class ExamRepository {
     return await prisma.examSubject.findUnique({
       where: { id },
       select: { examId: true, subjectId: true },
+    });
+  }
+
+  async getExamSubjectsBySubjectIds(examId: string, subjectIds: string[]) {
+    return await prisma.examSubject.findMany({
+      where: { examId, subjectId: { in: subjectIds } },
+      select: { id: true, subjectId: true },
     });
   }
 

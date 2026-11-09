@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { REFRESH_TOKEN_COOKIE } from "@/lib/auth/constants";
 import { clearAuthCookies } from "@/lib/auth/cookies";
 import { authService } from "@/features/auth";
-import { APP_URLS } from "@/constraints";
 
 export async function logoutAction() {
   const cookieStore = await cookies();
@@ -16,5 +15,5 @@ export async function logoutAction() {
   }
 
   await clearAuthCookies();
-  redirect(APP_URLS.auth.login);
+  redirect("/login");
 }

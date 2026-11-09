@@ -5,17 +5,17 @@ import {
   SidebarHeader,
   SidebarMenu,
 } from "@/components/shadcn/sidebar";
+import { ArrowLeftIcon, GraduationCapIcon } from "lucide-react";
+import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { Button, buttonVariants } from "@/components/shadcn/button";
-import { Separator } from "@/components/shadcn/separator";
-import { TypographyH1, TypographyH2, TypographyP } from "@/components/ui/typography";
-import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
-import EmptyState from "@/components/ui/empty-state";
-import Link from "next/link";
-import { IAcademicYear } from "@/features/academic-years";
-import { IExamListItem } from "@/features/exams";
-import SidebarExamButton from "./sidebar-exam-button";
 import { IClassListItem } from "@/features/class";
 import { IGradeListItem } from "@/features/grades";
+import { IAcademicYear } from "@/features/academic-years";
+import { IExamListItem } from "@/features/exams";
+import { Separator } from "@/components/shadcn/separator";
+import SidebarExamButton from "./sidebar-exam-button";
+import EmptyState from "@/components/ui/empty-state";
+import Link from "next/link";
 
 export default function SidebarExamContent({
   year,
@@ -39,14 +39,14 @@ export default function SidebarExamContent({
           Change class
         </Link>
         <div className="flex gap-3 items-center">
-          <TypographyH1>{classItem ? classItem.name : "View Results"}</TypographyH1>
+          <TypographyH2>{classItem ? classItem.name : "View Results"}</TypographyH2>
           <TypographyP>({gradeItem.name})</TypographyP>
         </div>
         <Separator />
-        <TypographyH2>All Exams</TypographyH2>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex-1">
+          <TypographyP>All Exams</TypographyP>
           {examList.length > 0 && (
             <SidebarGroupContent>
               <SidebarMenu>
@@ -61,11 +61,11 @@ export default function SidebarExamContent({
             <SidebarGroupContent>
               <EmptyState
                 icon={GraduationCapIcon}
-                title="No grades found"
-                description="You don't have any grades yet. Start by adding a new grade."
+                title="No exams found"
+                description="You don't have any exams for this grade. Start by adding a new exam."
                 action={
                   <Button className={"w-full"} variant={"outline"}>
-                    <PlusIcon className="size-4" />
+                    <ArrowLeftIcon className="size-4" />
                     Take me to add a new exam
                   </Button>
                 }

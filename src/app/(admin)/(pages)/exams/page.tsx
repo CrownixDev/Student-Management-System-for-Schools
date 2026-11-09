@@ -1,10 +1,13 @@
-import { examService, IExamClassData, IExamListItem, IExamTopResults } from "@/features/exams";
-import { ClipboardListIcon, MousePointerClickIcon } from "lucide-react";
+import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
+import { examService, IExamClassData, IExamListItem, IExamSubject } from "@/features/exams";
+import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { MousePointerClickIcon } from "lucide-react";
+import { classService, IClass } from "@/features/class";
+import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
 import ExamResultsPage from "@/components/pages/exams/exam-results-page";
 import EmptyState from "@/components/ui/empty-state";
-import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
@@ -51,19 +54,24 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     }
   }
 
-  let examResults: IExamTopResults | null = null;
+  let activeYear: IAcademicYear | null = null;
   let examDetails: IExamListItem | null = null;
-  let examClassData: IExamClassData | null = null;
+  let examDataForClass: IExamClassData | null = null;
+  let studentsWithEnrolledSubjects: IStudentsListWithSubjectsItem[] | null = null;
+  let classSubjects: IClass["subjects"] | null = null;
+  let examSubjects: IExamSubject[] | null = null;
 
   try {
     if (examId) {
       examDetails = await examService.getListItemById(examId);
     }
-    if (yearId && gradeId && examId) {
-      examResults = await examService.getTopResults(yearId, gradeId, examId);
-    }
+
     if (yearId && gradeId && classId && examId) {
-      examClassData = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
+      activeYear = await academicYearsService.getActiveYear();
+      examDataForClass = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
+      studentsWithEnrolledSubjects = await studentsService.getListForClassWithSubjects(classId);
+      classSubjects = await classService.getSubjectsById(classId);
+      examSubjects = await examService.getExamSubjects(examId);
     }
   } catch {
     redirect("/exams", "replace");
@@ -73,21 +81,25 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     <>
       {!examId && renderEmptyStateContent()}
 
-      {examId && isViewing && examDetails && !examResults && (
-        <EmptyState
-          icon={ClipboardListIcon}
-          title="No results available"
-          description="There are no results available for this exam."
-        />
-      )}
+      {examId && isViewing && examDetails && <ExamResultsPage exam={examDetails} />}
 
-      {examId && isViewing && examDetails && examResults && (
-        <ExamResultsPage details={examDetails} results={examResults} />
-      )}
-
-      {examId && !isViewing && examClassData && (
-        <ExamMarksPage examName={examDetails?.name ?? "Exam"} examData={examClassData} />
-      )}
+      {examId &&
+        !isViewing &&
+        examDetails &&
+        examDataForClass &&
+        studentsWithEnrolledSubjects &&
+        classSubjects &&
+        examSubjects && (
+          <ExamMarksPage
+            key={examId}
+            exam={examDetails}
+            examData={examDataForClass}
+            studentsWithSubjects={studentsWithEnrolledSubjects}
+            classSubjects={classSubjects}
+            examSubjects={examSubjects}
+            canEdit={activeYear?.id === examDetails.gradeLevel.academicYear.id}
+          />
+        )}
     </>
   );
 }

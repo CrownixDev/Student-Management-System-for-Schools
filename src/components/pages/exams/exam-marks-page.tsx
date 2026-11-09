@@ -7,12 +7,18 @@ import { Button } from "@/components/shadcn/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/shadcn/hover-card";
 import { Input } from "@/components/shadcn/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import type { IExamClassData } from "@/features/exams";
+import type { IExamClassData, IExamListItem, IExamSubject } from "@/features/exams";
 import { useRouter } from "next/navigation";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
+import { IStudentsListWithSubjectsItem } from "@/features/students";
+import { IClass } from "@/features/class";
+import { updateExamMarksAction } from "@/features/exams/exams.actions";
+import { examMarksSchema } from "@/features/exams/exams.schema";
+import { toast } from "react-toastify";
 
 type Student = IExamClassData["students"][number];
-type Subject = Student["subjects"][number];
+type Subject = IClass["subjects"][number];
+type ExamSubject = Student["subjects"][number];
 type CellKey = `${string}:${string}`;
 type SortDirection = 1 | -1;
 type MarkStatus = "present" | "absent";
@@ -37,16 +43,6 @@ function isValidMark(value: string): boolean {
   if (value.trim() === "") return true;
   const numericValue = Number(value);
   return Number.isFinite(numericValue) && numericValue >= 0 && numericValue <= 100;
-}
-
-function getSubjects(students: Student[]): Subject[] {
-  const byId = new Map<string, Subject>();
-  for (const student of students) {
-    for (const subject of student.subjects) {
-      if (!byId.has(subject.id)) byId.set(subject.id, subject);
-    }
-  }
-  return Array.from(byId.values());
 }
 
 function KeyboardShortcuts() {
@@ -80,31 +76,34 @@ function Shortcut({ label, keys }: { label: string; keys: string }) {
 }
 
 function ExamMarksHeader({
-  examName,
+  exam,
   examData,
   isEditing,
   isSaving,
   onToggleEditing,
   onSave,
+  canEdit,
 }: {
-  examName: string;
+  exam: IExamListItem;
   examData: IExamClassData;
   isEditing: boolean;
   isSaving: boolean;
   onToggleEditing: () => void;
   onSave: () => void;
+  canEdit: boolean;
 }) {
   function onCancel() {
     if (confirm("All Edited/Updated marks will be lost. Are you sure you want to cancel?")) {
       onToggleEditing();
     }
   }
+
   return (
     <header className="flex shrink-0 flex-wrap items-start justify-between gap-4">
       <div className="min-w-0 flex gap-5">
         <SidebarTrigger />
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">{examName} marks</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{exam.name} marks</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {examData.academicYear.name} - {examData.gradeLevel.name} - {examData.name}
           </p>
@@ -114,7 +113,7 @@ function ExamMarksHeader({
         <KeyboardShortcuts />
         {isEditing ? (
           <>
-            <Button type="button" variant="destructive" onClick={onCancel}>
+            <Button disabled={isSaving} type="button" variant="destructive" onClick={onCancel}>
               Cancel
             </Button>
             <Button type="button" onClick={onSave} disabled={isSaving}>
@@ -123,9 +122,11 @@ function ExamMarksHeader({
             </Button>
           </>
         ) : (
-          <Button type="button" onClick={onToggleEditing}>
-            Edit marks
-          </Button>
+          canEdit && (
+            <Button type="button" onClick={onToggleEditing}>
+              Edit marks
+            </Button>
+          )
         )}
       </div>
     </header>
@@ -136,6 +137,8 @@ function MarksTable({
   examName,
   students,
   subjects,
+  isSubjectInExam,
+  isStudentEnrolled,
   isEditing,
   sortDirection,
   onToggleSort,
@@ -147,6 +150,8 @@ function MarksTable({
   examName: string;
   students: Student[];
   subjects: Subject[];
+  isSubjectInExam: (subjectId: string) => boolean;
+  isStudentEnrolled: (student: Student, subjectId: string) => boolean;
   isEditing: boolean;
   sortDirection: SortDirection;
   onToggleSort: () => void;
@@ -163,7 +168,12 @@ function MarksTable({
       >
         <caption className="sr-only">Exam marks for class {examName}. Students can be sorted by class index.</caption>
         <TableHeader>
-          <MarksTableHeader subjects={subjects} sortDirection={sortDirection} onToggleSort={onToggleSort} />
+          <MarksTableHeader
+            subjects={subjects}
+            isSubjectInExam={isSubjectInExam}
+            sortDirection={sortDirection}
+            onToggleSort={onToggleSort}
+          />
         </TableHeader>
         <TableBody>
           {students.map((student) => (
@@ -171,6 +181,8 @@ function MarksTable({
               key={student.enrollmentId}
               student={student}
               subjects={subjects}
+              isSubjectInExam={isSubjectInExam}
+              isStudentEnrolled={isStudentEnrolled}
               isEditing={isEditing}
               findDraft={findDraft}
               registerInput={registerInput}
@@ -200,18 +212,20 @@ function MarksTable({
 
 function MarksTableHeader({
   subjects,
+  isSubjectInExam,
   sortDirection,
   onToggleSort,
 }: {
   subjects: Subject[];
+  isSubjectInExam: (subjectId: string) => boolean;
   sortDirection: SortDirection;
   onToggleSort: () => void;
 }) {
   return (
-    <TableRow className="bg-muted hover:bg-muted">
+    <TableRow className="bg-muted hover:bg-muted [&>th]:border-r [&>th]:border-border [&>th:last-child]:border-r-0">
       <TableHead
         aria-sort={sortDirection === 1 ? "ascending" : "descending"}
-        className="sticky left-0 top-0 z-40 w-[76px] min-w-[76px] bg-muted text-right"
+        className="sticky left-0 top-0 z-40 w-19 min-w-19 bg-muted text-right"
       >
         <button
           type="button"
@@ -227,12 +241,20 @@ function MarksTableHeader({
           )}
         </button>
       </TableHead>
-      <TableHead className="sticky left-[76px] top-0 z-40 w-[160px] min-w-[160px] bg-muted">Admission no.</TableHead>
-      <TableHead className="sticky left-[236px] top-0 z-40 w-[260px] min-w-[260px] bg-muted">Student name</TableHead>
+      <TableHead className="sticky left-19 top-0 z-40 w-40 min-w-40 bg-muted">Admission no.</TableHead>
+      <TableHead className="sticky left-59 top-0 z-40 w-65 min-w-65 bg-muted">Student name</TableHead>
       {subjects.map((subject) => (
-        <TableHead key={subject.id} className="sticky top-0 z-30 min-w-[176px] bg-muted">
+        <TableHead
+          key={subject.id}
+          className={`sticky top-0 z-30 w-50 whitespace-normal wrap-anywhere ${
+            isSubjectInExam(subject.id) ? "bg-muted" : "bg-muted/70 text-muted-foreground"
+          }`}
+        >
           <div className="flex flex-col gap-0.5">
             <span>{subject.name}</span>
+            {!isSubjectInExam(subject.id) && (
+              <span className="text-xs font-normal text-destructive">Subject not added to exam</span>
+            )}
           </div>
         </TableHead>
       ))}
@@ -243,6 +265,8 @@ function MarksTableHeader({
 function MarksTableRow({
   student,
   subjects,
+  isSubjectInExam,
+  isStudentEnrolled,
   isEditing,
   findDraft,
   registerInput,
@@ -251,6 +275,8 @@ function MarksTableRow({
 }: {
   student: Student;
   subjects: Subject[];
+  isSubjectInExam: (subjectId: string) => boolean;
+  isStudentEnrolled: (student: Student, subjectId: string) => boolean;
   isEditing: boolean;
   findDraft: (student: Student, subjectId: string) => MarkDraft;
   registerInput: (key: CellKey, element: HTMLInputElement | null) => void;
@@ -258,14 +284,14 @@ function MarksTableRow({
   onInputKeyDown: (event: KeyboardEvent<HTMLInputElement>, student: Student, subjectId: string) => void;
 }) {
   return (
-    <TableRow className="h-14">
-      <TableCell className="sticky left-0 z-20 w-[76px] min-w-[76px] bg-background text-right font-mono text-xs">
+    <TableRow className="h-14 border-b border-border [&>td]:border-b [&>td]:border-r [&>td]:border-border [&>td:last-child]:border-r-0">
+      <TableCell className="sticky left-0 z-20 w-19 min-w-19 bg-background text-right font-mono text-xs">
         {student.classIndex}
       </TableCell>
-      <TableCell className="sticky left-[76px] z-20 w-[160px] min-w-[160px] bg-background font-mono text-xs text-muted-foreground">
+      <TableCell className="sticky left-19 z-20 w-40 min-w-40 bg-background font-mono text-xs text-muted-foreground">
         {student.admissionNo}
       </TableCell>
-      <TableCell className="sticky left-[236px] z-20 w-[260px] min-w-[260px] whitespace-normal [overflow-wrap:anywhere] bg-background font-medium">
+      <TableCell className="sticky left-59 z-20 w-65 min-w-65 whitespace-normal wrap-anywhere bg-background font-medium">
         {student.fullName}
       </TableCell>
       {subjects.map((subject) => (
@@ -273,6 +299,8 @@ function MarksTableRow({
           key={subject.id}
           student={student}
           subject={subject}
+          isInExam={isSubjectInExam(subject.id)}
+          isEnrolled={isStudentEnrolled(student, subject.id)}
           isEditing={isEditing}
           draft={findDraft(student, subject.id)}
           registerInput={registerInput}
@@ -287,6 +315,8 @@ function MarksTableRow({
 function MarkCell({
   student,
   subject,
+  isInExam,
+  isEnrolled,
   isEditing,
   draft,
   registerInput,
@@ -295,13 +325,19 @@ function MarkCell({
 }: {
   student: Student;
   subject: Subject;
+  isInExam: boolean;
+  isEnrolled: boolean;
   isEditing: boolean;
   draft: MarkDraft;
   registerInput: (key: CellKey, element: HTMLInputElement | null) => void;
   onUpdateDraft: (enrollmentId: string, subjectId: string, draft: MarkDraft) => void;
   onInputKeyDown: (event: KeyboardEvent<HTMLInputElement>, student: Student, subjectId: string) => void;
 }) {
-  if (!student.subjects.some((item) => item.id === subject.id)) {
+  if (!isInExam) {
+    return <TableCell className="bg-muted/50 text-muted-foreground">—</TableCell>;
+  }
+
+  if (!isEnrolled) {
     return (
       <TableCell>
         <span className="inline-flex rounded-md bg-muted px-2.5 py-1.5 text-xs text-muted-foreground">
@@ -351,11 +387,8 @@ function MarkCell({
         <Input
           ref={(element) => registerInput(key, element)}
           className="h-9 w-24 tabular-nums"
-          type="number"
+          type="text"
           inputMode="decimal"
-          min={0}
-          max={100}
-          step="any"
           value={draft.value}
           aria-label={`${student.fullName}, class index ${student.classIndex}, ${subject.name}, maximum 100`}
           aria-invalid={!isValidMark(draft.value) || undefined}
@@ -378,7 +411,23 @@ function MarkCell({
   );
 }
 
-export function ExamMarksPage({ examName, examData }: { examName: string; examData: IExamClassData }) {
+interface Props {
+  exam: IExamListItem;
+  examData: IExamClassData;
+  studentsWithSubjects: IStudentsListWithSubjectsItem[];
+  classSubjects: IClass["subjects"];
+  examSubjects: IExamSubject[];
+  canEdit?: boolean;
+}
+
+export function ExamMarksPage({
+  exam,
+  examData,
+  studentsWithSubjects,
+  classSubjects,
+  examSubjects,
+  canEdit = false,
+}: Props) {
   const [draftState, setDraftState] = useState<{
     source: IExamClassData;
     values: Partial<Record<CellKey, MarkDraft>>;
@@ -392,21 +441,50 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
 
   const router = useRouter();
 
-  const subjects = useMemo(() => getSubjects(examData.students), [examData.students]);
+  const subjects = classSubjects;
+  const isSubjectInExam = (subjectId: string) =>
+    examSubjects.some((examSubject) => examSubject.subject.id === subjectId);
+
+  function getEnrolledSubjects(student: Student) {
+    const studentIndex = examData.students.findIndex((entry) => entry.enrollmentId === student.enrollmentId);
+    const enrolledStudent =
+      studentsWithSubjects.find((entry) => entry.id === student.id || entry.admissionNo === student.admissionNo) ??
+      studentsWithSubjects[studentIndex];
+
+    return enrolledStudent?.enrollment.subjects ?? [];
+  }
+
+  const isStudentEnrolled = (student: Student, subjectId: string) => {
+    const enrolledSubjects = getEnrolledSubjects(student);
+
+    return (
+      enrolledSubjects.some((enrolledSubject) => enrolledSubject.subjectId === subjectId) ||
+      student.subjects.some((examSubject) => examSubject.id === subjectId)
+    );
+  };
   const students = useMemo(
-    () => [...examData.students].sort((left, right) => (left.classIndex - right.classIndex) * sortDirection),
+    () =>
+      [...examData.students].sort((left, right) => {
+        const studentListLength = examData.students.length;
+        const leftIndex = left.classIndex ?? studentListLength;
+        const rightIndex = right.classIndex ?? studentListLength;
+
+        if (left.classIndex == null && right.classIndex != null) return 1;
+        if (left.classIndex != null && right.classIndex == null) return -1;
+        return (leftIndex - rightIndex) * sortDirection;
+      }),
     [examData.students, sortDirection],
   );
 
   function findDraft(student: Student, subjectId: string): MarkDraft {
-    const subject = student.subjects.find((item) => item.id === subjectId);
+    const subject: ExamSubject | undefined = student.subjects.find((item) => item.id === subjectId);
+    const draft = drafts[cellKey(student.enrollmentId, subjectId)];
+    if (draft) return draft;
     if (!subject) return { value: "", status: "present" };
-    return (
-      drafts[cellKey(student.enrollmentId, subjectId)] ?? {
-        value: subject.result.marks == null ? "" : String(subject.result.marks),
-        status: subject.result.status,
-      }
-    );
+    return {
+      value: subject.result.marks == null ? "" : String(subject.result.marks),
+      status: subject.result.status,
+    };
   }
 
   function updateDraft(enrollmentId: string, subjectId: string, draft: MarkDraft) {
@@ -432,7 +510,7 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
   function focusStudentInSubject(studentIndex: number, subjectId: string, direction: SortDirection) {
     for (let index = studentIndex + direction; index >= 0 && index < students.length; index += direction) {
       const student = students[index];
-      if (student.subjects.some((subject) => subject.id === subjectId)) {
+      if (isSubjectInExam(subjectId) && isStudentEnrolled(student, subjectId)) {
         focusCell(student.enrollmentId, subjectId);
         return;
       }
@@ -440,8 +518,8 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
   }
 
   function focusSubjectForStudent(student: Student, subjectId: string, direction: SortDirection) {
-    const eligibleSubjects = subjects.filter((subject) =>
-      student.subjects.some((studentSubject) => studentSubject.id === subject.id),
+    const eligibleSubjects = subjects.filter(
+      (subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id),
     );
     const currentIndex = eligibleSubjects.findIndex((subject) => subject.id === subjectId);
     const nextSubject = eligibleSubjects[currentIndex + direction];
@@ -468,8 +546,8 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
 
     if (event.key === "Tab") {
       const direction = event.shiftKey ? -1 : 1;
-      const eligibleSubjects = subjects.filter((subject) =>
-        student.subjects.some((studentSubject) => studentSubject.id === subject.id),
+      const eligibleSubjects = subjects.filter(
+        (subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id),
       );
       const currentIndex = eligibleSubjects.findIndex((subject) => subject.id === subjectId);
       if (eligibleSubjects[currentIndex + direction]) {
@@ -483,7 +561,9 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
     const marks: ExamMarkInput[] = [];
 
     for (const student of examData.students) {
-      for (const subject of student.subjects) {
+      for (const subject of subjects.filter(
+        (item) => isSubjectInExam(item.id) && isStudentEnrolled(student, item.id),
+      )) {
         const draft = findDraft(student, subject.id);
         if (!isValidMark(draft.value)) {
           setMessage(`${student.fullName}: enter a mark from 0 to 100.`);
@@ -501,30 +581,49 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
 
     setIsSaving(true);
     try {
-      console.log(marks);
-      setMessage(`${marks.length} student-subject marks passed to the save handler.`);
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : "The marks could not be passed to the save handler.");
+      const parsedRes = examMarksSchema.safeParse(marks);
+      if (!parsedRes.success) {
+        toast.error("Invalid marks provided");
+        return;
+      }
+
+      const res = await updateExamMarksAction(exam.id, parsedRes.data);
+      if (res.success) {
+        setIsEditing((current) => !current);
+        router.refresh();
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
+    } catch {
+      toast.error("Marks cannot be saved. Please try again. Reloading will discard your edits.");
     } finally {
       setIsSaving(false);
     }
   }
 
-  const eligibleCount = examData.students.reduce((count, student) => count + student.subjects.length, 0);
+  const eligibleCount = examData.students.reduce(
+    (count, student) =>
+      count +
+      subjects.filter((subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id)).length,
+    0,
+  );
   const markedCount = examData.students.reduce(
     (count, student) =>
       count +
-      student.subjects.filter((subject) => {
-        const draft = findDraft(student, subject.id);
-        return draft.status === "absent" || draft.value.trim() !== "";
-      }).length,
+      subjects
+        .filter((subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id))
+        .filter((subject) => {
+          const draft = findDraft(student, subject.id);
+          return draft.status === "absent" || draft.value.trim() !== "";
+        }).length,
     0,
   );
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-hidden p-4 sm:p-6">
       <ExamMarksHeader
-        examName={examName}
+        exam={exam}
         examData={examData}
         isEditing={isEditing}
         isSaving={isSaving}
@@ -533,12 +632,15 @@ export function ExamMarksPage({ examName, examData }: { examName: string; examDa
           router.refresh();
         }}
         onSave={saveMarks}
+        canEdit={canEdit}
       />
       <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3" aria-labelledby="marks-table-title">
         <MarksTable
           examName={examData.name}
           students={students}
           subjects={subjects}
+          isSubjectInExam={isSubjectInExam}
+          isStudentEnrolled={isStudentEnrolled}
           isEditing={isEditing}
           sortDirection={sortDirection}
           onToggleSort={() => setSortDirection((direction) => (direction === 1 ? -1 : 1))}

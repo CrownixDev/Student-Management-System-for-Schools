@@ -5,36 +5,23 @@ import {
   SidebarHeader,
   SidebarMenu,
 } from "@/components/shadcn/sidebar";
-import { Button, buttonVariants } from "@/components/shadcn/button";
-import { Separator } from "@/components/shadcn/separator";
-import { TypographyH1, TypographyH2 } from "@/components/ui/typography";
-import { ArrowLeftIcon, GraduationCapIcon } from "lucide-react";
+import { TypographyH1, TypographyP } from "@/components/ui/typography";
+import { GraduationCapIcon } from "lucide-react";
 import { IGradeListItemForYear } from "@/features/grades";
 import EmptyState from "@/components/ui/empty-state";
 import SidebarGradeButton from "./sidebar-grade-button";
-import Link from "next/link";
-import { IAcademicYear } from "@/features/academic-years";
+import YearBatchSelectorDialog from "@/components/dialog/sidebar/year-batch-selector-dialog";
 
-export default function SidebarGradeContent({
-  year,
-  grades,
-}: {
-  year: IAcademicYear;
-  grades: IGradeListItemForYear[];
-}) {
+export default function SidebarGradeContent({ grades }: { grades: IGradeListItemForYear[] }) {
   return (
     <>
       <SidebarHeader>
-        <Link href={"/nav/exams"} className={buttonVariants({ variant: "outline", className: "w-fit" })}>
-          <ArrowLeftIcon />
-          Change year
-        </Link>
-        <TypographyH1>Year {year.name}</TypographyH1>
-        <Separator />
-        <TypographyH2>All Grades</TypographyH2>
+        <TypographyH1>Exams</TypographyH1>
+        <YearBatchSelectorDialog allow={{ batch: false }} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex-1">
+          <TypographyP>All Grades</TypographyP>
           {grades.length > 0 && (
             <SidebarGroupContent>
               <SidebarMenu>
@@ -51,12 +38,6 @@ export default function SidebarGradeContent({
                 icon={GraduationCapIcon}
                 title="No grades found"
                 description="You don't have any grades yet. Start by adding a new grade."
-                action={
-                  <Button className={"w-full"} variant={"outline"} render={<Link href={"/setup"} />}>
-                    <ArrowLeftIcon className="size-4" />
-                    Take me to add a new grade
-                  </Button>
-                }
                 noBorder
               />
             </SidebarGroupContent>

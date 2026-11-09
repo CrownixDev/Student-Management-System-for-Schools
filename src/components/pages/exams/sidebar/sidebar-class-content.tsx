@@ -5,17 +5,17 @@ import {
   SidebarHeader,
   SidebarMenu,
 } from "@/components/shadcn/sidebar";
-import { Button, buttonVariants } from "@/components/shadcn/button";
-import { Separator } from "@/components/shadcn/separator";
-import { TypographyH1, TypographyH2, TypographyP } from "@/components/ui/typography";
 import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
-import EmptyState from "@/components/ui/empty-state";
-import Link from "next/link";
+import { TypographyH2, TypographyP } from "@/components/ui/typography";
+import { Button, buttonVariants } from "@/components/shadcn/button";
+import { IGradeListItem } from "@/features/grades";
 import { IAcademicYear } from "@/features/academic-years";
 import { IClassList } from "@/features/class";
-import SidebarClassButton from "./sidebar-class-button";
-import { IGradeListItem } from "@/features/grades";
+import { Separator } from "@/components/shadcn/separator";
 import SidebarResultViewButton from "./sidebar-result-view-button";
+import SidebarClassButton from "./sidebar-class-button";
+import EmptyState from "@/components/ui/empty-state";
+import Link from "next/link";
 
 export default function SidebarClassContent({
   year,
@@ -34,15 +34,15 @@ export default function SidebarClassContent({
           Change grade
         </Link>
         <div className="flex gap-3 items-center">
-          <TypographyH1>{gradeItem.name}</TypographyH1>
+          <TypographyH2>{gradeItem.name}</TypographyH2>
           <TypographyP>({year.name})</TypographyP>
         </div>
         <Separator />
-        <TypographyH2>All Classes</TypographyH2>
         <SidebarResultViewButton />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex-1">
+          <TypographyP>All Classes</TypographyP>
           {classList.length > 0 && (
             <SidebarGroupContent>
               <SidebarMenu>

@@ -1,14 +1,17 @@
 "use server";
 
-import { IQueryParams } from "@/lib/filter";
 import { IStudentEnrollment, IStudentList, IStudentsListItem, IStudentsListWithSubjectsItem } from "./students.types";
-import { studentsService } from ".";
 import { requireAuthServerAction } from "@/lib/auth/authenticate";
-import { IResponse } from "@/lib/types";
-import { studentSchema } from "./student.schema";
+import { IStudentDetailsData } from "@/components/pages/exams/student-details-view-button";
+import { subjectRepository } from "../subjects";
+import { studentsService } from ".";
 import { revalidatePath } from "next/cache";
-import { Route } from "next";
+import { studentSchema } from "./student.schema";
+import { IQueryParams } from "@/lib/filter";
+import { examService } from "../exams";
 import { ApiErrorV2 } from "@/lib/ApiError";
+import { IResponse } from "@/lib/types";
+import { Route } from "next";
 import z from "zod";
 
 export async function getStudentListAction({ search, page, limit }: IQueryParams): Promise<IResponse<IStudentList>> {
@@ -20,6 +23,25 @@ export async function getStudentListAction({ search, page, limit }: IQueryParams
   } catch (error) {
     console.error("Error fetching student list:", error);
     return { success: false, message: "Failed to fetch student list." };
+  }
+}
+
+export async function getStudentDetailsAction(
+  studentId: string,
+  classId: string,
+): Promise<IResponse<IStudentDetailsData>> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  try {
+    const student = await studentsService.getById(classId, studentId);
+    const [examData, subjectList] = await Promise.all([
+      examService.getDataByEnrollmentId(student.enrollment.id),
+      subjectRepository.getListByEnrollmentId(student.enrollment.id),
+    ]);
+    return { success: true, data: { student, examData, subjectList } };
+  } catch (error) {
+    console.error("Error fetching data for student details:", error);
+    return { success: false, message: "Failed to fetch data for student details" };
   }
 }
 

@@ -1,18 +1,18 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { batchService, IBatchList } from "@/features/batch";
+import { batchService, IBatchListItem } from "@/features/batch";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
-import BatchEditBtn from "./batch-edit-btn";
 import { BatchType } from "@/generated/prisma/enums";
-import EmptyState from "@/components/ui/empty-state";
 import { EyeIcon, LinkIcon } from "lucide-react";
 import { buttonVariants } from "@/components/shadcn/button";
+import EmptyState from "@/components/ui/empty-state";
+import BatchEditBtn from "./batch-edit-btn";
 import TooltipLink from "@/components/ui/tooltip-link";
 
 export default async function BatchTable({ type }: { type: BatchType }) {
   const search = filterCache.get("search");
 
-  let batches: IBatchList | null = null;
+  let batches: IBatchListItem[] | null = null;
 
   try {
     batches = await batchService.getList({ search, type });
@@ -31,7 +31,7 @@ export default async function BatchTable({ type }: { type: BatchType }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {batches.list.map((batch) => (
+          {batches.map((batch) => (
             <TableRow key={batch.id}>
               <TableCell className="font-medium">{batch.name}</TableCell>
               <TableCell className="text-right">
@@ -49,7 +49,7 @@ export default async function BatchTable({ type }: { type: BatchType }) {
           ))}
         </TableBody>
       </Table>
-      {batches.list.length === 0 && (
+      {batches.length === 0 && (
         <div className="py-12">
           <EmptyState
             icon={LinkIcon}

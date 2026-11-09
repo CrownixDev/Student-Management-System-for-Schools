@@ -17,20 +17,20 @@ export default async function page({ searchParams }: PageProps<"/grades">) {
   try {
     if (yearId) {
       yearData = await academicYearsService.getListItemById(yearId);
-      gradelist = await gradesService.getListByYear(yearId);
+      gradelist = await gradesService.getListByYear({ yearId });
     }
     if (batchId) batchData = await batchService.getById(batchId);
   } catch {
-    redirect("/nav/student");
+    redirect("/");
   }
 
   if ((!yearData && !batchData) || !gradelist) {
-    redirect("/nav/student");
+    redirect("/");
   }
 
   return (
     <>
-      <GradesSidebar gradeList={gradelist} year={yearData} batch={batchData} />
+      <GradesSidebar grades={gradelist} year={yearData} batch={batchData} />
       <SidebarInset>
         <GradesPage />
       </SidebarInset>

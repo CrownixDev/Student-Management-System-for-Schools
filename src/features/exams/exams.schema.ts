@@ -1,5 +1,5 @@
 import { IExamListItem } from "./exams.types";
-import { SubjectCategory } from "@/generated/prisma/enums";
+import { MarkStatus, SubjectCategory } from "@/generated/prisma/enums";
 import z from "zod";
 
 export const examSchema = z.object({
@@ -35,3 +35,12 @@ export const examDialogSchema = z.object({
     } satisfies Partial<Record<keyof IExamListItem["examSubjects"][number], z.ZodType>>),
   ),
 });
+
+export const examMarksSchema = z.array(
+  z.object({
+    enrollmentId: z.string(),
+    subjectId: z.string(),
+    marks: z.number().nonnegative().nullable(),
+    status: z.enum(MarkStatus),
+  }),
+);

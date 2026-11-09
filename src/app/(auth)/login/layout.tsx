@@ -1,4 +1,3 @@
-import { APP_URLS } from "@/constraints";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth/constants";
 import { verifyAccessToken } from "@/lib/auth/jwt";
 import { cookies } from "next/headers";
@@ -12,12 +11,12 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
   if (accesstoken) {
     try {
       await verifyAccessToken(accesstoken);
-      redirect(APP_URLS.dashboard);
+      redirect("/");
     } catch {}
   }
 
   if (refreshToken) {
-    redirect(APP_URLS.dashboard);
+    redirect("/");
   }
 
   return <div className="bg-gray-200">{children}</div>;

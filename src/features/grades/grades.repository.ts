@@ -33,9 +33,9 @@ export class GradesRepository {
     });
   }
 
-  async getAllStudentsWithResults(yearId: string, gradeId: string, examId: string) {
+  async getAllStudentsWithResults(gradeId: string, examId: string) {
     return await prisma.gradeLevel.findUnique({
-      where: { academicYearId: yearId, id: gradeId },
+      where: { id: gradeId },
       select: {
         id: true,
         name: true,
@@ -46,6 +46,7 @@ export class GradesRepository {
             enrollments: {
               select: {
                 id: true,
+                classIndex: true,
                 student: { select: { id: true, fullName: true, admissionNo: true } },
                 enrollmentSubjects: {
                   select: {

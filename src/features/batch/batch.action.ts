@@ -1,6 +1,6 @@
 "use server";
 
-import { batchService, IBatchList } from ".";
+import { batchService, IBatchListItem } from ".";
 import { BatchType } from "@/generated/prisma/enums";
 import { requireAuthServerAction } from "@/lib/auth/authenticate";
 import { IQueryParams } from "@/lib/filter";
@@ -13,14 +13,12 @@ import z from "zod";
 
 export async function getBatchListAction({
   search,
-  page,
-  limit,
   type,
-}: IQueryParams & { type: BatchType }): Promise<IResponse<IBatchList>> {
+}: Pick<IQueryParams, "search"> & { type: BatchType }): Promise<IResponse<IBatchListItem[]>> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   try {
-    const batches = await batchService.getList({ search, limit, page, type });
+    const batches = await batchService.getList({ search, type });
     return { success: true, data: batches };
   } catch (error) {
     console.error("Failed to fetch batch list:", error);

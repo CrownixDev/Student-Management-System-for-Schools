@@ -1,5 +1,5 @@
 import { Badge } from "@/components/shadcn/badge";
-import { Button, buttonVariants } from "@/components/shadcn/button";
+import { buttonVariants } from "@/components/shadcn/button";
 import { Separator } from "@/components/shadcn/separator";
 import {
   Sidebar,
@@ -12,15 +12,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
-import { TypographyH1, TypographyH2, TypographyH3 } from "@/components/ui/typography";
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
-import { classService } from "@/features/class";
+import { ArrowLeftIcon, HomeIcon, HousesIcon } from "lucide-react";
 import { gradesService, IGradeListItem } from "@/features/grades";
-import { idCache } from "@/lib/nuqs/id";
-import { ArrowLeftIcon, HomeIcon, PlusIcon } from "lucide-react";
-import { redirect } from "next/navigation";
-import Link from "next/link";
 import { batchService, IBatchListItem } from "@/features/batch";
+import { TypographyH2, TypographyP } from "@/components/ui/typography";
+import { classService } from "@/features/class";
+import { redirect } from "next/navigation";
+import { idCache } from "@/lib/nuqs/id";
+import EmptyState from "@/components/ui/empty-state";
+import Link from "next/link";
 
 export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
@@ -44,7 +45,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
     redirect("/");
   }
 
-  const classList = await classService.getList(yearId, gradeId);
+  const classList = await classService.getList(gradeId);
   return (
     <Sidebar>
       <SidebarHeader>
@@ -53,17 +54,17 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
           className={buttonVariants({ variant: "outline", className: "w-fit" })}
         >
           <ArrowLeftIcon />
-          Back to {batchData ? "batch" : "year"}
+          Back to {batchData ? "batch" : "grades"}
         </Link>
         <div className="flex w-full items-center gap-2">
-          <TypographyH1>{gradeData.name}</TypographyH1>
-          <TypographyH3>({yearData.name})</TypographyH3>
+          <TypographyH2>{gradeData.name}</TypographyH2>
+          <TypographyP>({yearData.name})</TypographyP>
         </div>
         <Separator />
-        <TypographyH2>All Classes</TypographyH2>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex-1">
+          <TypographyP>All Classes</TypographyP>
           <SidebarGroupContent>
             <SidebarMenu>
               {classList.map((classItem) => (
@@ -83,14 +84,15 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
                 </SidebarMenuItem>
               ))}
               {classList.length === 0 && (
-                <li className="px-2 py-2 text-xs text-muted-foreground">No classes in this grade yet.</li>
+                <EmptyState
+                  icon={HousesIcon}
+                  title="No classes found"
+                  description="Start by adding classes to this grade"
+                  noBorder
+                />
               )}
             </SidebarMenu>
           </SidebarGroupContent>
-          <Button className={"w-full"} variant={"outline"}>
-            <PlusIcon className="size-4" />
-            Add a new class
-          </Button>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>

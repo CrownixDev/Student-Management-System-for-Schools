@@ -2,7 +2,7 @@ import "server-only";
 
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { BatchRepository } from "./batch.repository";
-import { IBatch, IBatchList, IBatchListItem } from "./batch.types";
+import { IBatch, IBatchListItem } from "./batch.types";
 import { IQueryParams } from "@/lib/filter";
 import { BatchType } from "@/generated/prisma/enums";
 import { batchSchema } from "./batch.schema";
@@ -12,10 +12,9 @@ import z from "zod";
 export class BatchService {
   constructor(private repository: BatchRepository) {}
 
-  async getList({ search, page, limit, type }: IQueryParams & { type: BatchType }): Promise<IBatchList> {
+  async getList({ search, type }: Pick<IQueryParams, "search"> & { type: BatchType }): Promise<IBatchListItem[]> {
     if (!type) throw new ApiErrorV2("Batch type is required");
-    const [count, list] = await this.repository.getList({ search, page, limit, type });
-    return { count, list };
+    return await this.repository.getList({ search, type });
   }
 
   async getListItemById(batchId: string): Promise<IBatchListItem> {

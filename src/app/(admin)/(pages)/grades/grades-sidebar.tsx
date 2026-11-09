@@ -10,64 +10,41 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
-import { Button, buttonVariants } from "@/components/shadcn/button";
-import { ArrowLeftIcon, GraduationCapIcon, HomeIcon } from "lucide-react";
-import Link from "next/link";
+import { buttonVariants } from "@/components/shadcn/button";
+import { GraduationCapIcon, HomeIcon } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { IGradeListItemForYear } from "@/features/grades";
-import { Empty, EmptyContent, EmptyMedia, EmptyTitle } from "@/components/shadcn/empty";
-import { TypographyH1, TypographyH2 } from "@/components/ui/typography";
+import { TypographyH1, TypographyP } from "@/components/ui/typography";
 import { IAcademicYear } from "@/features/academic-years";
 import { Separator } from "@/components/shadcn/separator";
 import { IBatch } from "@/features/batch";
-import { Route } from "next";
+import EmptyState from "@/components/ui/empty-state";
+import Link from "next/link";
+import YearBatchSelectorDialog from "@/components/dialog/sidebar/year-batch-selector-dialog";
 
 export default function GradesSidebar({
-  gradeList = [],
+  grades = [],
   year,
   batch,
 }: {
   year: IAcademicYear | null;
   batch: IBatch | null;
-  gradeList?: IGradeListItemForYear[];
+  grades?: IGradeListItemForYear[];
 }) {
   return (
     <Sidebar collapsible="none" className="sticky top-0 h-screen">
-      {year && (
-        <SidebarHeader>
-          <Link
-            href={"/nav/student/year" as Route}
-            className={buttonVariants({ variant: "outline", className: "w-fit" })}
-          >
-            <ArrowLeftIcon />
-            Change year
-          </Link>
-          <TypographyH1>Year {year.name}</TypographyH1>
-          <Separator />
-          <TypographyH2>All Grades</TypographyH2>
-        </SidebarHeader>
-      )}
-      {batch && (
-        <SidebarHeader>
-          <Link
-            href={"/nav/student/batch" as Route}
-            className={buttonVariants({ variant: "outline", className: "w-fit" })}
-          >
-            <ArrowLeftIcon />
-            Change batch
-          </Link>
-          <TypographyH1>{batch.name} Batch</TypographyH1>
-          <Separator />
-          <TypographyH2>All Grades</TypographyH2>
-        </SidebarHeader>
-      )}
+      <SidebarHeader>
+        <TypographyH1>Students</TypographyH1>
+        <YearBatchSelectorDialog />
+      </SidebarHeader>
       <SidebarContent>
         {year && (
           <SidebarGroup className="flex-1">
-            {gradeList.length > 0 && (
+            <TypographyP>All Grades</TypographyP>
+            {grades.length > 0 && (
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {gradeList.map((grade) => (
+                  {grades.map((grade) => (
                     <SidebarMenuItem key={grade.id}>
                       <SidebarMenuButton
                         isActive={false}
@@ -87,30 +64,24 @@ export default function GradesSidebar({
               </SidebarGroupContent>
             )}
 
-            {gradeList.length === 0 && (
+            {grades.length === 0 && (
               <SidebarGroupContent>
-                <Empty>
-                  <EmptyMedia>
-                    <GraduationCapIcon className="size-8" />
-                  </EmptyMedia>
-                  <EmptyTitle>No grades found</EmptyTitle>
-                  <EmptyContent>
-                    You don&apos;t have any grades yet. Start by adding a new grade.
-                    <Button className={"w-full"} variant={"outline"} render={<Link href={"/setup"} />}>
-                      <ArrowLeftIcon className="size-4" />
-                      Take me to add a new grade
-                    </Button>
-                  </EmptyContent>
-                </Empty>
+                <EmptyState
+                  icon={GraduationCapIcon}
+                  title="No Grades Found"
+                  description="Add a new grade to this year to get started."
+                  noBorder
+                />
               </SidebarGroupContent>
             )}
           </SidebarGroup>
         )}
 
         {batch &&
-          batch.academicYear.length > 0 &&
-          batch.academicYear.map((year) => (
+          batch.academicYears.length > 0 &&
+          batch.academicYears.map((year) => (
             <SidebarGroup key={year.id}>
+              <TypographyP>All Grades</TypographyP>
               <SidebarGroupLabel>{year.name}</SidebarGroupLabel>
               <SidebarGroupContent>
                 {year.grades.map((grade) => (
@@ -135,22 +106,15 @@ export default function GradesSidebar({
             </SidebarGroup>
           ))}
 
-        {batch && batch.academicYear.length === 0 && (
+        {batch && batch.academicYears.length === 0 && (
           <SidebarGroup>
             <SidebarGroupContent>
-              <Empty>
-                <EmptyMedia>
-                  <GraduationCapIcon className="size-8" />
-                </EmptyMedia>
-                <EmptyTitle>No grades found for this batch</EmptyTitle>
-                <EmptyContent>
-                  Add a new grade to this batch to get started.
-                  <Button className={"w-full"} variant={"outline"} render={<Link href={"/setup"} />}>
-                    <ArrowLeftIcon className="size-4" />
-                    Take me to add a new grade
-                  </Button>
-                </EmptyContent>
-              </Empty>
+              <EmptyState
+                icon={GraduationCapIcon}
+                title="No Grades Found"
+                description="Add a new grade to this batch to get started."
+                noBorder
+              />
             </SidebarGroupContent>
           </SidebarGroup>
         )}

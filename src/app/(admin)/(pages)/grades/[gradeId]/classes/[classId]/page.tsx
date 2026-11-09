@@ -1,12 +1,13 @@
-import EmptyState from "@/components/ui/empty-state";
-import ClassSidebar from "@/components/pages/classes/class-sidebar";
-import StudentDetails from "@/components/pages/classes/student-details";
 import { examService } from "@/features/exams";
 import { studentsService } from "@/features/students";
-import { subjectRepository } from "@/features/subjects";
+import { subjectService } from "@/features/subjects";
 import { idCache } from "@/lib/nuqs/id";
 import { TriangleAlertIcon, UsersRoundIcon } from "lucide-react";
 import { redirect } from "next/navigation";
+import { classService } from "@/features/class";
+import EmptyState from "@/components/ui/empty-state";
+import ClassSidebar from "@/components/pages/classes/class-sidebar";
+import StudentDetails from "@/components/pages/classes/student-details";
 
 export default async function ClassPage({ params, searchParams }: PageProps<"/grades/[gradeId]/classes/[classId]">) {
   const { yearId, studentId } = await idCache.parse(searchParams);
@@ -24,13 +25,14 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
     />
   );
 
-  const studentList = await studentsService.getListForClass(yearId, gradeId, classId);
+  const classData = await classService.getById(classId);
 
   if (studentId) {
-    const student = await studentsService.getById(studentId, yearId, gradeId, classId);
+    const student = await studentsService.getById(classId, studentId);
     if (student) {
       const examData = await examService.getDataByEnrollmentId(student.enrollment.id);
-      const subjectList = await subjectRepository.getListByEnrollmentId(student.enrollment.id);
+      const subjectList = await subjectService.getListByEnrollmentId(student.enrollment.id);
+
       {
         studentDetails = <StudentDetails student={student} examData={examData} subjectList={subjectList} />;
       }
@@ -39,7 +41,7 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
 
   return (
     <div className="flex h-dvh">
-      <ClassSidebar studentList={studentList} />
+      <ClassSidebar classData={classData} />
       <div className="flex-1 overflow-y-auto">
         {!studentId && (
           <EmptyState

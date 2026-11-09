@@ -2,12 +2,36 @@
 
 import { requireAuthServerAction } from "@/lib/auth/authenticate";
 import { revalidatePath } from "next/cache";
-import { examSchema } from "./exams.schema";
+import { examMarksSchema, examSchema } from "./exams.schema";
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { IResponse } from "@/lib/types";
 import { examService } from ".";
 import { Route } from "next";
 import z from "zod";
+
+export async function updateExamMarksAction(examId: string, data: z.infer<typeof examMarksSchema>): Promise<IResponse> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  if (!examId) {
+    return { success: false, message: "Exam id is required" };
+  }
+
+  const parsedRes = examMarksSchema.safeParse(data);
+  if (!parsedRes.success) {
+    return { success: false, message: "Invalid data provided" };
+  }
+
+  try {
+    await examService.updateMarks(examId, parsedRes.data);
+    revalidatePath("/setup" as Route);
+    return { success: true, message: "Exam marks Updated" };
+  } catch (error) {
+    if (error instanceof ApiErrorV2) {
+      return { success: false, message: error.message };
+    }
+    return { success: false, message: "Unknown error occured" };
+  }
+}
 
 export async function createExamAction(gradeId: string, data: z.infer<typeof examSchema>): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });

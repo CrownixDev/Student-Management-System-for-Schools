@@ -4,10 +4,12 @@ import {
   IExamByEnrollmentId,
   IExamClassData,
   IExamListItem,
+  IExamSubject,
   IExamTopResults,
   TopResultStudent,
   TopResultStudentWithClass,
 } from "./exams.types";
+import { AcademicYearsRepository } from "../academic-years/year.repository";
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
@@ -15,7 +17,7 @@ import { ExamRepository } from "./exams.repository";
 import { GradesRepository } from "../grades/grades.repository";
 import { MarkStatus } from "@/generated/prisma/enums";
 import { ClassRepository } from "../class/class.repository";
-import { examSchema } from "./exams.schema";
+import { examMarksSchema, examSchema } from "./exams.schema";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
 
@@ -30,6 +32,7 @@ export class ExamService {
     private enrollmentRepository: EnrollmentRepository,
     private gradesRepository: GradesRepository,
     private classRepository: ClassRepository,
+    private yearRepository: AcademicYearsRepository,
   ) {}
 
   async getList(gradeId: string): Promise<IExamListItem[]> {
@@ -42,6 +45,11 @@ export class ExamService {
     const exam = await this.repository.getListItemById(examId);
     if (!exam) throw new ApiErrorV2("Exam not found");
     return exam;
+  }
+
+  async getExamSubjects(examId: string): Promise<IExamSubject[]> {
+    if (!examId) throw new ApiErrorV2("Exam id is required");
+    return await this.repository.getExamSubjects(examId);
   }
 
   async getDataByEnrollmentId(enrollmentId: string): Promise<IExamByEnrollmentId[]> {
@@ -80,19 +88,15 @@ export class ExamService {
     }));
   }
 
-  async getTopResults(yearId: string, gradeId: string, examId: string): Promise<IExamTopResults> {
-    if (!yearId || !gradeId || !examId) throw new ApiErrorV2("Year, grade and exam ids are required");
+  async getTopResults(gradeId: string, examId: string): Promise<IExamTopResults> {
+    if (!gradeId || !examId) throw new ApiErrorV2("Year, grade and exam ids are required");
 
-    const exam = await this.getListItemById(examId);
-    if (exam.gradeLevel.academicYear.id !== yearId || exam.gradeLevel.id !== gradeId) {
-      throw new ApiErrorV2("Exam not found");
-    }
-
-    const grade = await this.gradesRepository.getAllStudentsWithResults(yearId, gradeId, examId);
-
-    if (!grade) {
-      throw new ApiErrorV2("Grade not found");
-    }
+    const [exam, grade] = await Promise.all([
+      this.getListItemById(examId),
+      this.gradesRepository.getAllStudentsWithResults(gradeId, examId),
+    ]);
+    if (!exam) throw new ApiErrorV2("Exam not found");
+    if (!grade) throw new ApiErrorV2("Grade not found");
 
     const ignoredRankingSubjectIds = new Set(
       exam.examSubjects.filter((examSubject) => examSubject.ignoreRanking).map((examSubject) => examSubject.subject.id),
@@ -115,16 +119,21 @@ export class ExamService {
     >();
 
     const byClass = grade.classes.map((classItem) => {
-      const students = new Map<string, TopResultStudent>();
+      const students = new Map<string, TopResultStudent & { classIndex: number | null }>();
 
       for (const enrollment of classItem.enrollments) {
+        const marksBySubjectId = new Map(enrollment.marks.map((mark) => [mark.examSubject.subject.id, mark]));
         const studentInfo = {
           id: enrollment.student.id,
           fullName: enrollment.student.fullName,
           admissionNo: enrollment.student.admissionNo,
         };
         const studentClass = { id: classItem.id, name: classItem.name };
-        const classStudent = students.get(enrollment.student.id) ?? { ...studentInfo, fullMarks: 0 };
+        const classStudent = students.get(enrollment.student.id) ?? {
+          ...studentInfo,
+          classIndex: enrollment.classIndex,
+          fullMarks: 0,
+        };
         students.set(enrollment.student.id, classStudent);
 
         const gradeStudent = byGrade.get(enrollment.student.id) ?? {
@@ -138,7 +147,7 @@ export class ExamService {
           const { subject } = classSubject;
           if (ignoredRankingSubjectIds.has(subject.id)) continue;
 
-          const mark = enrollment.marks.find((result) => result.examSubject.subject.id === subject.id);
+          const mark = marksBySubjectId.get(subject.id);
           const subjectResult = subjectResults.get(subject.id) ?? {
             id: subject.id,
             name: subject.name,
@@ -223,6 +232,53 @@ export class ExamService {
         })),
       })),
     };
+  }
+
+  async updateMarks(examId: string, data: z.infer<typeof examMarksSchema>) {
+    if (!examId) throw new ApiErrorV2("Exam id is required");
+
+    const [activeYear, exam] = await Promise.all([
+      this.yearRepository.getActiveYear(),
+      this.repository.getListItemById(examId),
+    ]);
+
+    if (!activeYear) throw new ApiErrorV2("No active years found");
+    if (!exam) throw new ApiErrorV2("Exam not found");
+
+    if (exam.gradeLevel.academicYear.id !== activeYear.id) {
+      throw new ApiErrorV2("You can only edit marks from active year");
+    }
+
+    const parsedRes = examMarksSchema.safeParse(data);
+    if (!parsedRes.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    const subjectIds = [...new Set(parsedRes.data.map((mark) => mark.subjectId))];
+    const examSubjects = await this.repository.getExamSubjectsBySubjectIds(examId, subjectIds);
+    const examSubjectIds = new Map(examSubjects.map((examSubject) => [examSubject.subjectId, examSubject.id]));
+
+    if (examSubjects.length !== subjectIds.length) {
+      throw new ApiErrorV2("Exam subject not found");
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      for (const mark of parsedRes.data) {
+        const examSubjectId = examSubjectIds.get(mark.subjectId);
+        if (!examSubjectId) throw new ApiErrorV2("Exam subject not found");
+
+        await transaction.mark.upsert({
+          where: { enrollmentId_examSubjectId: { enrollmentId: mark.enrollmentId, examSubjectId } },
+          update: { marks: mark.marks, status: mark.status },
+          create: {
+            enrollment: { connect: { id: mark.enrollmentId } },
+            examSubject: { connect: { id: examSubjectId } },
+            marks: mark.marks,
+            status: mark.status,
+          },
+        });
+      }
+    });
   }
 
   async create(gradeId: string, data: z.infer<typeof examSchema>) {

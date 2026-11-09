@@ -1,6 +1,18 @@
 import { AcademicYear, Class, Enrollment, GradeLevel, Mark, Medium, Student, Subject } from "@/generated/prisma/client";
 import { MarkStatus, SubjectCategory } from "@/generated/prisma/enums";
-import { ExamGetPayload, ExamSelect } from "@/generated/prisma/models";
+import { ExamGetPayload, ExamSelect, ExamSubjectGetPayload, ExamSubjectSelect } from "@/generated/prisma/models";
+
+export const examSubjectSelect = {
+  id: true,
+  passMark: true,
+  maxMarks: true,
+  ignoreRanking: true,
+  subject: { select: { id: true, name: true, code: true, category: true } },
+} satisfies ExamSubjectSelect;
+
+export type IExamSubject = ExamSubjectGetPayload<{
+  select: typeof examSubjectSelect;
+}>;
 
 export const examListSelect = {
   id: true,
@@ -12,15 +24,7 @@ export const examListSelect = {
       academicYear: { select: { id: true, name: true } },
     },
   },
-  examSubjects: {
-    select: {
-      id: true,
-      passMark: true,
-      maxMarks: true,
-      ignoreRanking: true,
-      subject: { select: { id: true, name: true, code: true, category: true } },
-    },
-  },
+  examSubjects: { select: examSubjectSelect },
 } satisfies ExamSelect;
 
 export type IExamListItem = ExamGetPayload<{
@@ -69,6 +73,8 @@ export interface IExamByEnrollmentId {
   }[];
 }
 
+//---------------------- Ranking related Types ----------------------
+
 export interface TopResultStudent {
   id: Student["id"];
   fullName: Student["fullName"];
@@ -80,13 +86,13 @@ export type TopResultStudentWithClass = TopResultStudent & {
   class: Pick<Class, "id" | "name">;
 };
 
-interface TopResultClass {
+export interface TopResultClass {
   id: Class["id"];
   name: Class["name"];
-  topResult: TopResultStudent[];
+  topResult: (TopResultStudent & { classIndex: number | null })[];
 }
 
-interface TopResultSubject {
+export interface TopResultSubject {
   id: Subject["id"];
   name: Subject["name"];
   topResult: (TopResultStudentWithClass & {

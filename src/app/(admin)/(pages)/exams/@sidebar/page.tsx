@@ -1,17 +1,14 @@
-import { Sidebar, SidebarFooter } from "@/components/shadcn/sidebar";
-import { buttonVariants } from "@/components/shadcn/button";
-import { idCache } from "@/lib/nuqs/id";
-import { HomeIcon } from "lucide-react";
-import { Separator } from "@/components/shadcn/separator";
-import { redirect } from "next/navigation";
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { classService, IClassList } from "@/features/class";
 import { examService, IExamListItem } from "@/features/exams";
+import { redirect } from "next/navigation";
+import { Sidebar } from "@/components/shadcn/sidebar";
+import { idCache } from "@/lib/nuqs/id";
 import SidebarGradeContent from "@/components/pages/exams/sidebar/sidebar-grade-content";
 import SidebarClassContent from "@/components/pages/exams/sidebar/sidebar-class-content";
 import SidebarExamContent from "@/components/pages/exams/sidebar/sidebar-exam-content";
-import Link from "next/link";
+import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
@@ -26,9 +23,9 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
 
   try {
     if (yearId) yearData = await academicYearsService.getListItemById(yearId);
-    if (yearId) gradeList = await gradesService.getListByYear(yearId);
-    if (yearId && gradeId) classList = await classService.getList(yearId, gradeId);
-    if (yearId && gradeId) examList = await examService.getList(yearId, gradeId);
+    if (yearId) gradeList = await gradesService.getListByYear({ yearId });
+    if (gradeId) classList = await classService.getList(gradeId);
+    if (gradeId) examList = await examService.getList(gradeId);
   } catch {
     redirect("/");
   }
@@ -50,7 +47,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
 
   const renderSidebarContent = () => {
     if (showGrades) {
-      return <SidebarGradeContent year={yearData} grades={gradeList} />;
+      return <SidebarGradeContent grades={gradeList} />;
     }
 
     if (showClasses) {
@@ -74,14 +71,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
   return (
     <Sidebar collapsible="offcanvas">
       {renderSidebarContent()}
-      <SidebarFooter>
-        <Link href={"/"} className={buttonVariants({ variant: "outline" })}>
-          <HomeIcon />
-          Go Home
-        </Link>
-        <Separator />
-        <p className="text-xs text-sidebar-foreground/60 text-center">A Project by CROWNIX</p>
-      </SidebarFooter>
+      <AppSidebarFooter />
     </Sidebar>
   );
 }

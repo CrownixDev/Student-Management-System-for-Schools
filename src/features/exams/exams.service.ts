@@ -4,6 +4,7 @@ import {
   IExamByEnrollmentId,
   IExamClassData,
   IExamListItem,
+  IExamSubject,
   IExamTopResults,
   TopResultStudent,
   TopResultStudentWithClass,
@@ -44,6 +45,11 @@ export class ExamService {
     const exam = await this.repository.getListItemById(examId);
     if (!exam) throw new ApiErrorV2("Exam not found");
     return exam;
+  }
+
+  async getExamSubjects(examId: string): Promise<IExamSubject[]> {
+    if (!examId) throw new ApiErrorV2("Exam id is required");
+    return await this.repository.getExamSubjects(examId);
   }
 
   async getDataByEnrollmentId(enrollmentId: string): Promise<IExamByEnrollmentId[]> {

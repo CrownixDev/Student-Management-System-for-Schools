@@ -7,7 +7,7 @@ import { Button } from "@/components/shadcn/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/shadcn/hover-card";
 import { Input } from "@/components/shadcn/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import type { IExamClassData, IExamListItem } from "@/features/exams";
+import type { IExamClassData, IExamListItem, IExamSubject } from "@/features/exams";
 import { useRouter } from "next/navigation";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
 import { IStudentsListWithSubjectsItem } from "@/features/students";
@@ -137,6 +137,7 @@ function MarksTable({
   examName,
   students,
   subjects,
+  isSubjectInExam,
   isStudentEnrolled,
   isEditing,
   sortDirection,
@@ -149,6 +150,7 @@ function MarksTable({
   examName: string;
   students: Student[];
   subjects: Subject[];
+  isSubjectInExam: (subjectId: string) => boolean;
   isStudentEnrolled: (student: Student, subjectId: string) => boolean;
   isEditing: boolean;
   sortDirection: SortDirection;
@@ -166,7 +168,12 @@ function MarksTable({
       >
         <caption className="sr-only">Exam marks for class {examName}. Students can be sorted by class index.</caption>
         <TableHeader>
-          <MarksTableHeader subjects={subjects} sortDirection={sortDirection} onToggleSort={onToggleSort} />
+          <MarksTableHeader
+            subjects={subjects}
+            isSubjectInExam={isSubjectInExam}
+            sortDirection={sortDirection}
+            onToggleSort={onToggleSort}
+          />
         </TableHeader>
         <TableBody>
           {students.map((student) => (
@@ -174,6 +181,7 @@ function MarksTable({
               key={student.enrollmentId}
               student={student}
               subjects={subjects}
+              isSubjectInExam={isSubjectInExam}
               isStudentEnrolled={isStudentEnrolled}
               isEditing={isEditing}
               findDraft={findDraft}
@@ -204,15 +212,17 @@ function MarksTable({
 
 function MarksTableHeader({
   subjects,
+  isSubjectInExam,
   sortDirection,
   onToggleSort,
 }: {
   subjects: Subject[];
+  isSubjectInExam: (subjectId: string) => boolean;
   sortDirection: SortDirection;
   onToggleSort: () => void;
 }) {
   return (
-    <TableRow className="bg-muted hover:bg-muted">
+    <TableRow className="bg-muted hover:bg-muted [&>th]:border-r [&>th]:border-border [&>th:last-child]:border-r-0">
       <TableHead
         aria-sort={sortDirection === 1 ? "ascending" : "descending"}
         className="sticky left-0 top-0 z-40 w-19 min-w-19 bg-muted text-right"
@@ -234,9 +244,17 @@ function MarksTableHeader({
       <TableHead className="sticky left-19 top-0 z-40 w-40 min-w-40 bg-muted">Admission no.</TableHead>
       <TableHead className="sticky left-59 top-0 z-40 w-65 min-w-65 bg-muted">Student name</TableHead>
       {subjects.map((subject) => (
-        <TableHead key={subject.id} className="sticky top-0 z-30 min-w-44 bg-muted">
+        <TableHead
+          key={subject.id}
+          className={`sticky top-0 z-30 w-50 whitespace-normal wrap-anywhere ${
+            isSubjectInExam(subject.id) ? "bg-muted" : "bg-muted/70 text-muted-foreground"
+          }`}
+        >
           <div className="flex flex-col gap-0.5">
             <span>{subject.name}</span>
+            {!isSubjectInExam(subject.id) && (
+              <span className="text-xs font-normal text-destructive">Subject not added to exam</span>
+            )}
           </div>
         </TableHead>
       ))}
@@ -247,6 +265,7 @@ function MarksTableHeader({
 function MarksTableRow({
   student,
   subjects,
+  isSubjectInExam,
   isStudentEnrolled,
   isEditing,
   findDraft,
@@ -256,6 +275,7 @@ function MarksTableRow({
 }: {
   student: Student;
   subjects: Subject[];
+  isSubjectInExam: (subjectId: string) => boolean;
   isStudentEnrolled: (student: Student, subjectId: string) => boolean;
   isEditing: boolean;
   findDraft: (student: Student, subjectId: string) => MarkDraft;
@@ -264,7 +284,7 @@ function MarksTableRow({
   onInputKeyDown: (event: KeyboardEvent<HTMLInputElement>, student: Student, subjectId: string) => void;
 }) {
   return (
-    <TableRow className="h-14 border-b border-border [&>td]:border-b [&>td]:border-border">
+    <TableRow className="h-14 border-b border-border [&>td]:border-b [&>td]:border-r [&>td]:border-border [&>td:last-child]:border-r-0">
       <TableCell className="sticky left-0 z-20 w-19 min-w-19 bg-background text-right font-mono text-xs">
         {student.classIndex}
       </TableCell>
@@ -279,6 +299,7 @@ function MarksTableRow({
           key={subject.id}
           student={student}
           subject={subject}
+          isInExam={isSubjectInExam(subject.id)}
           isEnrolled={isStudentEnrolled(student, subject.id)}
           isEditing={isEditing}
           draft={findDraft(student, subject.id)}
@@ -294,6 +315,7 @@ function MarksTableRow({
 function MarkCell({
   student,
   subject,
+  isInExam,
   isEnrolled,
   isEditing,
   draft,
@@ -303,6 +325,7 @@ function MarkCell({
 }: {
   student: Student;
   subject: Subject;
+  isInExam: boolean;
   isEnrolled: boolean;
   isEditing: boolean;
   draft: MarkDraft;
@@ -310,6 +333,10 @@ function MarkCell({
   onUpdateDraft: (enrollmentId: string, subjectId: string, draft: MarkDraft) => void;
   onInputKeyDown: (event: KeyboardEvent<HTMLInputElement>, student: Student, subjectId: string) => void;
 }) {
+  if (!isInExam) {
+    return <TableCell className="bg-muted/50 text-muted-foreground">—</TableCell>;
+  }
+
   if (!isEnrolled) {
     return (
       <TableCell>
@@ -389,10 +416,18 @@ interface Props {
   examData: IExamClassData;
   studentsWithSubjects: IStudentsListWithSubjectsItem[];
   classSubjects: IClass["subjects"];
+  examSubjects: IExamSubject[];
   canEdit?: boolean;
 }
 
-export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubjects, canEdit = false }: Props) {
+export function ExamMarksPage({
+  exam,
+  examData,
+  studentsWithSubjects,
+  classSubjects,
+  examSubjects,
+  canEdit = false,
+}: Props) {
   const [draftState, setDraftState] = useState<{
     source: IExamClassData;
     values: Partial<Record<CellKey, MarkDraft>>;
@@ -407,6 +442,9 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
   const router = useRouter();
 
   const subjects = classSubjects;
+  const isSubjectInExam = (subjectId: string) =>
+    examSubjects.some((examSubject) => examSubject.subject.id === subjectId);
+
   function getEnrolledSubjects(student: Student) {
     const studentIndex = examData.students.findIndex((entry) => entry.enrollmentId === student.enrollmentId);
     const enrolledStudent =
@@ -472,7 +510,7 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
   function focusStudentInSubject(studentIndex: number, subjectId: string, direction: SortDirection) {
     for (let index = studentIndex + direction; index >= 0 && index < students.length; index += direction) {
       const student = students[index];
-      if (isStudentEnrolled(student, subjectId)) {
+      if (isSubjectInExam(subjectId) && isStudentEnrolled(student, subjectId)) {
         focusCell(student.enrollmentId, subjectId);
         return;
       }
@@ -480,7 +518,9 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
   }
 
   function focusSubjectForStudent(student: Student, subjectId: string, direction: SortDirection) {
-    const eligibleSubjects = subjects.filter((subject) => isStudentEnrolled(student, subject.id));
+    const eligibleSubjects = subjects.filter(
+      (subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id),
+    );
     const currentIndex = eligibleSubjects.findIndex((subject) => subject.id === subjectId);
     const nextSubject = eligibleSubjects[currentIndex + direction];
     if (nextSubject) focusCell(student.enrollmentId, nextSubject.id);
@@ -506,7 +546,9 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
 
     if (event.key === "Tab") {
       const direction = event.shiftKey ? -1 : 1;
-      const eligibleSubjects = subjects.filter((subject) => isStudentEnrolled(student, subject.id));
+      const eligibleSubjects = subjects.filter(
+        (subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id),
+      );
       const currentIndex = eligibleSubjects.findIndex((subject) => subject.id === subjectId);
       if (eligibleSubjects[currentIndex + direction]) {
         event.preventDefault();
@@ -519,7 +561,9 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
     const marks: ExamMarkInput[] = [];
 
     for (const student of examData.students) {
-      for (const subject of subjects.filter((item) => isStudentEnrolled(student, item.id))) {
+      for (const subject of subjects.filter(
+        (item) => isSubjectInExam(item.id) && isStudentEnrolled(student, item.id),
+      )) {
         const draft = findDraft(student, subject.id);
         if (!isValidMark(draft.value)) {
           setMessage(`${student.fullName}: enter a mark from 0 to 100.`);
@@ -559,14 +603,16 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
   }
 
   const eligibleCount = examData.students.reduce(
-    (count, student) => count + subjects.filter((subject) => isStudentEnrolled(student, subject.id)).length,
+    (count, student) =>
+      count +
+      subjects.filter((subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id)).length,
     0,
   );
   const markedCount = examData.students.reduce(
     (count, student) =>
       count +
       subjects
-        .filter((subject) => isStudentEnrolled(student, subject.id))
+        .filter((subject) => isSubjectInExam(subject.id) && isStudentEnrolled(student, subject.id))
         .filter((subject) => {
           const draft = findDraft(student, subject.id);
           return draft.status === "absent" || draft.value.trim() !== "";
@@ -593,6 +639,7 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
           examName={examData.name}
           students={students}
           subjects={subjects}
+          isSubjectInExam={isSubjectInExam}
           isStudentEnrolled={isStudentEnrolled}
           isEditing={isEditing}
           sortDirection={sortDirection}

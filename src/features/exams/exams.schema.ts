@@ -40,7 +40,7 @@ export const examMarksSchema = z.array(
   z.object({
     enrollmentId: z.string(),
     subjectId: z.string(),
-    marks: z.number().positive().nullable(),
+    marks: z.number().nonnegative().nullable(),
     status: z.enum(MarkStatus),
   }),
 );

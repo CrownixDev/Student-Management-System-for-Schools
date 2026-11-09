@@ -1,9 +1,9 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
-import { examListSelect, examSelect } from "./exams.types";
+import { examListSelect, examSelect, examSubjectSelect } from "./exams.types";
 import { ExamCreateInput, ExamUpdateInput } from "@/generated/prisma/models";
 import { TransactionClient } from "@/generated/prisma/internal/prismaNamespace";
+import { prisma } from "@/lib/prisma";
 
 export class ExamRepository {
   private db(client?: TransactionClient) {
@@ -22,6 +22,13 @@ export class ExamRepository {
     return await prisma.exam.findUnique({
       where: { id: examId },
       select: examListSelect,
+    });
+  }
+
+  async getExamSubjects(examId: string) {
+    return await prisma.examSubject.findMany({
+      where: { examId },
+      select: examSubjectSelect,
     });
   }
 

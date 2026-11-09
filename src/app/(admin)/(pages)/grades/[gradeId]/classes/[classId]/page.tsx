@@ -42,7 +42,7 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
   return (
     <div className="flex h-dvh">
       <ClassSidebar classData={classData} />
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-sidebar/25">
         {!studentId && (
           <EmptyState
             title="Select a student"

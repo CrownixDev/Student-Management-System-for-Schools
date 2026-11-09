@@ -27,7 +27,7 @@ export default function SidebarPagination({ itemCount, className, ...props }: Pr
   const isNextDisabled = page >= pageCount;
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2 bg-background p-2", className)} {...props}>
+    <div className={cn("flex min-w-0 flex-col gap-2 p-2 bg-sidebar border-t-border border-t", className)} {...props}>
       <Pagination className="w-full">
         <PaginationContent className="w-full min-w-0 justify-between">
           <PaginationItem>

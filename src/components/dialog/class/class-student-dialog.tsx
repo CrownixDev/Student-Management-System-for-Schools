@@ -378,7 +378,7 @@ export default function ClassStudentDialog({
                         {student.admissionNo}
                       </TableCell>
                       <TableCell
-                        className="sticky left-0 z-10 max-w-72 truncate bg-background"
+                        className="sticky left-0 z-10 max-w-72 truncate bg-sidebar hover:bg-muted/50"
                         title={student.fullName}
                       >
                         {student.fullName}

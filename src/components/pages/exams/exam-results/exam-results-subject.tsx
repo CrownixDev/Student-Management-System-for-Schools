@@ -35,8 +35,8 @@ export default function ExamResultsSubjects({ exam, subjects }: { exam: IExamLis
                 description={`There are no results available for ${subject.name}.`}
               />
             ) : (
-              <Table containerClassName="h-full overflow-auto">
-                <TableHeader className="sticky top-0 z-10 bg-background">
+              <Table containerClassName="h-full overflow-auto border rounded-md">
+                <TableHeader className="sticky top-0 z-10 bg-muted">
                   <TableRow>
                     <TableHead>Place</TableHead>
                     <TableHead>Full Name</TableHead>

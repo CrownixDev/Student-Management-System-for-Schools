@@ -50,7 +50,7 @@ export default async function TeacherDetails() {
             Class teacher assignments <span className="font-mono">({teacher.classesAsClassTeacher.length})</span>
           </TypographyH2>
           {teacher.classesAsClassTeacher.length > 0 ? (
-            <Table>
+            <Table className="border rounded-md">
               <TableHeader className="bg-muted/40">
                 <TableRow>
                   <TableHead className="font-semibold text-foreground">Academic year</TableHead>
@@ -75,7 +75,7 @@ export default async function TeacherDetails() {
             Subject assignments <span className="font-mono">({teacher.subjects.length})</span>
           </TypographyH2>
           {teacher.subjects.length ? (
-            <Table>
+            <Table className="border rounded-md">
               <TableHeader className="bg-muted/40">
                 <TableRow>
                   <TableHead className="font-semibold text-foreground">Class</TableHead>

@@ -96,7 +96,7 @@ export default function StudentDetails({
         <TypographyH2>Exam results</TypographyH2>
         {examData.length > 0 ? (
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className={"w-full overflow-x-auto "}>
+            <TabsList className={"w-full"}>
               <TabsTrigger value="exam">By Exam</TabsTrigger>
               <TabsTrigger value="subject">By Subject</TabsTrigger>
             </TabsList>
@@ -116,7 +116,7 @@ export default function StudentDetails({
               {selectedExam && (
                 <div>
                   <StudentSubjectMarksChart subjects={selectedExam.subjects} examName={selectedExam.name} />
-                  <Table>
+                  <Table containerClassName="border rounded-md">
                     <TableHeader>
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableHead>Subject</TableHead>
@@ -166,7 +166,7 @@ export default function StudentDetails({
                         subjectName={selectedSubject.name}
                         examData={examData}
                       />
-                      <Table>
+                      <Table containerClassName="border rounded-md">
                         <TableHeader>
                           <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead>Exam</TableHead>

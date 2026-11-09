@@ -33,7 +33,7 @@ export default function SidebarExamContent({
       <SidebarHeader>
         <Link
           href={`/exams?yearId=${year.id}&gradeId=${gradeItem.id}`}
-          className={buttonVariants({ variant: "outline", className: "w-fit" })}
+          className={buttonVariants({ variant: "link", className: "w-fit hover:no-underline!" })}
         >
           <ArrowLeftIcon />
           Change class

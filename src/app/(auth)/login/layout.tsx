@@ -19,5 +19,5 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
     redirect("/");
   }
 
-  return <div className="bg-gray-200">{children}</div>;
+  return <div className="bg-gray-200 dark:bg-transparent">{children}</div>;
 }

@@ -1,4 +1,4 @@
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/shadcn/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/shadcn/empty";
 import { cn } from "cn";
 import { LucideIcon } from "lucide-react";
 
@@ -21,11 +21,7 @@ export default function EmptyState({
       <div>
         <Empty className={cn("max-w-sm", noBorder ? undefined : "border border-muted-foreground")}>
           <EmptyHeader>
-            {Icon && (
-              <EmptyMedia variant="icon">
-                <Icon className="size-10" aria-hidden="true" />
-              </EmptyMedia>
-            )}
+            {Icon && <Icon className="size-10" aria-hidden="true" />}
             <EmptyTitle>{title}</EmptyTitle>
             <EmptyDescription className="wrap-anywhere">{description}</EmptyDescription>
           </EmptyHeader>

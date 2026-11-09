@@ -25,7 +25,7 @@ export default function ExamResultsClass({ exam, classes }: { exam: IExamListIte
         </NativeSelect>
       </Field>
 
-      <Tabs value={value} className="flex min-h-0 flex-1 flex-col border rounded-md">
+      <Tabs value={value} className="flex min-h-0 flex-1 flex-col">
         {classes.map((classItem) => (
           <TabsContent key={classItem.id} value={classItem.id} className="min-h-0 overflow-hidden">
             {classItem.topResult.length === 0 ? (
@@ -35,8 +35,8 @@ export default function ExamResultsClass({ exam, classes }: { exam: IExamListIte
                 description={`There are no results available for ${classItem.name}.`}
               />
             ) : (
-              <Table containerClassName="h-full overflow-auto">
-                <TableHeader className="sticky top-0 z-10 bg-background">
+              <Table containerClassName="h-full overflow-auto border rounded-md">
+                <TableHeader className="sticky top-0 z-10 bg-muted">
                   <TableRow>
                     <TableHead>Place</TableHead>
                     <TableHead>Class Index</TableHead>

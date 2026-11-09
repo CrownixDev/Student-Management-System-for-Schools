@@ -1,7 +1,6 @@
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -10,17 +9,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
-import { buttonVariants } from "@/components/shadcn/button";
-import { GraduationCapIcon, HomeIcon } from "lucide-react";
-import { Badge } from "@/components/shadcn/badge";
-import { IGradeListItemForYear } from "@/features/grades";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
+import { IGradeListItemForYear } from "@/features/grades";
+import { GraduationCapIcon } from "lucide-react";
 import { IAcademicYear } from "@/features/academic-years";
-import { Separator } from "@/components/shadcn/separator";
 import { IBatch } from "@/features/batch";
+import { Badge } from "@/components/shadcn/badge";
+import YearBatchSelectorDialog from "@/components/dialog/sidebar/year-batch-selector-dialog";
+import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
-import YearBatchSelectorDialog from "@/components/dialog/sidebar/year-batch-selector-dialog";
 
 export default function GradesSidebar({
   grades = [],
@@ -119,14 +117,7 @@ export default function GradesSidebar({
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter>
-        <Link href={"/"} className={buttonVariants({ variant: "outline" })}>
-          <HomeIcon />
-          Go Home
-        </Link>
-        <Separator />
-        <p className="text-xs text-sidebar-foreground/60 text-center">A Project by CROWNIX</p>
-      </SidebarFooter>
+      <AppSidebarFooter />
     </Sidebar>
   );
 }

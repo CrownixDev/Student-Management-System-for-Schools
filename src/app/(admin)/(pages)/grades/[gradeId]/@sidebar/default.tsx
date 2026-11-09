@@ -4,7 +4,6 @@ import { Separator } from "@/components/shadcn/separator";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -13,7 +12,7 @@ import {
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
 import { academicYearsService, IAcademicYear } from "@/features/academic-years";
-import { ArrowLeftIcon, HomeIcon, HousesIcon } from "lucide-react";
+import { ArrowLeftIcon, HousesIcon } from "lucide-react";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { batchService, IBatchListItem } from "@/features/batch";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
@@ -22,6 +21,7 @@ import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
 import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
+import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 
 export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
@@ -51,7 +51,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
       <SidebarHeader>
         <Link
           href={`/grades?${batchData ? "batchId=" + batchId : "yearId=" + yearId}`}
-          className={buttonVariants({ variant: "outline", className: "w-fit" })}
+          className={buttonVariants({ variant: "link", className: "w-fit hover:no-underline!" })}
         >
           <ArrowLeftIcon />
           Back to {batchData ? "batch" : "grades"}
@@ -95,14 +95,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <Link href={"/"} className={buttonVariants({ variant: "outline" })}>
-          <HomeIcon />
-          Go Home
-        </Link>
-        <Separator />
-        <p className="text-xs text-sidebar-foreground/60 text-center">A Project by CROWNIX</p>
-      </SidebarFooter>
+      <AppSidebarFooter />
     </Sidebar>
   );
 }

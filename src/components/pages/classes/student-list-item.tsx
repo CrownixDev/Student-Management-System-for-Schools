@@ -11,7 +11,7 @@ export default function StudentListItem({ enrollment }: { enrollment: IClass["en
       key={enrollment.id}
       type="button"
       aria-pressed={studentId === enrollment.student.id}
-      className={`cursor-pointer flex w-full items-center gap-3 border-b border-border/70 px-4 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${studentId === enrollment.student.id ? "bg-muted" : "bg-card"}`}
+      className={`cursor-pointer flex w-full items-center gap-3 border-b border-border/70 px-4 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${studentId === enrollment.student.id ? "bg-muted" : "bg-sidebar/50"}`}
       onClick={() => setQueryStates({ studentId: enrollment.student.id })}
     >
       <span className="w-8 shrink-0 text-right font-mono text-xs text-muted-foreground">

@@ -29,7 +29,10 @@ export default function SidebarClassContent({
   return (
     <>
       <SidebarHeader>
-        <Link href={`/exams?yearId=${year.id}`} className={buttonVariants({ variant: "outline", className: "w-fit" })}>
+        <Link
+          href={`/exams?yearId=${year.id}`}
+          className={buttonVariants({ variant: "link", className: "w-fit hover:no-underline!" })}
+        >
           <ArrowLeftIcon />
           Change grade
         </Link>

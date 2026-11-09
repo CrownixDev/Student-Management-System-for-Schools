@@ -38,7 +38,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
           />
         ) : (
           <Table containerClassName="h-full overflow-auto border rounded-md">
-            <TableHeader className="sticky top-0 z-10 bg-background">
+            <TableHeader className="sticky top-0 z-10 bg-muted">
               <TableRow>
                 <TableHead>Place</TableHead>
                 <TableHead>Full Name</TableHead>

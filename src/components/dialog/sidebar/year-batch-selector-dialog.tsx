@@ -108,7 +108,7 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
 
   return (
     <>
-      <Button size="lg" variant="outline" className="p-3" onClick={() => setOpen(true)}>
+      <Button size="lg" variant="secondary" className="p-3" onClick={() => setOpen(true)}>
         <div className="grid flex-1 text-left">
           {selectedYear && <TypographyH2>Year {selectedYear.name}</TypographyH2>}
           {selectedBatch && (

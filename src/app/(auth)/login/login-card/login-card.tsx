@@ -10,7 +10,6 @@ import { registerAction } from "@/features/auth/actions";
 import { loginAction } from "@/features/auth/actions";
 import { toast } from "react-toastify";
 import { redirect } from "next/navigation";
-import { APP_URLS } from "@/constraints";
 import PasswordInput from "./password-input";
 import zod from "zod";
 
@@ -83,7 +82,7 @@ export function LoginCard({ create = false }: { create?: boolean }) {
 
       if (res.success) {
         toast.success(res.message);
-        redirect(APP_URLS.dashboard);
+        redirect("/");
       } else {
         toast.error(res.message);
         return {
@@ -96,7 +95,7 @@ export function LoginCard({ create = false }: { create?: boolean }) {
     const res = await loginAction(username, password);
     if (res.success) {
       toast.success(res.message);
-      redirect(APP_URLS.dashboard);
+      redirect("/");
     } else {
       toast.error(res.message);
       return {

@@ -3,6 +3,8 @@ import { academicYearsService } from "@/features/academic-years";
 import NavButton from "@/components/simple-nav/nav-button";
 import ButtonShell from "@/components/simple-nav/button-shell";
 
+export const dynamic = "force-dynamic";
+
 export default async function page() {
   const yearList = await academicYearsService.getList({});
 

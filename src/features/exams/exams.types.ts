@@ -80,13 +80,13 @@ export type TopResultStudentWithClass = TopResultStudent & {
   class: Pick<Class, "id" | "name">;
 };
 
-interface TopResultClass {
+export interface TopResultClass {
   id: Class["id"];
   name: Class["name"];
   topResult: (TopResultStudent & { classIndex: number | null })[];
 }
 
-interface TopResultSubject {
+export interface TopResultSubject {
   id: Subject["id"];
   name: Subject["name"];
   topResult: (TopResultStudentWithClass & {

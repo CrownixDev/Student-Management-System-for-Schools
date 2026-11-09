@@ -11,7 +11,7 @@ import { getStudentDetailsAction } from "@/features/students/students.actions";
 import { toast } from "react-toastify";
 import { useQuery } from "@tanstack/react-query";
 import LoadingIndicator from "@/components/ui/loading-indicator";
-import StudentDetails from "@/components/pages/classes/student-details";
+import StudentDetails, { IStudentDetailsTab } from "@/components/pages/classes/student-details";
 import { STUDENT_DETAILS } from "@/lib/query-keys";
 import EmptyState from "@/components/ui/empty-state";
 
@@ -21,7 +21,19 @@ export interface IStudentDetailsData {
   subjectList: ISubjectListItem[];
 }
 
-export default function StudentDetailsViewButton({ studentId, classId }: { studentId: string; classId: string }) {
+export default function StudentDetailsViewButton({
+  studentId,
+  classId,
+  defaultExamId,
+  defaultSubjectId,
+  defaultTab,
+}: {
+  studentId: string;
+  classId: string;
+  defaultExamId?: string;
+  defaultSubjectId?: string;
+  defaultTab?: IStudentDetailsTab;
+}) {
   const [open, setOpen] = useState(false);
 
   const { data, isPending } = useQuery({
@@ -57,7 +69,16 @@ export default function StudentDetailsViewButton({ studentId, classId }: { stude
             description="We could not get the student data "
           />
         )}
-        {data && <StudentDetails student={data.student} examData={data.examData} subjectList={data.subjectList} />}
+        {data && (
+          <StudentDetails
+            student={data.student}
+            examData={data.examData}
+            subjectList={data.subjectList}
+            defaultExamId={defaultExamId}
+            defaultSubjectId={defaultSubjectId}
+            defaultTab={defaultTab}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );

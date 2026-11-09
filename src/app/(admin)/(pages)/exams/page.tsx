@@ -1,5 +1,6 @@
 import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
 import { examService, IExamClassData, IExamListItem } from "@/features/exams";
+import { academicYearsService, IAcademicYear } from "@/features/academic-years";
 import { MousePointerClickIcon } from "lucide-react";
 import { classService, IClass } from "@/features/class";
 import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
@@ -53,8 +54,8 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     }
   }
 
+  let activeYear: IAcademicYear | null = null;
   let examDetails: IExamListItem | null = null;
-
   let examDataForClass: IExamClassData | null = null;
   let studentsWithEnrolledSubjects: IStudentsListWithSubjectsItem[] | null = null;
   let classSubjects: IClass["subjects"] | null = null;
@@ -65,6 +66,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     }
 
     if (yearId && gradeId && classId && examId) {
+      activeYear = await academicYearsService.getActiveYear();
       examDataForClass = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
       studentsWithEnrolledSubjects = await studentsService.getListForClassWithSubjects(classId);
       classSubjects = await classService.getSubjectsById(classId);
@@ -86,6 +88,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
           examData={examDataForClass}
           studentsWithSubjects={studentsWithEnrolledSubjects}
           classSubjects={classSubjects}
+          canEdit={activeYear?.id === examDetails.gradeLevel.academicYear.id}
         />
       )}
     </>

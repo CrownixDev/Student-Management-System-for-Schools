@@ -82,6 +82,7 @@ function ExamMarksHeader({
   isSaving,
   onToggleEditing,
   onSave,
+  canEdit,
 }: {
   exam: IExamListItem;
   examData: IExamClassData;
@@ -89,6 +90,7 @@ function ExamMarksHeader({
   isSaving: boolean;
   onToggleEditing: () => void;
   onSave: () => void;
+  canEdit: boolean;
 }) {
   function onCancel() {
     if (confirm("All Edited/Updated marks will be lost. Are you sure you want to cancel?")) {
@@ -120,9 +122,11 @@ function ExamMarksHeader({
             </Button>
           </>
         ) : (
-          <Button type="button" onClick={onToggleEditing}>
-            Edit marks
-          </Button>
+          canEdit && (
+            <Button type="button" onClick={onToggleEditing}>
+              Edit marks
+            </Button>
+          )
         )}
       </div>
     </header>
@@ -385,9 +389,10 @@ interface Props {
   examData: IExamClassData;
   studentsWithSubjects: IStudentsListWithSubjectsItem[];
   classSubjects: IClass["subjects"];
+  canEdit?: boolean;
 }
 
-export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubjects }: Props) {
+export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubjects, canEdit = false }: Props) {
   const [draftState, setDraftState] = useState<{
     source: IExamClassData;
     values: Partial<Record<CellKey, MarkDraft>>;
@@ -581,6 +586,7 @@ export function ExamMarksPage({ exam, examData, studentsWithSubjects, classSubje
           router.refresh();
         }}
         onSave={saveMarks}
+        canEdit={canEdit}
       />
       <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3" aria-labelledby="marks-table-title">
         <MarksTable

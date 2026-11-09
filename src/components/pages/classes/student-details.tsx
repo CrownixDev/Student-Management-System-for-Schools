@@ -15,17 +15,26 @@ import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-sel
 import EmptyState from "@/components/ui/empty-state";
 import { NotebookPenIcon } from "lucide-react";
 
+export type IStudentDetailsTab = "exam" | "subject";
+
 export default function StudentDetails({
   student,
   subjectList,
   examData,
+  defaultExamId,
+  defaultSubjectId,
+  defaultTab,
 }: {
   student: IStudent;
   subjectList: ISubjectListItem[];
   examData: IExamByEnrollmentId[];
+  defaultExamId?: string;
+  defaultSubjectId?: string;
+  defaultTab?: IStudentDetailsTab;
 }) {
-  const [selectedExamId, setSelectedExamId] = useState<string | undefined>();
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>();
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(defaultExamId);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>(defaultSubjectId);
+  const [tab, setTab] = useState<IStudentDetailsTab>(defaultTab ?? "exam");
 
   const selectedSubject = subjectList.find((subject) => subject.id === selectedSubjectId) || subjectList[0];
   const selectedExam = examData.find((exam) => exam.id === selectedExamId) || examData[0];
@@ -86,7 +95,7 @@ export default function StudentDetails({
       <section>
         <TypographyH2>Exam results</TypographyH2>
         {examData.length > 0 ? (
-          <Tabs>
+          <Tabs value={tab} onValueChange={setTab}>
             <TabsList className={"w-full overflow-x-auto "}>
               <TabsTrigger value="exam">By Exam</TabsTrigger>
               <TabsTrigger value="subject">By Subject</TabsTrigger>
@@ -95,7 +104,7 @@ export default function StudentDetails({
             <TabsContent value={"exam"}>
               <NativeSelect
                 value={selectedExamId}
-                className="w-full"
+                className="w-full my-1"
                 onChange={(e) => setSelectedExamId(e.target.value)}
               >
                 {examData.map((exam) => (
@@ -132,7 +141,7 @@ export default function StudentDetails({
             <TabsContent value={"subject"}>
               <NativeSelect
                 value={selectedSubjectId}
-                className="w-full"
+                className="w-full my-1"
                 onChange={(e) => setSelectedSubjectId(e.target.value)}
               >
                 {subjectList.map((sub) => (

@@ -1,11 +1,13 @@
-import { Separator } from "@/components/shadcn/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import { examService, IExamListItem, IExamTopResults } from "@/features/exams";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
-import { examService, IExamListItem, IExamTopResults } from "@/features/exams";
 import { ClipboardListIcon } from "lucide-react";
+import { Separator } from "@/components/shadcn/separator";
 import { Suspense } from "react";
 import StudentDetailsViewButton from "./student-details-view-button";
+import ExamResultsSubjects from "./exam-results/exam-results-subject";
+import ExamResultsClass from "./exam-results/exam-results-class";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
 
@@ -21,7 +23,12 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
   }
 
   return (
-    <>
+    <Tabs className="flex min-h-0 flex-1 flex-col">
+      <TabsList className="w-full shrink-0">
+        <TabsTrigger value="grade">By Grade</TabsTrigger>
+        <TabsTrigger value="class">By Class</TabsTrigger>
+        <TabsTrigger value="subject">By Subject</TabsTrigger>
+      </TabsList>
       <TabsContent value="grade" className="min-h-0 overflow-hidden">
         {results.byGrade.length === 0 ? (
           <EmptyState
@@ -30,7 +37,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
             description={"There are no results available for this selection."}
           />
         ) : (
-          <Table containerClassName="h-full overflow-auto">
+          <Table containerClassName="h-full overflow-auto border rounded-md">
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Place</TableHead>
@@ -50,7 +57,11 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
                   <TableCell>{student.class.name}</TableCell>
                   <TableCell>{student.fullMarks}</TableCell>
                   <TableCell>
-                    <StudentDetailsViewButton studentId={student.id} classId={student.class.id} />
+                    <StudentDetailsViewButton
+                      studentId={student.id}
+                      classId={student.class.id}
+                      defaultExamId={exam.id}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -66,53 +77,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
             description={"There are no class results available for this exam."}
           />
         ) : (
-          <Tabs className="flex min-h-0 flex-1 flex-col">
-            <TabsList variant="line" className="w-full shrink-0">
-              {results.byClass.map((classItem) => (
-                <TabsTrigger key={classItem.id} value={classItem.id}>
-                  {classItem.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {results.byClass.map((classItem) => (
-              <TabsContent key={classItem.id} value={classItem.id} className="min-h-0 overflow-hidden">
-                {classItem.topResult.length === 0 ? (
-                  <EmptyState
-                    icon={ClipboardListIcon}
-                    title="No results available"
-                    description={`There are no results available for ${classItem.name}.`}
-                  />
-                ) : (
-                  <Table containerClassName="h-full overflow-auto">
-                    <TableHeader className="sticky top-0 z-10 bg-background">
-                      <TableRow>
-                        <TableHead>Place</TableHead>
-                        <TableHead>Class Index</TableHead>
-                        <TableHead>Full Name</TableHead>
-                        <TableHead>Addmission No.</TableHead>
-                        <TableHead>Full Marks</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {classItem.topResult.map((student, index) => (
-                        <TableRow key={student.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{student.classIndex ? student.classIndex : "-"}</TableCell>
-                          <TableCell>{student.fullName}</TableCell>
-                          <TableCell>{student.admissionNo}</TableCell>
-                          <TableCell>{student.fullMarks}</TableCell>
-                          <TableCell>
-                            <StudentDetailsViewButton studentId={student.id} classId={classItem.id} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </TabsContent>
-            ))}
-          </Tabs>
+          <ExamResultsClass classes={results.byClass} exam={exam} />
         )}
       </TabsContent>
       <TabsContent value="subject" className="flex min-h-0 flex-col overflow-hidden">
@@ -123,58 +88,10 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
             description={"There are no subject results available for this exam."}
           />
         ) : (
-          <Tabs className="flex min-h-0 flex-1 flex-col">
-            <TabsList variant="line" className="w-full shrink-0">
-              {results.bySubject.map((subject) => (
-                <TabsTrigger key={subject.id} value={subject.id}>
-                  {subject.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {results.bySubject.map((subject) => (
-              <TabsContent key={subject.id} value={subject.id} className="min-h-0 overflow-hidden">
-                {subject.topResult.length === 0 ? (
-                  <EmptyState
-                    icon={ClipboardListIcon}
-                    title="No results available"
-                    description={`There are no results available for ${subject.name}.`}
-                  />
-                ) : (
-                  <Table containerClassName="h-full overflow-auto">
-                    <TableHeader className="sticky top-0 z-10 bg-background">
-                      <TableRow>
-                        <TableHead>Place</TableHead>
-                        <TableHead>Full Name</TableHead>
-                        <TableHead>Addmission No.</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Full Marks</TableHead>
-                        <TableHead>Medium</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {subject.topResult.map((student, index) => (
-                        <TableRow key={student.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{student.fullName}</TableCell>
-                          <TableCell>{student.admissionNo}</TableCell>
-                          <TableCell>{student.class.name}</TableCell>
-                          <TableCell>{student.status === "present" ? student.fullMarks : "Absent"}</TableCell>
-                          <TableCell>{student.medium}</TableCell>
-                          <TableCell>
-                            <StudentDetailsViewButton studentId={student.id} classId={student.class.id} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </TabsContent>
-            ))}
-          </Tabs>
+          <ExamResultsSubjects subjects={results.bySubject} exam={exam} />
         )}
       </TabsContent>
-    </>
+    </Tabs>
   );
 }
 
@@ -186,17 +103,10 @@ export default function ExamResults({ exam }: { exam: IExamListItem }) {
         <TypographyP>({exam.gradeLevel.academicYear.name})</TypographyP>
       </div>
       <Separator className="shrink-0" />
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <Tabs className="flex min-h-0 flex-1 flex-col">
-          <TabsList className="w-full shrink-0">
-            <TabsTrigger value="grade">By Grade</TabsTrigger>
-            <TabsTrigger value="class">By Class</TabsTrigger>
-            <TabsTrigger value="subject">By Subject</TabsTrigger>
-          </TabsList>
-          <Suspense key={exam.id} fallback={<LoadingIndicator />}>
-            <ResultsContent exam={exam} />
-          </Suspense>
-        </Tabs>
+      <section key={exam.id} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Suspense fallback={<LoadingIndicator />}>
+          <ResultsContent exam={exam} />
+        </Suspense>
       </section>
     </div>
   );

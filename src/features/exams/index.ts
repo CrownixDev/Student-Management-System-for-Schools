@@ -1,3 +1,4 @@
+import { academicYearsRepository } from "../academic-years";
 import { classRepository } from "../class";
 import { enrollmentRepository } from "../enrollment";
 import { gradesRepository } from "../grades";
@@ -5,6 +6,12 @@ import { ExamRepository } from "./exams.repository";
 import { ExamService } from "./exams.service";
 
 export const examRepository = new ExamRepository();
-export const examService = new ExamService(examRepository, enrollmentRepository, gradesRepository, classRepository);
+export const examService = new ExamService(
+  examRepository,
+  enrollmentRepository,
+  gradesRepository,
+  classRepository,
+  academicYearsRepository,
+);
 
 export * from "./exams.types";

@@ -8,6 +8,7 @@ import {
   TopResultStudent,
   TopResultStudentWithClass,
 } from "./exams.types";
+import { AcademicYearsRepository } from "../academic-years/year.repository";
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
@@ -30,6 +31,7 @@ export class ExamService {
     private enrollmentRepository: EnrollmentRepository,
     private gradesRepository: GradesRepository,
     private classRepository: ClassRepository,
+    private yearRepository: AcademicYearsRepository,
   ) {}
 
   async getList(gradeId: string): Promise<IExamListItem[]> {
@@ -114,9 +116,7 @@ export class ExamService {
       const students = new Map<string, TopResultStudent & { classIndex: number | null }>();
 
       for (const enrollment of classItem.enrollments) {
-        const marksBySubjectId = new Map(
-          enrollment.marks.map((mark) => [mark.examSubject.subject.id, mark]),
-        );
+        const marksBySubjectId = new Map(enrollment.marks.map((mark) => [mark.examSubject.subject.id, mark]));
         const studentInfo = {
           id: enrollment.student.id,
           fullName: enrollment.student.fullName,
@@ -229,6 +229,20 @@ export class ExamService {
   }
 
   async updateMarks(examId: string, data: z.infer<typeof examMarksSchema>) {
+    if (!examId) throw new ApiErrorV2("Exam id is required");
+
+    const [activeYear, exam] = await Promise.all([
+      this.yearRepository.getActiveYear(),
+      this.repository.getListItemById(examId),
+    ]);
+
+    if (!activeYear) throw new ApiErrorV2("No active years found");
+    if (!exam) throw new ApiErrorV2("Exam not found");
+
+    if (exam.gradeLevel.academicYear.id !== activeYear.id) {
+      throw new ApiErrorV2("You can only edit marks from active year");
+    }
+
     const parsedRes = examMarksSchema.safeParse(data);
     if (!parsedRes.success) {
       throw new ApiErrorV2("Data validation failed");

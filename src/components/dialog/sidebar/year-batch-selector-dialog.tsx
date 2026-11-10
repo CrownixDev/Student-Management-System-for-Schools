@@ -120,7 +120,7 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
         <ChevronsUpDownIcon className="ml-auto" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex min-h-128 max-h-[75dvh] min-w-md flex-col overflow-hidden">
+        <DialogContent className="flex min-h-128 max-h-128 min-w-md flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Select academic year or batch</DialogTitle>
           </DialogHeader>
@@ -129,11 +129,11 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
               {allowYear && <TabsTrigger value="years">Academic years</TabsTrigger>}
               {allowBatch && <TabsTrigger value="batches">Batches</TabsTrigger>}
             </TabsList>
-            <TabsContent value="years">
+            <TabsContent value="years" className="min-h-0 flex flex-col">
               {isYearListPending ? (
                 <LoadingIndicator />
               ) : (
-                <div className="min-h-72 max-h-[55dvh] overflow-y-auto rounded-md border">
+                <div className="min-h-0 flex-1 overflow-y-auto rounded-md border">
                   <RadioGroup value={selectedYear?.id ?? ""} onValueChange={(yearId) => handleSelectYear(yearId)}>
                     {yearList.map((year) => (
                       <div key={year.id} className="flex items-center gap-3 border-b px-3 py-2.5 last:border-b-0">
@@ -159,8 +159,12 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="batches">
-              <Tabs value={batchType} onValueChange={(value) => setBatchType(value as BatchType)} className="min-h-0">
+            <TabsContent value="batches" className="min-h-0 flex flex-col">
+              <Tabs
+                value={batchType}
+                onValueChange={(value) => setBatchType(value as BatchType)}
+                className="min-h-0 flex-1"
+              >
                 <TabsList className="w-full">
                   {batchTypeOptions.map((type) => (
                     <TabsTrigger key={type.value} value={type.value}>
@@ -168,11 +172,11 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                <TabsContent value={batchType}>
+                <TabsContent value={batchType} className="min-h-0 flex flex-col">
                   {isBatchListPending ? (
                     <LoadingIndicator />
                   ) : (
-                    <div className="min-h-72 max-h-[55dvh] overflow-y-auto rounded-md border">
+                    <div className="min-h-0 flex-1 overflow-y-auto rounded-md border">
                       <RadioGroup value={batchId ?? ""} onValueChange={(batchId) => handleSelectBatch(batchId)}>
                         {batchLists[batchType].map((batch) => (
                           <div key={batch.id} className="flex items-center gap-3 border-b px-3 py-2.5 last:border-b-0">

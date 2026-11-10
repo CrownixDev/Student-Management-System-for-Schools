@@ -296,13 +296,14 @@ export default function ExportResultsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="flex min-h-150 max-h-150 flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Export results</DialogTitle>
           <DialogDescription>Choose the fields and headings to include in the Excel file.</DialogDescription>
         </DialogHeader>
         <Tabs
           value={activeTab}
+          className="min-h-0 flex-1"
           onValueChange={(value) => {
             if (value === "byGrade" || value === "byClass" || value === "bySubject") setActiveTab(value);
           }}
@@ -312,10 +313,10 @@ export default function ExportResultsDialog({
             <TabsTrigger value="byClass">By Class</TabsTrigger>
             <TabsTrigger value="bySubject">By Subject</TabsTrigger>
           </TabsList>
-          <TabsContent value="byGrade" className="mt-4">
+          <TabsContent value="byGrade" className="-mr-4 mt-4 min-h-0 overflow-y-auto pr-4">
             {renderSettings("byGrade", gradeColumns)}
           </TabsContent>
-          <TabsContent value="byClass" className="mt-4">
+          <TabsContent value="byClass" className="-mr-4 mt-4 min-h-0 overflow-y-auto pr-4">
             <label className="mb-4 flex items-center gap-3">
               <span className="shrink-0">Class</span>
               <NativeSelect
@@ -337,7 +338,7 @@ export default function ExportResultsDialog({
               <p className="text-muted-foreground">No class results are available to export.</p>
             )}
           </TabsContent>
-          <TabsContent value="bySubject" className="mt-4">
+          <TabsContent value="bySubject" className="-mr-4 mt-4 min-h-0 overflow-y-auto pr-4">
             <label className="mb-4 flex items-center gap-3">
               <span className="shrink-0">Subject</span>
               <NativeSelect

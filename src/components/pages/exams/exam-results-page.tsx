@@ -2,7 +2,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { examService, IExamListItem, IExamTopResults } from "@/features/exams";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
-import { ClipboardListIcon, DownloadIcon } from "lucide-react";
+import { ClipboardListIcon } from "lucide-react";
+import { SidebarTrigger } from "@/components/shadcn/sidebar";
+import { classService, IClassListWithSubjectsItem } from "@/features/class";
 import { Separator } from "@/components/shadcn/separator";
 import { Suspense } from "react";
 import StudentDetailsViewButton from "./student-details-view-button";
@@ -10,9 +12,7 @@ import ExamResultsSubjects from "./exam-results/exam-results-subject";
 import ExamResultsClass from "./exam-results/exam-results-class";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
-import { SidebarTrigger } from "@/components/shadcn/sidebar";
-import { Button } from "@/components/shadcn/button";
-import { classService, IClassListWithSubjectsItem } from "@/features/class";
+import ExportResultsBtn from "./buttons/export-results-btn";
 
 async function ResultsContent({ exam }: { exam: IExamListItem }) {
   let results: IExamTopResults | null = null;
@@ -29,11 +29,14 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
 
   return (
     <Tabs className="flex min-h-0 flex-1 flex-col">
-      <TabsList className="w-full shrink-0">
-        <TabsTrigger value="grade">By Grade</TabsTrigger>
-        <TabsTrigger value="class">By Class</TabsTrigger>
-        <TabsTrigger value="subject">By Subject</TabsTrigger>
-      </TabsList>
+      <div className="flex gap-3">
+        <TabsList className="flex-1 shrink-0">
+          <TabsTrigger value="grade">By Grade</TabsTrigger>
+          <TabsTrigger value="class">By Class</TabsTrigger>
+          <TabsTrigger value="subject">By Subject</TabsTrigger>
+        </TabsList>
+        <ExportResultsBtn exam={exam} results={results} classesWithSubjects={classesWithSubjects} />
+      </div>
       <TabsContent value="grade" className="min-h-0 overflow-hidden">
         {results.byGrade.length === 0 ? (
           <EmptyState
@@ -57,7 +60,9 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
               {results.byGrade.map((student, index) => (
                 <TableRow key={student.id}>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">{student.fullName}</TableCell>
+                  <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">
+                    {student.fullName}
+                  </TableCell>
                   <TableCell>{student.admissionNo}</TableCell>
                   <TableCell>{student.class.name}</TableCell>
                   <TableCell>{student.fullMarks}</TableCell>
@@ -111,11 +116,6 @@ export default function ExamResults({ exam }: { exam: IExamListItem }) {
             ({exam.gradeLevel.academicYear.name} - {exam.gradeLevel.name})
           </TypographyP>
         </div>
-        {/* TODO: Implement students export functionality */}
-        <Button variant="outline">
-          Export
-          <DownloadIcon />
-        </Button>
       </div>
       <Separator className="shrink-0" />
       <section key={exam.id} className="flex min-h-0 flex-1 flex-col overflow-hidden">

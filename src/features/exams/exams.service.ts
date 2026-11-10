@@ -6,6 +6,7 @@ import {
   IExamListItem,
   IExamSubject,
   IExamTopResults,
+  TopResultClass,
   TopResultStudent,
   TopResultStudentWithClass,
 } from "./exams.types";
@@ -119,7 +120,7 @@ export class ExamService {
     >();
 
     const byClass = grade.classes.map((classItem) => {
-      const students = new Map<string, TopResultStudent & { classIndex: number | null }>();
+      const students = new Map<string, TopResultClass["topResult"][number]>();
 
       for (const enrollment of classItem.enrollments) {
         const marksBySubjectId = new Map(enrollment.marks.map((mark) => [mark.examSubject.subject.id, mark]));
@@ -128,11 +129,21 @@ export class ExamService {
           fullName: enrollment.student.fullName,
           admissionNo: enrollment.student.admissionNo,
         };
+        const subjects = enrollment.marks.map((mark) => ({
+          id: mark.examSubject.subject.id,
+          name: mark.examSubject.subject.name,
+          code: mark.examSubject.subject.code,
+          result: {
+            marks: mark.marks,
+            status: mark.status,
+          },
+        }));
         const studentClass = { id: classItem.id, name: classItem.name };
         const classStudent = students.get(enrollment.student.id) ?? {
           ...studentInfo,
           classIndex: enrollment.classIndex,
           fullMarks: 0,
+          subjects,
         };
         students.set(enrollment.student.id, classStudent);
 

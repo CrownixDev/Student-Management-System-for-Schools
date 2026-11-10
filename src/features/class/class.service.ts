@@ -2,7 +2,7 @@ import "server-only";
 
 import { ApiErrorV2 } from "@/lib/ApiError";
 import { ClassRepository } from "./class.repository";
-import { IClass, IClassList, IClassOption } from "./class.types";
+import { IClass, IClassList, IClassListWithSubjectsItem, IClassOption } from "./class.types";
 import { classDetailsSchema, classSubjectsSchema } from "./class.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { prisma } from "@/lib/prisma";
@@ -59,6 +59,21 @@ export class ClassService {
       id: classItem.id,
       name: classItem.name,
       studentCount: classItem.enrollments.length,
+    }));
+  }
+
+  async getListWithSubjects(gradeId: string): Promise<IClassListWithSubjectsItem[]> {
+    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    const classList = await this.repository.getListWithSubjects(gradeId);
+    return classList.map((classItem) => ({
+      id: classItem.id,
+      name: classItem.name,
+      studentCount: classItem.enrollments.length,
+      subjects: classItem.classSubjects.map((csub) => ({
+        id: csub.subject.id,
+        name: csub.subject.name,
+        code: csub.subject.code,
+      })),
     }));
   }
 

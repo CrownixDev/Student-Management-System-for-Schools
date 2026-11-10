@@ -126,12 +126,31 @@ export default function StudentDetails({
                     <TableBody>
                       {selectedExam.subjects.map((subject) => (
                         <TableRow key={subject.id}>
-                          <TableCell className="font-medium">{subject.name}</TableCell>
+                          <TableCell>{subject.name}</TableCell>
                           <TableCell className="tabular-nums">
                             {subject.result.status === "present" ? subject.result.marks : "-"}
                           </TableCell>
                         </TableRow>
                       ))}
+                      <TableRow className="bg-muted/50">
+                        <TableCell>Average</TableCell>
+                        <TableCell className="tabular-nums">
+                          {(
+                            selectedExam.subjects.reduce((total, subject) => {
+                              return total + (subject.result.status === "present" ? (subject.result.marks ?? 0) : 0);
+                            }, 0) / selectedExam.subjects.length
+                          ).toFixed(1)}
+                          %
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="bg-muted/50">
+                        <TableCell>Total</TableCell>
+                        <TableCell className="tabular-nums">
+                          {selectedExam.subjects.reduce((total, subject) => {
+                            return total + (subject.result.status === "present" ? (subject.result.marks ?? 0) : 0);
+                          }, 0)}
+                        </TableCell>
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </div>
@@ -184,6 +203,20 @@ export default function StudentDetails({
                               </TableCell>
                             </TableRow>
                           ))}
+                          <TableRow className="bg-muted/50">
+                            <TableCell>Average</TableCell>
+                            <TableCell className="tabular-nums">
+                              {(
+                                subjectMarks.reduce((total, item) => {
+                                  return (
+                                    total +
+                                    (item.subject?.result.status === "present" ? (item.subject.result.marks ?? 0) : 0)
+                                  );
+                                }, 0) / subjectMarks.length
+                              ).toFixed(1)}
+                              %
+                            </TableCell>
+                          </TableRow>
                         </TableBody>
                       </Table>
                     </div>

@@ -89,7 +89,18 @@ export type TopResultStudentWithClass = TopResultStudent & {
 export interface TopResultClass {
   id: Class["id"];
   name: Class["name"];
-  topResult: (TopResultStudent & { classIndex: number | null })[];
+  topResult: (TopResultStudent & {
+    classIndex: number | null;
+    subjects: {
+      id: Subject["id"];
+      name: Subject["name"];
+      code: Subject["code"];
+      result: {
+        marks: Mark["marks"];
+        status: Mark["status"];
+      };
+    }[];
+  })[];
 }
 
 export interface TopResultSubject {

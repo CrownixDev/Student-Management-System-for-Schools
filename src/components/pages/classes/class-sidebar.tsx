@@ -1,7 +1,7 @@
 "use client";
 
 import { TypographyH2 } from "@/components/ui/typography";
-import { UsersRoundIcon } from "lucide-react";
+import { DownloadIcon, UsersRoundIcon } from "lucide-react";
 import { Separator } from "@/components/shadcn/separator";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import EmptyState from "@/components/ui/empty-state";
 import SearchInput from "@/components/ui/search-input";
 import Fuse from "fuse.js";
 import { PageSidebar, PageSidebarContent, PageSidebarHearder } from "@/components/ui/page/page-sidebar";
+import { Button } from "@/components/shadcn/button";
 
 export default function ClassSidebar({ classData }: { classData: IClass }) {
   const [search, setSearch] = useState("");
@@ -34,11 +35,18 @@ export default function ClassSidebar({ classData }: { classData: IClass }) {
     <PageSidebar>
       <PageSidebarHearder>
         <div className="flex flex-col gap-3 p-3 ">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger />
-            <TypographyH2 title={classData.name} className="truncate">
-              {classData.name}
-            </TypographyH2>
+          <div className="flex justify-between items-center gap-3">
+            <div className="flex">
+              <SidebarTrigger />
+              <TypographyH2 title={classData.name} className="max-w-33 truncate">
+                {classData.name}
+              </TypographyH2>
+            </div>
+            {/* TODO: Implement class students export functionality */}
+            <Button variant="outline">
+              Export
+              <DownloadIcon />
+            </Button>
           </div>
 
           <SearchInput

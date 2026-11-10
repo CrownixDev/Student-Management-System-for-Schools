@@ -15,6 +15,36 @@ export type IClassListItem = {
   studentCount: number;
 };
 
+export const classListWithSubjectsItemSelect = {
+  id: true,
+  name: true,
+  enrollments: {
+    select: { id: true },
+  },
+  classSubjects: {
+    select: {
+      subject: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
+    },
+  },
+} satisfies ClassSelect;
+
+export type IClassListWithSubjectsItem = {
+  id: Class["id"];
+  name: Class["name"];
+  studentCount: number;
+  subjects: {
+    id: string;
+    name: string;
+    code: string | null;
+  }[];
+};
+
 export type IClassList = IClassListItem[];
 
 export const classSelect = {

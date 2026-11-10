@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { examService, IExamListItem, IExamTopResults } from "@/features/exams";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
-import { ClipboardListIcon } from "lucide-react";
+import { ClipboardListIcon, DownloadIcon } from "lucide-react";
 import { Separator } from "@/components/shadcn/separator";
 import { Suspense } from "react";
 import StudentDetailsViewButton from "./student-details-view-button";
@@ -10,12 +10,17 @@ import ExamResultsSubjects from "./exam-results/exam-results-subject";
 import ExamResultsClass from "./exam-results/exam-results-class";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
+import { SidebarTrigger } from "@/components/shadcn/sidebar";
+import { Button } from "@/components/shadcn/button";
+import { classService, IClassListWithSubjectsItem } from "@/features/class";
 
 async function ResultsContent({ exam }: { exam: IExamListItem }) {
   let results: IExamTopResults | null = null;
+  let classesWithSubjects: IClassListWithSubjectsItem[] | null = null;
 
   try {
     results = await examService.getTopResults(exam.gradeLevel.id, exam.id);
+    classesWithSubjects = await classService.getListWithSubjects(exam.gradeLevel.id);
   } catch {
     return (
       <EmptyState icon={ClipboardListIcon} title="No results available" description={"Could not get exam results"} />
@@ -52,7 +57,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
               {results.byGrade.map((student, index) => (
                 <TableRow key={student.id}>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell>{student.fullName}</TableCell>
+                  <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">{student.fullName}</TableCell>
                   <TableCell>{student.admissionNo}</TableCell>
                   <TableCell>{student.class.name}</TableCell>
                   <TableCell>{student.fullMarks}</TableCell>
@@ -77,7 +82,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
             description={"There are no class results available for this exam."}
           />
         ) : (
-          <ExamResultsClass classes={results.byClass} exam={exam} />
+          <ExamResultsClass classes={results.byClass} classesWithSubjects={classesWithSubjects} exam={exam} />
         )}
       </TabsContent>
       <TabsContent value="subject" className="flex min-h-0 flex-col overflow-hidden">
@@ -98,9 +103,19 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
 export default function ExamResults({ exam }: { exam: IExamListItem }) {
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden p-5">
-      <div className="flex shrink-0 items-center gap-3 p-3">
-        <TypographyH1>{exam.name} Results</TypographyH1>
-        <TypographyP>({exam.gradeLevel.academicYear.name})</TypographyP>
+      <div className="flex shrink-0 items-center justify-between">
+        <div className="flex items-center gap-3 p-3">
+          <SidebarTrigger />
+          <TypographyH1>{exam.name} Results</TypographyH1>
+          <TypographyP>
+            ({exam.gradeLevel.academicYear.name} - {exam.gradeLevel.name})
+          </TypographyP>
+        </div>
+        {/* TODO: Implement students export functionality */}
+        <Button variant="outline">
+          Export
+          <DownloadIcon />
+        </Button>
       </div>
       <Separator className="shrink-0" />
       <section key={exam.id} className="flex min-h-0 flex-1 flex-col overflow-hidden">

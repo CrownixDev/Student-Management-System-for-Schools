@@ -20,7 +20,7 @@ export default function ClassSidebarItem({ open = false, grade }: { open?: boole
             <span className="truncate" title={grade.name}>
               {grade.name}
             </span>
-            <Badge variant="outline">{currentBatch?.name}</Badge>
+            {currentBatch && <Badge variant="outline">{currentBatch.name}</Badge>}
           </div>
         </CollapsibleTrigger>
         <div className="flex items-center">

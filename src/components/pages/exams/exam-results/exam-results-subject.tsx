@@ -51,7 +51,9 @@ export default function ExamResultsSubjects({ exam, subjects }: { exam: IExamLis
                   {subject.topResult.map((student, index) => (
                     <TableRow key={student.id}>
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{student.fullName}</TableCell>
+                      <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">
+                        {student.fullName}
+                      </TableCell>
                       <TableCell>{student.admissionNo}</TableCell>
                       <TableCell>{student.class.name}</TableCell>
                       <TableCell>{student.status === "present" ? student.fullMarks : "Absent"}</TableCell>

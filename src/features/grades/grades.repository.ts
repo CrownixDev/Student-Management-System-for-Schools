@@ -61,7 +61,7 @@ export class GradesRepository {
                     status: true,
                     examSubject: {
                       select: {
-                        subject: { select: { id: true, name: true } },
+                        subject: { select: { id: true, name: true, code: true } },
                       },
                     },
                   },

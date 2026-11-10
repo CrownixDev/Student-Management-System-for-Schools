@@ -1,6 +1,6 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/shadcn/chart";
 import type { IExamByEnrollmentId } from "@/features/exams";
 
@@ -66,7 +66,7 @@ export function StudentSubjectProgressChart({
             className="h-85 min-w-140 w-full aspect-auto"
             aria-label={`${subjectName} marks across exams`}
           >
-            <LineChart data={data} margin={{ top: 12, right: 20, bottom: 12, left: 8 }} accessibilityLayer>
+            <AreaChart data={data} margin={{ top: 12, right: 20, bottom: 12, left: 8 }} accessibilityLayer>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="exam"
@@ -110,26 +110,29 @@ export function StudentSubjectProgressChart({
                   />
                 }
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="mark"
                 name="Student mark"
                 stroke="var(--color-marks)"
                 strokeWidth={2}
+                fill="var(--color-marks)"
+                fillOpacity={0.2}
                 connectNulls
                 dot={{ r: 4, fill: "var(--color-marks)" }}
                 activeDot={{ r: 6 }}
               />
-              <Line
+              <Area
                 type="linear"
                 dataKey="absenceMarker"
                 name="A/B"
                 stroke="transparent"
+                fill="transparent"
                 activeDot={false}
                 dot={<AbsenceDot />}
                 isAnimationActive={false}
               />
-            </LineChart>
+            </AreaChart>
           </ChartContainer>
         </div>
       )}

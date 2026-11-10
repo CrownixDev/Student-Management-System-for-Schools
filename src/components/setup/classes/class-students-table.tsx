@@ -18,19 +18,12 @@ export default function ClassStudentsTable({ enrollments }: { enrollments: IClas
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex gap-2">
-        <SearchInput
-          placeholder="Search by student name, index or admission number"
-          value={search}
-          onChange={setSearch}
-          onClear={() => setSearch("")}
-        />
-        {/* TODO: Implement class students export functionality */}
-        <Button variant="outline">
-          Export
-          <DownloadIcon />
-        </Button>
-      </div>
+      <SearchInput
+        placeholder="Search by student name, index or admission number"
+        value={search}
+        onChange={setSearch}
+        onClear={() => setSearch("")}
+      />
       <div className="overflow-hidden rounded-md border">
         <div className="max-h-[65vh] overflow-auto">
           <Table containerClassName="overflow-visible">

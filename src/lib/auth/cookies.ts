@@ -7,9 +7,15 @@ import {
 } from "./constants";
 import { NextResponse } from "next/server";
 
+const isSecure = process.env.SECURE;
+
+if (isSecure !== undefined && isSecure !== "true" && isSecure !== "false") {
+  throw new Error('SECURE must be "true" or "false"');
+}
+
 const commonCookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: isSecure === "true",
   sameSite: "lax" as const,
   path: "/",
 };

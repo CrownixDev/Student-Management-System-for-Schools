@@ -1,6 +1,12 @@
 "use server";
 
-import { IStudentEnrollment, IStudentList, IStudentsListItem, IStudentsListWithSubjectsItem } from "./students.types";
+import {
+  IStudentEnrollment,
+  IStudentList,
+  IStudentProfile,
+  IStudentsListItem,
+  IStudentsListWithSubjectsItem,
+} from "./students.types";
 import { requireAuthServerAction } from "@/lib/auth/authenticate";
 import { IStudentDetailsData } from "@/components/pages/exams/student-details-view-button";
 import { subjectRepository } from "../subjects";
@@ -58,6 +64,22 @@ export async function getStudentListForClassAction(classId: string): Promise<IRe
   } catch (error) {
     console.error("Error fetching class student list:", error);
     return { success: false, message: "Failed to fetch class student list." };
+  }
+}
+
+export async function getStudentProfileListForClassAction(classId: string): Promise<IResponse<IStudentProfile[]>> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  if (!classId) {
+    return { success: false, message: "Class id is required" };
+  }
+
+  try {
+    const result = await studentsService.getProfileListForClass(classId);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error fetching class student list:", error);
+    return { success: false, message: "Failed to fetch class student profile list." };
   }
 }
 

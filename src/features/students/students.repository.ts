@@ -98,6 +98,19 @@ export class StudentsRepository {
     });
   }
 
+  async getProfileListForClass(classId: string) {
+    return await prisma.student.findMany({
+      where: { enrollments: { some: { class: { id: classId } } } },
+      select: {
+        ...studentProfuileSelect,
+        enrollments: {
+          where: { class: { id: classId } },
+          select: { classIndex: true },
+        },
+      },
+    });
+  }
+
   async getListForClassWithSubjects(classId: string) {
     return await prisma.student.findMany({
       where: { enrollments: { some: { class: { id: classId } } } },

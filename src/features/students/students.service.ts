@@ -6,6 +6,8 @@ import {
   IStudent,
   IStudentEnrollment,
   IStudentList,
+  IStudentProfile,
+  IStudentProfileList,
   IStudentsListItem,
   IStudentsListWithSubjectsItem,
 } from "./students.types";
@@ -22,7 +24,14 @@ export class StudentsService {
     return { count, list };
   }
 
-  async getProfileList({ search, page, limit, gender, dobFrom, dobTo }: IStudentProfileListFilters) {
+  async getProfileList({
+    search,
+    page,
+    limit,
+    gender,
+    dobFrom,
+    dobTo,
+  }: IStudentProfileListFilters): Promise<IStudentProfileList> {
     const [count, list] = await this.repository.getProfileList({ search, page, limit, gender, dobFrom, dobTo });
     return { count, list };
   }
@@ -31,6 +40,16 @@ export class StudentsService {
     if (!classId) throw new ApiErrorV2("Class id is required");
 
     const itemList = await this.repository.getListForClass(classId);
+    const sortedItemList = itemList.sort(
+      (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
+    );
+    return sortedItemList;
+  }
+
+  async getProfileListForClass(classId: string): Promise<IStudentProfile[]> {
+    if (!classId) throw new ApiErrorV2("Class id is required");
+
+    const itemList = await this.repository.getProfileListForClass(classId);
     const sortedItemList = itemList.sort(
       (a, b) => (a.enrollments[0].classIndex ?? itemList.length) - (b.enrollments[0].classIndex ?? itemList.length),
     );

@@ -61,6 +61,8 @@ export type IStudentList = {
   count: number;
 };
 
+
+
 export const studentSelect = {
   id: true,
   admissionNo: true,

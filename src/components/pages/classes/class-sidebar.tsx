@@ -1,17 +1,17 @@
 "use client";
 
-import { TypographyH2 } from "@/components/ui/typography";
-import { DownloadIcon, UsersRoundIcon } from "lucide-react";
-import { Separator } from "@/components/shadcn/separator";
+import { PageSidebar, PageSidebarContent, PageSidebarHearder } from "@/components/ui/page/page-sidebar";
+import { UsersRoundIcon } from "lucide-react";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
+import { TypographyH2 } from "@/components/ui/typography";
+import { Separator } from "@/components/shadcn/separator";
 import { useState } from "react";
 import { IClass } from "@/features/class";
+import ExportStudentsBtn from "./buttons/export-students-btn";
 import StudentListItem from "./student-list-item";
-import EmptyState from "@/components/ui/empty-state";
 import SearchInput from "@/components/ui/search-input";
+import EmptyState from "@/components/ui/empty-state";
 import Fuse from "fuse.js";
-import { PageSidebar, PageSidebarContent, PageSidebarHearder } from "@/components/ui/page/page-sidebar";
-import { Button } from "@/components/shadcn/button";
 
 export default function ClassSidebar({ classData }: { classData: IClass }) {
   const [search, setSearch] = useState("");
@@ -42,11 +42,7 @@ export default function ClassSidebar({ classData }: { classData: IClass }) {
                 {classData.name}
               </TypographyH2>
             </div>
-            {/* TODO: Implement class students export functionality */}
-            <Button variant="outline">
-              Export
-              <DownloadIcon />
-            </Button>
+            <ExportStudentsBtn classData={classData}/>
           </div>
 
           <SearchInput

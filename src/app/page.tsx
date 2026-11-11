@@ -40,24 +40,32 @@ export default async function page() {
             Crownix Student Management System
           </h1>
           <nav aria-label="Main navigation" className="flex flex-col gap-4">
-            <Link href={`/grades?yearId=${yearId}`}>
-              <Button className="flex w-full py text-2xl h-30 items-center" variant="outline">
+            <Button
+              disabled={yearList.length === 0}
+              className="flex w-full py text-2xl h-30 items-center"
+              variant="outline"
+            >
+              <Link href={`/grades?yearId=${yearId}`} className="flex gap-2 w-full h-full items-center justify-center">
                 <GraduationCapIcon className="size-7" />
                 Students
-              </Button>
-            </Link>
-            <Link href={`/exams?yearId=${yearId}`}>
-              <Button className="flex w-full py text-2xl h-30 items-center" variant="outline">
+              </Link>
+            </Button>
+            <Button
+              disabled={yearList.length === 0}
+              className="flex w-full py text-2xl h-30 items-center"
+              variant="outline"
+            >
+              <Link href={`/exams?yearId=${yearId}`} className="flex gap-2 w-full h-full items-center justify-center">
                 <NotebookPenIcon className="size-7" />
                 Exams
-              </Button>
-            </Link>
-            <Link href={"/setup"}>
-              <Button className="flex w-full py text-2xl h-30 items-center" variant="outline">
+              </Link>
+            </Button>
+            <Button className="flex w-full py text-2xl h-30 items-center" variant="outline">
+              <Link href={"/setup"} className="flex gap-2 w-full h-full items-center justify-center">
                 <Wrench className="size-7" />
                 Setup
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </nav>
         </div>
       </section>

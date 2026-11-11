@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/shadcn/card";
 import { FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { IClass } from "@/features/class";
 import { AlertTriangleIcon, BookOpenIcon, EditIcon, Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { toast } from "react-toastify";
@@ -75,6 +75,15 @@ export default function ClassSubjectsDialog({
     },
     queryKey: [MEDIUM_OPTIONS],
   });
+
+  useEffect(() => {
+    function setMedium() {
+      if (mediumOptions.length > 0) {
+        setSubjects((prev) => prev.map((sub) => (sub.mediumId ? sub : { ...sub, mediumId: mediumOptions[0].value })));
+      }
+    }
+    setMedium();
+  }, [mediumOptions, subjects.length]);
 
   function updateSubject(index: number, changes: Partial<ClassSubject>) {
     setSubjects((current) =>

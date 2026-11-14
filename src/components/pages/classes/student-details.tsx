@@ -1,19 +1,19 @@
 "use client";
 
-import { IStudent } from "@/features/students";
-import { TypographyH2 } from "@/components/ui/typography";
-import { Badge } from "@/components/shadcn/badge";
-import { Separator } from "@/components/shadcn/separator";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { StudentSubjectProgressChart } from "@/components/pages/classes/student-subject-progress-chart";
+import { StudentSubjectMarksChart } from "@/components/pages/classes/student-subject-marks-chart";
 import { IExamByEnrollmentId } from "@/features/exams";
 import { ISubjectListItem } from "@/features/subjects";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { StudentSubjectMarksChart } from "@/components/pages/classes/student-subject-marks-chart";
-import { StudentSubjectProgressChart } from "@/components/pages/classes/student-subject-progress-chart";
-import { useState } from "react";
-import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-select";
-import EmptyState from "@/components/ui/empty-state";
 import { NotebookPenIcon } from "lucide-react";
+import { TypographyH2 } from "@/components/ui/typography";
+import { Separator } from "@/components/shadcn/separator";
+import { IStudent } from "@/features/students";
+import { useState } from "react";
+import { Badge } from "@/components/shadcn/badge";
+import EmptyState from "@/components/ui/empty-state";
 
 export type IStudentDetailsTab = "exam" | "subject";
 
@@ -32,8 +32,8 @@ export default function StudentDetails({
   defaultSubjectId?: string;
   defaultTab?: IStudentDetailsTab;
 }) {
-  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(defaultExamId);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>(defaultSubjectId);
+  const [selectedExamId, setSelectedExamId] = useState<string>(defaultExamId || examData[0].id);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(defaultSubjectId || subjectList[0].id);
   const [tab, setTab] = useState<IStudentDetailsTab>(defaultTab ?? "exam");
 
   const selectedSubject = subjectList.find((subject) => subject.id === selectedSubjectId) || subjectList[0];
@@ -102,17 +102,25 @@ export default function StudentDetails({
             </TabsList>
 
             <TabsContent value={"exam"}>
-              <NativeSelect
+              <Select
+                items={examData.map((item) => ({ value: item.id, label: item.name }))}
                 value={selectedExamId}
-                className="w-full my-1"
-                onChange={(e) => setSelectedExamId(e.target.value)}
+                onValueChange={(value) => (value ? setSelectedExamId(value) : undefined)}
               >
-                {examData.map((exam) => (
-                  <NativeSelectOption key={exam.id} value={exam.id}>
-                    {exam.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger className="w-full my-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {examData.map((exam) => (
+                      <SelectItem key={exam.id} value={exam.id}>
+                        {exam.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
               {selectedExam && (
                 <div>
                   <StudentSubjectMarksChart subjects={selectedExam.subjects} examName={selectedExam.name} />
@@ -158,17 +166,25 @@ export default function StudentDetails({
             </TabsContent>
 
             <TabsContent value={"subject"}>
-              <NativeSelect
+              <Select
                 value={selectedSubjectId}
-                className="w-full my-1"
-                onChange={(e) => setSelectedSubjectId(e.target.value)}
+                items={subjectList.map((sub) => ({ value: sub.id, label: sub.name }))}
+                onValueChange={(value) => (value ? setSelectedSubjectId(value) : undefined)}
               >
-                {subjectList.map((sub) => (
-                  <NativeSelectOption key={sub.id} value={sub.id}>
-                    {sub.name.length > 30 ? sub.name.substring(0, 50) + "..." : sub.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger className="w-full my-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {subjectList.map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.name.length > 30 ? sub.name.substring(0, 50) + "..." : sub.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
               {selectedSubject &&
                 (() => {
                   const subjectMarks = examData.map((exam) => {

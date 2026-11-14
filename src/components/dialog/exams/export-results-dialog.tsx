@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/shadcn/button";
-import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +9,14 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
-import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { IClassListWithSubjectsItem } from "@/features/class";
 import { IExamListItem, IExamTopResults } from "@/features/exams";
+import { IClassListWithSubjectsItem } from "@/features/class";
 import { exportExcelSheet } from "@/lib/excell";
+import { useState } from "react";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Button } from "@/components/shadcn/button";
 
 type ExportTab = "byGrade" | "byClass" | "bySubject";
 type SortDirection = "asc" | "desc";
@@ -57,6 +57,12 @@ const subjectColumns: ExportColumn[] = [
   { key: "fullMarks", label: "Full Marks" },
   { key: "medium", label: "Medium" },
 ];
+
+const sortingOptions = [
+  { value: "", label: "No sort" },
+  { value: "asc", label: "Ascending" },
+  { value: "desc", label: "Descending" },
+] satisfies { value: string; label: string }[];
 
 function getDisplayValue(value: ExportCell): ExportCell {
   return value ?? "-";
@@ -113,20 +119,27 @@ function ColumnSettings({
               disabled={!preference.enabled}
               aria-label={`${column.label} heading`}
             />
+
             {isSortable && (
-              <NativeSelect
-                className="w-32 shrink-0"
+              <Select
+                items={sortingOptions}
                 value={sortKey === column.key ? (sortDirection ?? "") : ""}
                 disabled={!preference.enabled}
-                onChange={(event) =>
-                  onSortChange(tab, column.key, event.target.value ? (event.target.value as SortDirection) : null)
-                }
-                aria-label={`Sort by ${column.label}`}
+                onValueChange={(value) => onSortChange(tab, column.key, value ? (value as SortDirection) : null)}
               >
-                <NativeSelectOption value="">No sort</NativeSelectOption>
-                <NativeSelectOption value="asc">Ascending</NativeSelectOption>
-                <NativeSelectOption value="desc">Descending</NativeSelectOption>
-              </NativeSelect>
+                <SelectTrigger className="w-32 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {sortingOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             )}
           </div>
         );
@@ -319,18 +332,25 @@ export default function ExportResultsDialog({
           <TabsContent value="byClass" className="-mr-4 mt-4 min-h-0 overflow-y-auto pr-4">
             <label className="mb-4 flex items-center gap-3">
               <span className="shrink-0">Class</span>
-              <NativeSelect
-                className="w-full"
+
+              <Select
+                items={results.byClass.map((cls) => ({ value: cls.id, label: cls.name }))}
                 value={selectedClassId}
-                onChange={(event) => setSelectedClassId(event.target.value)}
-                aria-label="Select class"
+                onValueChange={(value) => (value ? setSelectedClassId(value) : undefined)}
               >
-                {results.byClass.map((classResult) => (
-                  <NativeSelectOption key={classResult.id} value={classResult.id}>
-                    {classResult.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {results.byClass.map((classItem) => (
+                      <SelectItem key={classItem.id} value={classItem.id}>
+                        {classItem.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </label>
             {selectedClass ? (
               renderSettings("byClass", classColumns, ["place", "classIndex"])
@@ -341,18 +361,25 @@ export default function ExportResultsDialog({
           <TabsContent value="bySubject" className="-mr-4 mt-4 min-h-0 overflow-y-auto pr-4">
             <label className="mb-4 flex items-center gap-3">
               <span className="shrink-0">Subject</span>
-              <NativeSelect
-                className="w-full"
+
+              <Select
+                items={results.bySubject.map((sub) => ({ value: sub.id, label: sub.name }))}
                 value={selectedSubjectId}
-                onChange={(event) => setSelectedSubjectId(event.target.value)}
-                aria-label="Select subject"
+                onValueChange={(value) => (value ? setSelectedSubjectId(value) : undefined)}
               >
-                {results.bySubject.map((subjectResult) => (
-                  <NativeSelectOption key={subjectResult.id} value={subjectResult.id}>
-                    {subjectResult.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {results.bySubject.map((subjectResult) => (
+                      <SelectItem key={subjectResult.id} value={subjectResult.id}>
+                        {subjectResult.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </label>
             {selectedSubject ? (
               renderSettings("bySubject", subjectColumns)

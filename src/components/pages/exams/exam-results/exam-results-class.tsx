@@ -1,15 +1,15 @@
 "use client";
 
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-select";
+import { IExamListItem, TopResultClass } from "@/features/exams";
+import { IClassListWithSubjectsItem } from "@/features/class";
 import { Tabs, TabsContent } from "@/components/shadcn/tabs";
 import { ClipboardListIcon } from "lucide-react";
 import { Field, FieldLabel } from "@/components/shadcn/field";
-import { IExamListItem, TopResultClass } from "@/features/exams";
 import { useState } from "react";
 import StudentDetailsViewButton from "../student-details-view-button";
 import EmptyState from "@/components/ui/empty-state";
-import { IClassListWithSubjectsItem } from "@/features/class";
 
 export default function ExamResultsClass({
   exam,
@@ -25,13 +25,24 @@ export default function ExamResultsClass({
     <>
       <Field orientation="horizontal" className="w-fit mb-3 max-w-lg truncate">
         <FieldLabel>Class: </FieldLabel>
-        <NativeSelect className="w-full" value={value} onChange={(e) => setValue(e.target.value)}>
-          {classes.map((classItem) => (
-            <NativeSelectOption key={classItem.id} value={classItem.id}>
-              {classItem.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+        <Select
+          items={classes.map((cls) => ({ value: cls.id, label: cls.name }))}
+          value={value}
+          onValueChange={(value) => (value ? setValue(value) : undefined)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {classes.map((classItem) => (
+                <SelectItem key={classItem.id} value={classItem.id}>
+                  {classItem.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field>
 
       <Tabs value={value} className="flex min-h-0 flex-1 flex-col">

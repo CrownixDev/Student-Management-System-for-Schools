@@ -1,7 +1,7 @@
 "use client";
 
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { NativeSelect, NativeSelectOption } from "@/components/shadcn/native-select";
 import { IExamListItem, TopResultSubject } from "@/features/exams";
 import { Tabs, TabsContent } from "@/components/shadcn/tabs";
 import { ClipboardListIcon } from "lucide-react";
@@ -15,14 +15,26 @@ export default function ExamResultsSubjects({ exam, subjects }: { exam: IExamLis
   return (
     <>
       <Field orientation="horizontal" className="w-fit mb-3 max-w-lg truncate">
-        <FieldLabel>Class: </FieldLabel>
-        <NativeSelect className="w-full" value={value} onChange={(e) => setValue(e.target.value)}>
-          {subjects.map((classItem) => (
-            <NativeSelectOption key={classItem.id} value={classItem.id}>
-              {classItem.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+        <FieldLabel>Subject: </FieldLabel>
+
+        <Select
+          items={subjects.map((sub) => ({ value: sub.id, label: sub.name }))}
+          value={value}
+          onValueChange={(value) => (value ? setValue(value) : undefined)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {subjects.map((sub) => (
+                <SelectItem key={sub.id} value={sub.id}>
+                  {sub.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field>
 
       <Tabs value={value} className="flex min-h-0 flex-1 flex-col border rounded-md">

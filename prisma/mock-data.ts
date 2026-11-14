@@ -50,19 +50,17 @@ export const academicYears = academicYearNames.map((year) => ({
 }));
 
 export const batches = [
-  { id: "batch-2025-al", name: "2025 A/L" },
-  { id: "batch-2026-al", name: "2026 A/L" },
+  { id: "batch-2025-al", name: "2025 A/L", type: "al" as const },
+  { id: "batch-2026-al", name: "2026 A/L", type: "al" as const },
 ];
 
 export const gradeLevels = [
   {
     id: gradeId(12),
-    number: 12,
     name: "Grade 12",
   },
   {
     id: gradeId(13),
-    number: 13,
     name: "Grade 13",
   },
 ];
@@ -71,8 +69,6 @@ export const mediums = [
   { id: "medium-sinhala", name: "Sinhala" },
   { id: "medium-english", name: "English" },
 ];
-
-export const streams = [{ id: "stream-technology", name: "Technology" }];
 
 export const subjects = [
   { id: "subject-et", name: "ET", code: "ET", category: "al_main" as const },
@@ -129,11 +125,8 @@ export const teachers = classContexts.flatMap((context, index) => [
 
 export const classes = classContexts.map((context) => ({
   id: context.classId,
-  academicYearId: yearId(context.year),
-  gradeLevelId: gradeId(context.grade),
-  streamId: "stream-technology",
+  gradeLevelRef: `${gradeId(context.grade)}:${yearId(context.year)}`,
   name: `${context.grade} ${context.className}`,
-  defaultMediumId: "medium-sinhala",
   batchId: classBatchId(context.year, context.grade),
   classTeacherId: id(
     "class-teacher",
@@ -206,7 +199,6 @@ export const enrollments = enrollmentContexts.map(
     id: enrollmentId,
     studentId,
     classId: context.classId,
-    academicYearId: yearId(context.year),
     classIndex: index + 1,
     status: "active" as const,
     joinedOn: new Date(`${context.year}-01-15T00:00:00.000Z`),
@@ -218,7 +210,13 @@ export const enrollmentSubjects = enrollmentContexts.flatMap(
     defaultSubjectIds[context.className].map((subjectId) => ({
       id: id("enrollment-subject", enrollmentId, subjectId),
       enrollmentId,
-      subjectId,
+      classSubjectId: id(
+        "class-subject",
+        context.year,
+        context.grade,
+        context.className,
+        subjectId,
+      ),
       mediumId:
         subjectId === "subject-ict" && (index + 1) % 7 === 0
           ? "medium-english"
@@ -230,8 +228,7 @@ export const exams = academicYearNames.flatMap((year) =>
   [12, 13].flatMap((grade) =>
     examNames.map((name, termIndex) => ({
       id: id("exam", year, grade, termIndex + 1),
-      academicYearId: yearId(year),
-      gradeLevelId: gradeId(grade),
+      gradeLevelRef: `${gradeId(grade)}:${yearId(year)}`,
       name,
     })),
   ),

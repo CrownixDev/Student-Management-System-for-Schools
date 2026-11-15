@@ -32,8 +32,8 @@ export default function StudentDetails({
   defaultSubjectId?: string;
   defaultTab?: IStudentDetailsTab;
 }) {
-  const [selectedExamId, setSelectedExamId] = useState<string>(defaultExamId || examData[0].id);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(defaultSubjectId || subjectList[0].id);
+  const [selectedExamId, setSelectedExamId] = useState<string>(defaultExamId || examData[0]?.id);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(defaultSubjectId || subjectList[0]?.id);
   const [tab, setTab] = useState<IStudentDetailsTab>(defaultTab ?? "exam");
 
   const selectedSubject = subjectList.find((subject) => subject.id === selectedSubjectId) || subjectList[0];

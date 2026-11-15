@@ -64,10 +64,12 @@ export default function SidebarExamContent({
                 title="No exams found"
                 description="You don't have any exams for this grade. Start by adding a new exam."
                 action={
-                  <Button className={"w-full"} variant={"outline"}>
-                    <ArrowLeftIcon className="size-4" />
-                    Take me to add a new exam
-                  </Button>
+                  <Link href={"/setup/exams"}>
+                    <Button className={"w-full"} variant={"outline"}>
+                      <ArrowLeftIcon className="size-4" />
+                      Take me to add a new exam
+                    </Button>
+                  </Link>
                 }
                 noBorder
               />

@@ -5,7 +5,7 @@ import {
   SidebarHeader,
   SidebarMenu,
 } from "@/components/shadcn/sidebar";
-import { ArrowLeftIcon, GraduationCapIcon, PlusIcon } from "lucide-react";
+import { ArrowLeftIcon, GraduationCapIcon } from "lucide-react";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { Button, buttonVariants } from "@/components/shadcn/button";
 import { IGradeListItem } from "@/features/grades";
@@ -63,10 +63,12 @@ export default function SidebarClassContent({
                 title="No grades found"
                 description="You don't have any grades yet. Start by adding a new grade."
                 action={
-                  <Button className={"w-full"} variant={"outline"}>
-                    <PlusIcon className="size-4" />
-                    Take me to add a new class
-                  </Button>
+                  <Link href={"/setup/classes"}>
+                    <Button className={"w-full"} variant={"outline"}>
+                      <ArrowLeftIcon className="size-4" />
+                      Take me to add a new class
+                    </Button>
+                  </Link>
                 }
                 noBorder
               />

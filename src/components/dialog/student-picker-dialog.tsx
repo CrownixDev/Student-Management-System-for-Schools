@@ -1,26 +1,26 @@
 "use client";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import { getStudentListAction, getStudentListForClassAction } from "@/features/students/students.actions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { BookUserIcon, CheckIcon, EditIcon, UsersIcon } from "lucide-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { getClassOptionsAction } from "@/features/class/class.actions";
+import { IStudentsListItem } from "@/features/students";
+import { IGradeListItem } from "@/features/grades";
+import { IAcademicYear } from "@/features/academic-years";
+import { IClassOption } from "@/features/class/class.types";
+import { RESULT_LIMIT } from "@/constraints";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { useState } from "react";
+import { Button } from "@/components/shadcn/button";
+import { toast } from "react-toastify";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
 import GradePickerDialog from "@/components/dialog/grade-picker-dialog";
 import YearPickerDialog from "@/components/dialog/year-picker-dialog";
-import { RESULT_LIMIT } from "@/constraints";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Label } from "@/components/shadcn/label";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { getClassOptionsAction } from "@/features/class/class.actions";
-import { IClassOption } from "@/features/class/class.types";
-import { IAcademicYear } from "@/features/academic-years";
-import { IGradeListItem } from "@/features/grades";
-import { getStudentListAction, getStudentListForClassAction } from "@/features/students/students.actions";
-import { IStudentsListItem } from "@/features/students";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BookUserIcon, CheckIcon, EditIcon, UsersIcon } from "lucide-react";
-import { useState } from "react";
-import { toast } from "react-toastify";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
@@ -161,7 +161,7 @@ export default function StudentPickerDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[70dvh] min-w-[42rem] flex-col overflow-hidden">
+        <DialogContent className="flex min-w-2xl flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle>Add students</DialogTitle>
           </DialogHeader>
@@ -271,7 +271,7 @@ export default function StudentPickerDialog({
                     items={classOptionsQuery.data ?? []}
                   >
                     <SelectTrigger className="w-full min-w-0">
-                      {!year || (!grade && <SelectValue placeholder={"Select year and grade first"} />)}
+                      {(!year || !grade) && <SelectValue placeholder={"Select year and grade first"} />}
                       {year && grade && (
                         <SelectValue
                           placeholder={
@@ -354,7 +354,7 @@ export default function StudentPickerDialog({
                   </ScrollArea>
                 </>
               ) : (
-                <div className="flex h-full items-center justify-center rounded-md border text-sm text-muted-foreground">
+                <div className="flex h-[min(38vh,24rem)] items-center justify-center rounded-md border text-sm text-muted-foreground">
                   Select an academic year and grade, then choose a class.
                 </div>
               )}

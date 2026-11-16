@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import {
   studentEnrollmentSelect,
+  StudentJsonFieldType,
   studentListSelect,
   studentListWithSubjectsSelect,
   studentProfuileSelect,
@@ -166,5 +167,21 @@ export class StudentsRepository {
 
   async delete(id: string) {
     return await prisma.student.delete({ where: { id } });
+  }
+
+  async getJsonFields() {
+    return await prisma.studentJsonField.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  async getJsonFieldByName(name: string) {
+    return await prisma.studentJsonField.findFirst({
+      where: { name },
+    });
+  }
+
+  async createJsonField(data: { name: string; type: StudentJsonFieldType }) {
+    return await prisma.studentJsonField.create({ data });
   }
 }

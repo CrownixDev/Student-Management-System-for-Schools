@@ -5,6 +5,7 @@ import { IStudentProfileListFilters, StudentsRepository } from "./students.repos
 import {
   IStudent,
   IStudentEnrollment,
+  IStudentJsonField,
   IStudentList,
   IStudentProfile,
   IStudentProfileList,
@@ -12,7 +13,7 @@ import {
   IStudentsListWithSubjectsItem,
 } from "./students.types";
 import { IQueryParams } from "@/lib/filter";
-import { studentSchema } from "./student.schema";
+import { studentJsonFieldSchema, studentSchema } from "./student.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import z from "zod";
 
@@ -118,6 +119,7 @@ export class StudentsService {
       guardianName: student.guardianName,
       guardianPhone: student.guardianPhone,
       status: student.status,
+      json: student.json,
       enrollment: {
         id: enrollment.id,
         status: enrollment.status,
@@ -166,7 +168,10 @@ export class StudentsService {
     }
 
     try {
-      await this.repository.create(parsedData.data);
+      await this.repository.create({
+        ...parsedData.data,
+        dob: parsedData.data.dob ? new Date(parsedData.data.dob) : undefined,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -228,5 +233,23 @@ export class StudentsService {
       }
       throw error;
     }
+  }
+
+  async getJsonFields(): Promise<IStudentJsonField[]> {
+    return await this.repository.getJsonFields();
+  }
+
+  async createJsonField(data: z.infer<typeof studentJsonFieldSchema>): Promise<IStudentJsonField> {
+    const parsedData = studentJsonFieldSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    const existing = await this.repository.getJsonFieldByName(parsedData.data.name);
+    if (existing) {
+      throw new ApiErrorV2("A custom field with this name already exists");
+    }
+
+    return await this.repository.createJsonField(parsedData.data);
   }
 }

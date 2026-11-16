@@ -2,6 +2,7 @@
 
 import {
   IStudentEnrollment,
+  IStudentJsonField,
   IStudentList,
   IStudentProfile,
   IStudentsListItem,
@@ -12,7 +13,7 @@ import { IStudentDetailsData } from "@/components/pages/exams/student-details-vi
 import { subjectRepository } from "../subjects";
 import { studentsService } from ".";
 import { revalidatePath } from "next/cache";
-import { studentSchema } from "./student.schema";
+import { studentJsonFieldSchema, studentSchema } from "./student.schema";
 import { IQueryParams } from "@/lib/filter";
 import { examService } from "../exams";
 import { ApiErrorV2 } from "@/lib/ApiError";
@@ -177,5 +178,40 @@ export async function deleteStudentAction(studentId: string): Promise<IResponse>
       return { success: false, message: error.message };
     }
     return { success: false, message: "Unknown error occured" };
+  }
+}
+
+export async function getStudentJsonFieldsAction(): Promise<IResponse<IStudentJsonField[]>> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  try {
+    const result = await studentsService.getJsonFields();
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error fetching custom fields:", error);
+    return { success: false, message: "Failed to fetch custom fields." };
+  }
+}
+
+export async function createStudentJsonFieldAction(
+  data: z.infer<typeof studentJsonFieldSchema>,
+): Promise<IResponse<IStudentJsonField>> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  const parsedRes = studentJsonFieldSchema.safeParse(data);
+  if (!parsedRes.success) {
+    return { success: false, message: "Invalid data provided" };
+  }
+
+  try {
+    const result = await studentsService.createJsonField(parsedRes.data);
+    revalidatePath("/setup/students" as Route);
+    return { success: true, data: result, message: "Custom field created successfully" };
+  } catch (error) {
+    if (error instanceof ApiErrorV2) {
+      return { success: false, message: error.message };
+    }
+    console.error("Error creating custom field:", error);
+    return { success: false, message: "Unknown error occurred" };
   }
 }

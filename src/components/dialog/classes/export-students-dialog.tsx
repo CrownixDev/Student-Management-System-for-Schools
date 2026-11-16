@@ -18,23 +18,35 @@ import { Input } from "@/components/shadcn/input";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import { IClass } from "@/features/class";
-import { getStudentProfileListForClassAction } from "@/features/students/students.actions";
+import {
+  getStudentJsonFieldsAction,
+  getStudentProfileListForClassAction,
+} from "@/features/students/students.actions";
 import { IStudentProfile } from "@/features/students";
 import { exportExcelSheet } from "@/lib/excell";
+import { STUDENT_CUSTOM_FIELDS } from "@/lib/query-keys";
 
 const CLASS_STUDENT_PROFILES = "class-student-profiles";
 
-const studentFields: { key: keyof IStudentProfile; label: string }[] = [
-  { key: "admissionNo", label: "Admission No." },
-  { key: "fullName", label: "Full Name" },
-  { key: "dob", label: "Date of Birth" },
-  { key: "gender", label: "Gender" },
-  { key: "nic", label: "NIC" },
-  { key: "phone", label: "Phone" },
-  { key: "address", label: "Address" },
-  { key: "guardianName", label: "Guardian Name" },
-  { key: "guardianPhone", label: "Guardian Phone" },
-  { key: "status", label: "Status" },
+type ExcelCell = string | number | boolean | Date | null | undefined;
+
+type ExportFieldItem = {
+  key: string;
+  label: string;
+  getValue: (student: IStudentProfile) => ExcelCell;
+};
+
+const baseStudentFields: ExportFieldItem[] = [
+  { key: "admissionNo", label: "Admission No.", getValue: (s) => s.admissionNo },
+  { key: "fullName", label: "Full Name", getValue: (s) => s.fullName },
+  { key: "dob", label: "Date of Birth", getValue: (s) => s.dob },
+  { key: "gender", label: "Gender", getValue: (s) => s.gender },
+  { key: "nic", label: "NIC", getValue: (s) => s.nic },
+  { key: "phone", label: "Phone", getValue: (s) => s.phone },
+  { key: "address", label: "Address", getValue: (s) => s.address },
+  { key: "guardianName", label: "Guardian Name", getValue: (s) => s.guardianName },
+  { key: "guardianPhone", label: "Guardian Phone", getValue: (s) => s.guardianPhone },
+  { key: "status", label: "Status", getValue: (s) => s.status },
 ];
 
 type FieldPreference = {
@@ -54,9 +66,9 @@ export default function ExportStudentsDialog({
   const [fieldPreferences, setFieldPreferences] = useState<Record<string, FieldPreference>>({});
   const {
     data: students = [],
-    isPending,
-    isError,
-    refetch,
+    isPending: isStudentsPending,
+    isError: isStudentsError,
+    refetch: refetchStudents,
   } = useQuery({
     enabled: open,
     queryFn: async () => {
@@ -70,16 +82,60 @@ export default function ExportStudentsDialog({
     queryKey: [CLASS_STUDENT_PROFILES, classData.id],
   });
 
-  function updateField(key: keyof IStudentProfile, preference: FieldPreference) {
+  const {
+    data: customFields = [],
+    isPending: isCustomFieldsPending,
+    isError: isCustomFieldsError,
+    refetch: refetchCustomFields,
+  } = useQuery({
+    enabled: open,
+    queryFn: async () => {
+      const result = await getStudentJsonFieldsAction();
+      if (!result.success) {
+        toast.error(result.message);
+        throw new Error(result.message);
+      }
+      return result.data;
+    },
+    queryKey: [STUDENT_CUSTOM_FIELDS],
+  });
+
+  const allFields: ExportFieldItem[] = [
+    ...baseStudentFields,
+    ...customFields.map((cf): ExportFieldItem => ({
+      key: `custom_${cf.name}`,
+      label: cf.name,
+      getValue: (student: IStudentProfile): ExcelCell => {
+        const val = (student.json as Record<string, unknown>)?.[cf.name];
+        if (val === undefined || val === null || val === "") return "-";
+        if (cf.type === "date" && (typeof val === "string" || typeof val === "number" || val instanceof Date)) {
+          try {
+            return new Date(val);
+          } catch {
+            return String(val);
+          }
+        }
+        if (typeof val === "string" || typeof val === "number" || typeof val === "boolean" || val instanceof Date) {
+          return val;
+        }
+        return String(val);
+      },
+    })),
+  ];
+
+  const isPending = isStudentsPending || isCustomFieldsPending;
+  const isError = isStudentsError || isCustomFieldsError;
+
+  function updateField(key: string, preference: FieldPreference) {
     setFieldPreferences((current) => ({ ...current, [key]: preference }));
   }
 
   function exportStudents() {
-    const enabledFields = studentFields.filter((field) => fieldPreferences[field.key]?.enabled !== false);
+    const enabledFields = allFields.filter((field) => fieldPreferences[field.key]?.enabled !== false);
     const headers = enabledFields.map((field) => fieldPreferences[field.key]?.heading || field.label);
     const rows = students.map((student) =>
       enabledFields.map((field) => {
-        const value = student[field.key];
+        const value = field.getValue(student);
         return value instanceof Date ? value : (value ?? "-");
       }),
     );
@@ -115,7 +171,7 @@ export default function ExportStudentsDialog({
           />
         ) : (
           <div className="grid gap-3">
-            {studentFields.map((field) => {
+            {allFields.map((field) => {
               const preference = fieldPreferences[field.key] ?? { enabled: true, heading: field.label };
               return (
                 <div key={field.key} className="flex items-center gap-3">
@@ -137,7 +193,14 @@ export default function ExportStudentsDialog({
         )}
         <DialogFooter>
           {isError ? (
-            <Button type="button" variant="outline" onClick={() => void refetch()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void refetchStudents();
+                void refetchCustomFields();
+              }}
+            >
               Try again
             </Button>
           ) : (

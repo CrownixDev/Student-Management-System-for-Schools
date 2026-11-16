@@ -4,12 +4,17 @@ import {
   Exam,
   Mark,
   Student,
+  StudentJsonField,
+  StudentJsonFieldType,
   StudentStatus,
   Subject,
   SubjectCategory,
 } from "@/generated/prisma/client";
 import { StudentGetPayload, StudentSelect } from "@/generated/prisma/models";
 import { StrictOmit } from "@/lib/utils";
+
+export type IStudentJsonField = StudentJsonField;
+export { StudentJsonFieldType };
 
 export const studentListWithSubjectsSelect = {
   id: true,
@@ -75,6 +80,7 @@ export const studentSelect = {
   guardianName: true,
   guardianPhone: true,
   status: true,
+  json: true,
   enrollments: {
     select: {
       id: true,
@@ -108,6 +114,7 @@ export type IStudent = {
   guardianName: Student["guardianName"];
   guardianPhone: Student["guardianPhone"];
   status: StudentStatus;
+  json: Student["json"];
   enrollment: {
     id: Enrollment["id"];
     status: Enrollment["status"];
@@ -139,6 +146,7 @@ export const studentProfuileSelect = {
   guardianName: true,
   guardianPhone: true,
   status: true,
+  json: true,
 } satisfies StudentSelect;
 
 export type IStudentProfile = StrictOmit<IStudent, "enrollment">;

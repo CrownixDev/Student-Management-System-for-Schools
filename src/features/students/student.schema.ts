@@ -1,6 +1,15 @@
-import { Gender, StudentStatus } from "@/generated/prisma/enums";
+import { Gender, StudentJsonFieldType, StudentStatus } from "@/generated/prisma/enums";
 import { StudentCreateInput } from "@/generated/prisma/models";
 import z from "zod";
+
+export const studentJsonFieldSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Field name is required")
+    .max(30, "Field name cannot be longer than 30 characters")
+    .transform((val) => val.trim()),
+  type: z.enum(["text", "bigText", "date"] satisfies StudentJsonFieldType[]),
+});
 
 export const studentSchema = z.object({
   admissionNo: z
@@ -22,4 +31,5 @@ export const studentSchema = z.object({
   guardianName: z.string("Name is required").max(100, "Guardian name cannot be longer than 100 characters").optional(),
   guardianPhone: z.string().max(10, "Invalid phone number").optional(),
   status: z.enum(["active", "left"] satisfies StudentStatus[]),
+  json: z.record(z.string(), z.any()).optional(),
 } satisfies Partial<Record<keyof StudentCreateInput, z.ZodType>>);

@@ -239,7 +239,7 @@ export class StudentsService {
     return await this.repository.getJsonFields();
   }
 
-  async createJsonField(data: z.infer<typeof studentJsonFieldSchema>): Promise<IStudentJsonField> {
+  async createJsonField(data: z.infer<typeof studentJsonFieldSchema>) {
     const parsedData = studentJsonFieldSchema.safeParse(data);
     if (!parsedData.success) {
       throw new ApiErrorV2("Data validation failed");
@@ -250,6 +250,45 @@ export class StudentsService {
       throw new ApiErrorV2("A custom field with this name already exists");
     }
 
-    return await this.repository.createJsonField(parsedData.data);
+    try {
+      await this.repository.createJsonField(parsedData.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateJsonField(id: string, data: z.infer<typeof studentJsonFieldSchema>) {
+    if (!id) throw new ApiErrorV2("Field id is required");
+    const parsedData = studentJsonFieldSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    const current = await this.repository.getJsonFieldById(id);
+    if (!current) {
+      throw new ApiErrorV2("Record not found");
+    }
+    if (current.type === "date" && (parsedData.data.type === "text" || parsedData.data.type === "bigText")) {
+      throw new ApiErrorV2("You cannot change the type of a date field to text field");
+    }
+    if (current.type !== "date" && parsedData.data.type === "date") {
+      throw new ApiErrorV2("You cannot change the type of a text field to date field");
+    }
+
+    const existing = await this.repository.getJsonFieldByName(parsedData.data.name);
+    if (existing && existing.id !== id) {
+      throw new ApiErrorV2("A custom field with this name already exists");
+    }
+
+    try {
+      await this.repository.updateJsonField(id, parsedData.data);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
   }
 }

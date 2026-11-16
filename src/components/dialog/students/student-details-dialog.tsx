@@ -8,10 +8,10 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import { IStudentProfile } from "@/features/students";
+import { IStudentJsonField, IStudentProfile } from "@/features/students";
 import { genderSelectOptions, studentStatusSelectOptions } from "@/lib/select-options";
-import { getHtmlDateString } from "@/lib/utils";
-import { EditIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
+import { getHtmlDateString, StrictOmit } from "@/lib/utils";
+import { EditIcon, PlusIcon, Trash2Icon, TrashIcon, XIcon } from "lucide-react";
 import { studentSchema } from "@/features/students/student.schema";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,7 +64,10 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
 
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [addCustomFieldOpen, setAddCustomFieldOpen] = useState(false);
+  const [addCustomField, setAddCustomField] = useState<{
+    open: boolean;
+    data?: StrictOmit<IStudentJsonField, "createdAt" | "updatedAt">;
+  }>({ open: false });
 
   const { data: customFields = [] } = useQuery({
     enabled: open,
@@ -429,6 +432,20 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                                     disabled={isSubmitting}
                                   />
                                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                  <div className="flex items-center gap-5">
+                                    <Button
+                                      className="flex-1"
+                                      variant="secondary"
+                                      onClick={() => setAddCustomField({ open: true, data: cf })}
+                                    >
+                                      <EditIcon />
+                                      Edit Field Name
+                                    </Button>
+                                    <Button className="flex-1" variant="destructive">
+                                      <TrashIcon />
+                                      Delete Field
+                                    </Button>
+                                  </div>
                                 </Field>
                               )}
                             />
@@ -453,6 +470,20 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                                     disabled={isSubmitting}
                                   />
                                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                  <div className="flex items-center gap-5">
+                                    <Button
+                                      className="flex-1"
+                                      variant="secondary"
+                                      onClick={() => setAddCustomField({ open: true, data: cf })}
+                                    >
+                                      <EditIcon />
+                                      Edit Field Name
+                                    </Button>
+                                    <Button className="flex-1" variant="destructive">
+                                      <TrashIcon />
+                                      Delete Field
+                                    </Button>
+                                  </div>
                                 </Field>
                               )}
                             />
@@ -476,6 +507,20 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                                   disabled={isSubmitting}
                                 />
                                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                <div className="flex items-center gap-5">
+                                  <Button
+                                    className="flex-1"
+                                    variant="secondary"
+                                    onClick={() => setAddCustomField({ open: true, data: cf })}
+                                  >
+                                    <EditIcon />
+                                    Edit Field Name
+                                  </Button>
+                                  <Button className="flex-1" variant="destructive">
+                                    <TrashIcon />
+                                    Delete Field
+                                  </Button>
+                                </div>
                               </Field>
                             )}
                           />
@@ -489,7 +534,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                           type="button"
                           variant="ghost"
                           className="w-fit hover:no-underline"
-                          onClick={() => setAddCustomFieldOpen(true)}
+                          onClick={() => setAddCustomField({ open: true })}
                         >
                           <PlusIcon />
                           Add new field
@@ -560,7 +605,9 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
         />
       )}
 
-      <AddCustomFieldDialog open={addCustomFieldOpen} onOpenChange={setAddCustomFieldOpen} />
+      {addCustomField.open && (
+        <AddCustomFieldDialog open onOpenChange={(open) => setAddCustomField({ open })} data={addCustomField.data} />
+      )}
     </>
   );
 }

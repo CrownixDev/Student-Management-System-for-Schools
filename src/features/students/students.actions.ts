@@ -204,9 +204,37 @@ export async function createStudentJsonFieldAction(
   }
 
   try {
-    const result = await studentsService.createJsonField(parsedRes.data);
+    await studentsService.createJsonField(parsedRes.data);
     revalidatePath("/setup/students" as Route);
-    return { success: true, data: result, message: "Custom field created successfully" };
+    return { success: true, message: "Custom field created successfully" };
+  } catch (error) {
+    if (error instanceof ApiErrorV2) {
+      return { success: false, message: error.message };
+    }
+    console.error("Error creating custom field:", error);
+    return { success: false, message: "Unknown error occurred" };
+  }
+}
+
+export async function updateStudentJsonFieldAction(
+  id: string,
+  data: z.infer<typeof studentJsonFieldSchema>,
+): Promise<IResponse<IStudentJsonField>> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  if (!id) {
+    return { success: false, message: "ID is required" };
+  }
+
+  const parsedRes = studentJsonFieldSchema.safeParse(data);
+  if (!parsedRes.success) {
+    return { success: false, message: "Invalid data provided" };
+  }
+
+  try {
+    await studentsService.updateJsonField(id, parsedRes.data);
+    revalidatePath("/setup/students" as Route);
+    return { success: true, message: "Custom field created successfully" };
   } catch (error) {
     if (error instanceof ApiErrorV2) {
       return { success: false, message: error.message };

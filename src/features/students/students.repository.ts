@@ -3,14 +3,19 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import {
   studentEnrollmentSelect,
-  StudentJsonFieldType,
   studentListSelect,
   studentListWithSubjectsSelect,
   studentProfuileSelect,
   studentSelect,
 } from "./students.types";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
-import { StudentCreateInput, StudentUpdateInput, StudentWhereInput } from "@/generated/prisma/models";
+import {
+  StudentCreateInput,
+  StudentJsonFieldCreateInput,
+  StudentJsonFieldUpdateInput,
+  StudentUpdateInput,
+  StudentWhereInput,
+} from "@/generated/prisma/models";
 import { DOBFilter, GenderFilter } from "./student.cache";
 
 export type IStudentProfileListFilters = IQueryParams & { gender: GenderFilter; dobFrom: DOBFilter; dobTo: DOBFilter };
@@ -175,13 +180,25 @@ export class StudentsRepository {
     });
   }
 
+  async getJsonFieldById(id: string) {
+    return await prisma.studentJsonField.findUnique({
+      where: { id },
+    });
+  }
   async getJsonFieldByName(name: string) {
     return await prisma.studentJsonField.findFirst({
       where: { name },
     });
   }
 
-  async createJsonField(data: { name: string; type: StudentJsonFieldType }) {
+  async createJsonField(data: StudentJsonFieldCreateInput) {
     return await prisma.studentJsonField.create({ data });
+  }
+
+  async updateJsonField(id: string, data: StudentJsonFieldUpdateInput) {
+    return await prisma.studentJsonField.update({
+      where: { id },
+      data,
+    });
   }
 }

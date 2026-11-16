@@ -193,9 +193,7 @@ export async function getStudentJsonFieldsAction(): Promise<IResponse<IStudentJs
   }
 }
 
-export async function createStudentJsonFieldAction(
-  data: z.infer<typeof studentJsonFieldSchema>,
-): Promise<IResponse<IStudentJsonField>> {
+export async function createStudentJsonFieldAction(data: z.infer<typeof studentJsonFieldSchema>): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   const parsedRes = studentJsonFieldSchema.safeParse(data);
@@ -219,7 +217,7 @@ export async function createStudentJsonFieldAction(
 export async function updateStudentJsonFieldAction(
   id: string,
   data: z.infer<typeof studentJsonFieldSchema>,
-): Promise<IResponse<IStudentJsonField>> {
+): Promise<IResponse> {
   await requireAuthServerAction({ requiredRoles: ["admin"] });
 
   if (!id) {
@@ -241,5 +239,24 @@ export async function updateStudentJsonFieldAction(
     }
     console.error("Error creating custom field:", error);
     return { success: false, message: "Unknown error occurred" };
+  }
+}
+
+export async function deleteFieldAction(fieldId: string): Promise<IResponse> {
+  await requireAuthServerAction({ requiredRoles: ["admin"] });
+
+  if (!fieldId) {
+    return { success: false, message: "Field id is required" };
+  }
+
+  try {
+    await studentsService.deleteJsonField(fieldId);
+    revalidatePath("/setup/students" as Route);
+    return { success: true, message: "Field Deleted" };
+  } catch (error) {
+    if (error instanceof ApiErrorV2) {
+      return { success: false, message: error.message };
+    }
+    return { success: false, message: "Unknown error occured" };
   }
 }

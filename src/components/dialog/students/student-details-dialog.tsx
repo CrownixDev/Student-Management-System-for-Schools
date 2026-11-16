@@ -11,7 +11,7 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { IStudentJsonField, IStudentProfile } from "@/features/students";
 import { genderSelectOptions, studentStatusSelectOptions } from "@/lib/select-options";
 import { getHtmlDateString, StrictOmit } from "@/lib/utils";
-import { EditIcon, PlusIcon, Trash2Icon, TrashIcon, XIcon } from "lucide-react";
+import { EditIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { studentSchema } from "@/features/students/student.schema";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -432,18 +432,13 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                                     disabled={isSubmitting}
                                   />
                                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                                  <div className="flex items-center gap-5">
+                                  <div className="flex items-center gap-2">
                                     <Button
-                                      className="flex-1"
                                       variant="secondary"
                                       onClick={() => setAddCustomField({ open: true, data: cf })}
                                     >
                                       <EditIcon />
-                                      Edit Field Name
-                                    </Button>
-                                    <Button className="flex-1" variant="destructive">
-                                      <TrashIcon />
-                                      Delete Field
+                                      Edit Field
                                     </Button>
                                   </div>
                                 </Field>
@@ -470,18 +465,13 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                                     disabled={isSubmitting}
                                   />
                                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                                  <div className="flex items-center gap-5">
+                                  <div className="flex items-center gap-2">
                                     <Button
-                                      className="flex-1"
                                       variant="secondary"
                                       onClick={() => setAddCustomField({ open: true, data: cf })}
                                     >
                                       <EditIcon />
-                                      Edit Field Name
-                                    </Button>
-                                    <Button className="flex-1" variant="destructive">
-                                      <TrashIcon />
-                                      Delete Field
+                                      Edit Field
                                     </Button>
                                   </div>
                                 </Field>
@@ -507,18 +497,13 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                                   disabled={isSubmitting}
                                 />
                                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                                <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-2">
                                   <Button
-                                    className="flex-1"
                                     variant="secondary"
                                     onClick={() => setAddCustomField({ open: true, data: cf })}
                                   >
                                     <EditIcon />
-                                    Edit Field Name
-                                  </Button>
-                                  <Button className="flex-1" variant="destructive">
-                                    <TrashIcon />
-                                    Delete Field
+                                    Edit Field
                                   </Button>
                                 </div>
                               </Field>

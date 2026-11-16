@@ -291,4 +291,34 @@ export class StudentsService {
       throw error;
     }
   }
+
+  async deleteJsonField(id: string) {
+    if (!id) throw new ApiErrorV2("Student id is required");
+
+    const current = await this.repository.getJsonFieldById(id);
+    if (!current) {
+      throw new ApiErrorV2("Record not found");
+    }
+
+    const relations = await this.repository.getRelations(current.name);
+    const hasRelations = relations && relations?.enrollments.length > 0;
+
+    if (hasRelations) {
+      throw new ApiErrorV2("This field is currently in use");
+    }
+
+    try {
+      await this.repository.deleteJsonField(id);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This field is currently in use");
+        }
+      }
+      throw error;
+    }
+  }
 }

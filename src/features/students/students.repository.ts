@@ -201,4 +201,19 @@ export class StudentsRepository {
       data,
     });
   }
+
+  async getRelationsForJsonField(name: string) {
+    return await prisma.student.findMany({
+      where: { json: { string_contains: name } },
+      select: {
+        enrollments: { select: { id: true } },
+      },
+    });
+  }
+
+  async deleteJsonField(id: string) {
+    return await prisma.studentJsonField.delete({
+      where: { id },
+    });
+  }
 }

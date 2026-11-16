@@ -50,6 +50,12 @@ enum BatchType {
   al
 }
 
+enum StudentJsonFieldType {
+  text
+  bigText
+  date
+}
+
 // Models
 
 model AcademicYear {
@@ -196,6 +202,7 @@ model Student {
   address       String?
   guardianName  String?
   guardianPhone String?
+  json          Json?
 
   status StudentStatus @default(active)
 
@@ -205,6 +212,15 @@ model Student {
   updatedAt DateTime @updatedAt
 
   @@index([fullName])
+}
+
+model StudentJsonField {
+  id   String               @id @default(uuid())
+  name String
+  type StudentJsonFieldType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // A student in one class for one academic year.

@@ -50,25 +50,6 @@ export default function ExamResultsClass({
         {classes.map((classItem) => {
           const subjects = classesWithSubjects.find((item) => item.id === classItem.id)?.subjects ?? [];
 
-          const rankedResults = function getRankedResult() {
-            let prevMarks: number | null = null;
-            let prevPlace = 0;
-            let currentPlace = 0;
-
-            return classItem.topResult.map((student) => {
-              currentPlace += 1;
-
-              // if marks equel to previous student, both should get the same place
-              if (student.fullMarks === prevMarks) {
-                return { place: prevPlace, ...student };
-              } else {
-                prevMarks = student.fullMarks;
-                prevPlace = currentPlace;
-                return { place: currentPlace, ...student };
-              }
-            });
-          };
-
           return (
             <TabsContent key={classItem.id} value={classItem.id} className="min-h-0 overflow-hidden">
               {classItem.topResult.length === 0 ? (
@@ -96,7 +77,7 @@ export default function ExamResultsClass({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rankedResults().map((student) => (
+                    {classItem.topResult.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell className="text-right">{student.place}</TableCell>
                         <TableCell className="text-right">{student.classIndex ? student.classIndex : "-"}</TableCell>

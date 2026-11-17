@@ -27,25 +27,6 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
     );
   }
 
-  const rankedResults = function getRankedResult() {
-    let prevMarks: number | null = null;
-    let prevPlace = 0;
-    let currentPlace = 0;
-
-    return results.byGrade.map((student) => {
-      currentPlace += 1;
-
-      // if marks equel to previous student, both should get the same place
-      if (student.fullMarks === prevMarks) {
-        return { place: prevPlace, ...student };
-      } else {
-        prevMarks = student.fullMarks;
-        prevPlace = currentPlace;
-        return { place: currentPlace, ...student };
-      }
-    });
-  };
-
   return (
     <Tabs className="flex min-h-0 flex-1 flex-col">
       <div className="flex gap-3">
@@ -76,7 +57,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rankedResults().map((student) => (
+              {results.byGrade.map((student) => (
                 <TableRow key={student.id}>
                   <TableCell className="text-right">{student.place}</TableCell>
                   <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">

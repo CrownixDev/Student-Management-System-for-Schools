@@ -83,6 +83,7 @@ export interface TopResultStudent {
 }
 
 export type TopResultStudentWithClass = TopResultStudent & {
+  place: number;
   class: Pick<Class, "id" | "name">;
 };
 
@@ -90,6 +91,7 @@ export interface TopResultClass {
   id: Class["id"];
   name: Class["name"];
   topResult: (TopResultStudent & {
+    place: number;
     classIndex: number | null;
     subjects: {
       id: Subject["id"];
@@ -103,13 +105,17 @@ export interface TopResultClass {
   })[];
 }
 
+export type TopResultSubjectStudent = TopResultStudent & {
+  class: Pick<Class, "id" | "name">;
+  classIndex: number | null;
+  medium: Medium["name"] | null;
+  status: MarkStatus | null;
+};
+
 export interface TopResultSubject {
   id: Subject["id"];
   name: Subject["name"];
-  topResult: (TopResultStudentWithClass & {
-    medium: Medium["name"] | null;
-    status: MarkStatus | null;
-  })[];
+  topResult: TopResultSubjectStudent[];
 }
 
 export interface IExamTopResults {

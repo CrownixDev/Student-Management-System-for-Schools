@@ -21,6 +21,7 @@ export default function ExamResultsClass({
   classesWithSubjects: IClassListWithSubjectsItem[];
 }) {
   const [value, setValue] = useState(classes[0].id);
+
   return (
     <>
       <Field orientation="horizontal" className="w-fit mb-3 max-w-lg truncate">
@@ -76,10 +77,10 @@ export default function ExamResultsClass({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {classItem.topResult.map((student, index) => (
+                    {classItem.topResult.map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{student.classIndex ? student.classIndex : "-"}</TableCell>
+                        <TableCell className="text-right">{student.place}</TableCell>
+                        <TableCell className="text-right">{student.classIndex ? student.classIndex : "-"}</TableCell>
                         <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">
                           {student.fullName}
                         </TableCell>
@@ -88,7 +89,7 @@ export default function ExamResultsClass({
                           const result = student.subjects.find((studentSubject) => studentSubject.id === subject.id);
 
                           return (
-                            <TableCell key={subject.id}>
+                            <TableCell key={subject.id} className="text-right">
                               {result?.result.status === "absent"
                                 ? "Absent"
                                 : result?.result.status === "present"
@@ -97,8 +98,8 @@ export default function ExamResultsClass({
                             </TableCell>
                           );
                         })}
-                        <TableCell>{student.fullMarks}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">{student.fullMarks}</TableCell>
+                        <TableCell className="text-right">
                           {subjects.length > 0 ? (student.fullMarks / subjects.length).toFixed(1) : "-"} %
                         </TableCell>
                         <TableCell>

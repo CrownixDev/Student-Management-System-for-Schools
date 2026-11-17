@@ -57,15 +57,15 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.byGrade.map((student, index) => (
+              {results.byGrade.map((student) => (
                 <TableRow key={student.id}>
-                  <TableCell>{index + 1}</TableCell>
+                  <TableCell className="text-right">{student.place}</TableCell>
                   <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">
                     {student.fullName}
                   </TableCell>
                   <TableCell>{student.admissionNo}</TableCell>
                   <TableCell>{student.class.name}</TableCell>
-                  <TableCell>{student.fullMarks}</TableCell>
+                  <TableCell className="text-right">{student.fullMarks}</TableCell>
                   <TableCell>
                     <StudentDetailsViewButton
                       studentId={student.id}
@@ -98,7 +98,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
             description={"There are no subject results available for this exam."}
           />
         ) : (
-          <ExamResultsSubjects subjects={results.bySubject} exam={exam} />
+          <ExamResultsSubjects results={results} exam={exam} />
         )}
       </TabsContent>
     </Tabs>

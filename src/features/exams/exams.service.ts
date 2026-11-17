@@ -9,20 +9,21 @@ import {
   TopResultClass,
   TopResultStudent,
   TopResultStudentWithClass,
+  TopResultSubjectStudent,
 } from "./exams.types";
-import { AcademicYearsRepository } from "../academic-years/year.repository";
-import { ApiErrorV2 } from "@/lib/ApiError";
-import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-import { ExamRepository } from "./exams.repository";
-import { GradesRepository } from "../grades/grades.repository";
-import { MarkStatus } from "@/generated/prisma/enums";
-import { ClassRepository } from "../class/class.repository";
 import { examMarksSchema, examSchema } from "./exams.schema";
+import { AcademicYearsRepository } from "../academic-years/year.repository";
+import { EnrollmentRepository } from "../enrollment/enrollment.repository";
+import { GradesRepository } from "../grades/grades.repository";
+import { ClassRepository } from "../class/class.repository";
+import { ExamRepository } from "./exams.repository";
+import { ApiErrorV2 } from "@/lib/ApiError";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
+import { StrictOmit } from "@/lib/utils";
 
-const rankTopResults = <T extends TopResultStudent>(students: Iterable<T>): T[] =>
+const sortTopResults = <T extends TopResultStudent>(students: Iterable<T>): T[] =>
   Array.from(students).sort(
     (a, b) => b.fullMarks - a.fullMarks || a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
   );
@@ -103,24 +104,18 @@ export class ExamService {
       exam.examSubjects.filter((examSubject) => examSubject.ignoreRanking).map((examSubject) => examSubject.subject.id),
     );
 
-    const byGrade = new Map<string, TopResultStudentWithClass>();
+    const byGrade = new Map<string, StrictOmit<TopResultStudentWithClass, "place">>();
     const subjectResults = new Map<
       string,
       {
         id: string;
         name: string;
-        students: Map<
-          string,
-          TopResultStudentWithClass & {
-            medium: string | null;
-            status: MarkStatus | null;
-          }
-        >;
+        students: Map<string, TopResultSubjectStudent>;
       }
     >();
 
     const byClass = grade.classes.map((classItem) => {
-      const students = new Map<string, TopResultClass["topResult"][number]>();
+      const students = new Map<string, StrictOmit<TopResultClass["topResult"][number], "place">>();
 
       for (const enrollment of classItem.enrollments) {
         const marksBySubjectId = new Map(enrollment.marks.map((mark) => [mark.examSubject.subject.id, mark]));
@@ -162,13 +157,7 @@ export class ExamService {
           const subjectResult = subjectResults.get(subject.id) ?? {
             id: subject.id,
             name: subject.name,
-            students: new Map<
-              string,
-              TopResultStudentWithClass & {
-                medium: string | null;
-                status: MarkStatus | null;
-              }
-            >(),
+            students: new Map<string, TopResultSubjectStudent>(),
           };
           subjectResult.students.set(enrollment.student.id, {
             ...studentInfo,
@@ -176,6 +165,7 @@ export class ExamService {
             class: studentClass,
             medium: medium?.name ?? null,
             status: mark?.status ?? null,
+            classIndex: enrollment.classIndex,
           });
           subjectResults.set(subject.id, subjectResult);
         }
@@ -199,16 +189,63 @@ export class ExamService {
       return {
         id: classItem.id,
         name: classItem.name,
-        topResult: rankTopResults(students.values()),
+        topResult: sortTopResults(students.values()),
       };
     });
 
+    const rankedGradeResults = () => {
+      let prevMarks: number | null = null;
+      let prevPlace = 0;
+      let currentPlace = 0;
+
+      const gradeResultList = sortTopResults(byGrade.values());
+
+      return gradeResultList.map((student) => {
+        currentPlace += 1;
+
+        // if marks equel to previous student, both should get the same place
+        if (student.fullMarks === prevMarks) {
+          return { place: prevPlace, ...student };
+        } else {
+          // The actuall place should give if student's full marks higher that prevous one
+          prevMarks = student.fullMarks;
+          prevPlace = currentPlace;
+          return { place: currentPlace, ...student };
+        }
+      });
+    };
+
+    const rankedClassResults = () => {
+      return byClass.map((classItem) => {
+        let prevMarks: number | null = null;
+        let prevPlace = 0;
+        let currentPlace = 0;
+
+        return {
+          ...classItem,
+          topResult: classItem.topResult.map((student) => {
+            currentPlace += 1;
+
+            // if marks equel to previous student, both should get the same place
+            if (student.fullMarks === prevMarks) {
+              return { place: prevPlace, ...student };
+            } else {
+              // The actuall place should give if student's full marks higher that prevous one
+              prevMarks = student.fullMarks;
+              prevPlace = currentPlace;
+              return { place: currentPlace, ...student };
+            }
+          }),
+        };
+      });
+    };
+
     return {
-      byGrade: rankTopResults(byGrade.values()),
-      byClass,
+      byGrade: rankedGradeResults(),
+      byClass: rankedClassResults(),
       bySubject: Array.from(subjectResults.values()).map(({ students, ...subject }) => ({
         ...subject,
-        topResult: rankTopResults(students.values()),
+        topResult: sortTopResults(students.values()),
       })),
     };
   }

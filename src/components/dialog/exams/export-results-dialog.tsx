@@ -201,8 +201,8 @@ export default function ExportResultsDialog({
     { key: "average", label: "Average" },
   ];
 
-  const gradeRows: ExportRow[] = results.byGrade.map((student, index) => ({
-    place: index + 1,
+  const gradeRows: ExportRow[] = results.byGrade.map((student) => ({
+    place: student.place,
     fullName: student.fullName,
     admissionNo: student.admissionNo,
     class: student.class.name,
@@ -212,9 +212,9 @@ export default function ExportResultsDialog({
   const classRows: ExportRow[] = (() => {
     if (!selectedClass) return [];
 
-    return selectedClass.topResult.map((student, index) => {
+    return selectedClass.topResult.map((student) => {
       const row: ExportRow = {
-        place: index + 1,
+        place: student.place,
         classIndex: getDisplayValue(student.classIndex),
         fullName: student.fullName,
         admissionNo: student.admissionNo,
@@ -236,23 +236,59 @@ export default function ExportResultsDialog({
     });
   })();
 
-  const subjectRows: ExportRow[] =
-    selectedSubject?.topResult
-      .filter((res) => {
-        if (selectedClassId !== "all") {
-          return res.class.id === selectedClassId;
-        }
-        return res;
-      })
-      .map((student, index) => ({
-        place: index + 1,
-        classIndex: getDisplayValue(student.classIndex),
-        fullName: student.fullName,
-        admissionNo: student.admissionNo,
-        class: student.class.name,
-        fullMarks: student.status === "present" ? student.fullMarks : "Absent",
-        medium: getDisplayValue(student.medium),
-      })) ?? [];
+  // const subjectRows: ExportRow[] =
+  //   selectedSubject?.topResult
+  //     .filter((res) => {
+  //       if (selectedClassId !== "all") {
+  //         return res.class.id === selectedClassId;
+  //       }
+  //       return res;
+  //     })
+  //     .map((student, index) => ({
+  //       place: index + 1,
+  //       classIndex: getDisplayValue(student.classIndex),
+  //       fullName: student.fullName,
+  //       admissionNo: student.admissionNo,
+  //       class: student.class.name,
+  //       fullMarks: student.status === "present" ? student.fullMarks : "Absent",
+  //       medium: getDisplayValue(student.medium),
+  //     })) ?? [];
+
+  const subjectRows = (): ExportRow[] => {
+    let prevMarks: number | null = null;
+    let prevPlace = 0;
+    let currentPlace = 0;
+
+    return (
+      selectedSubject?.topResult
+        .filter((res) => {
+          if (selectedClassId !== "all") {
+            return res.class.id === selectedClassId;
+          }
+          return res;
+        })
+        .map((student) => {
+          currentPlace += 1;
+
+          const newStudent = {
+            classIndex: getDisplayValue(student.classIndex),
+            fullName: student.fullName,
+            admissionNo: student.admissionNo,
+            class: student.class.name,
+            fullMarks: student.status === "present" ? student.fullMarks : "Absent",
+            medium: getDisplayValue(student.medium),
+          };
+
+          if (student.fullMarks === prevMarks) {
+            return { place: prevPlace, ...newStudent };
+          } else {
+            prevMarks = student.fullMarks;
+            prevPlace = currentPlace;
+            return { place: currentPlace, ...newStudent };
+          }
+        }) ?? []
+    );
+  };
 
   function updatePreference(key: string, preference: ColumnPreference) {
     setPreferences((current) => ({ ...current, [key]: preference }));
@@ -280,8 +316,9 @@ export default function ExportResultsDialog({
     const config: { columns: ExportColumn[]; rows: ExportRow[]; sheetName: string } = {
       byGrade: { columns: gradeColumns, rows: gradeRows, sheetName: "By Grade" },
       byClass: { columns: classColumns, rows: classRows, sheetName: "By Class" },
-      bySubject: { columns: subjectColumns, rows: subjectRows, sheetName: "By Subject" },
+      bySubject: { columns: subjectColumns, rows: subjectRows(), sheetName: "By Subject" },
     }[activeTab];
+
     const enabledColumns = config.columns.filter(
       (column) => preferences[`${activeTab}:${column.key}`]?.enabled !== false,
     );

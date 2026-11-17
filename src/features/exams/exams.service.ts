@@ -9,16 +9,16 @@ import {
   TopResultClass,
   TopResultStudent,
   TopResultStudentWithClass,
+  TopResultSubjectStudent,
 } from "./exams.types";
-import { AcademicYearsRepository } from "../academic-years/year.repository";
-import { ApiErrorV2 } from "@/lib/ApiError";
-import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-import { ExamRepository } from "./exams.repository";
-import { GradesRepository } from "../grades/grades.repository";
-import { MarkStatus } from "@/generated/prisma/enums";
-import { ClassRepository } from "../class/class.repository";
 import { examMarksSchema, examSchema } from "./exams.schema";
+import { AcademicYearsRepository } from "../academic-years/year.repository";
+import { EnrollmentRepository } from "../enrollment/enrollment.repository";
+import { GradesRepository } from "../grades/grades.repository";
+import { ClassRepository } from "../class/class.repository";
+import { ExamRepository } from "./exams.repository";
+import { ApiErrorV2 } from "@/lib/ApiError";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
 
@@ -109,13 +109,7 @@ export class ExamService {
       {
         id: string;
         name: string;
-        students: Map<
-          string,
-          TopResultStudentWithClass & {
-            medium: string | null;
-            status: MarkStatus | null;
-          }
-        >;
+        students: Map<string, TopResultSubjectStudent>;
       }
     >();
 
@@ -162,13 +156,7 @@ export class ExamService {
           const subjectResult = subjectResults.get(subject.id) ?? {
             id: subject.id,
             name: subject.name,
-            students: new Map<
-              string,
-              TopResultStudentWithClass & {
-                medium: string | null;
-                status: MarkStatus | null;
-              }
-            >(),
+            students: new Map<string, TopResultSubjectStudent>(),
           };
           subjectResult.students.set(enrollment.student.id, {
             ...studentInfo,
@@ -176,6 +164,7 @@ export class ExamService {
             class: studentClass,
             medium: medium?.name ?? null,
             status: mark?.status ?? null,
+            classIndex: enrollment.classIndex,
           });
           subjectResults.set(subject.id, subjectResult);
         }

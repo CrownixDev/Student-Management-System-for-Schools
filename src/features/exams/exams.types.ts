@@ -103,13 +103,15 @@ export interface TopResultClass {
   })[];
 }
 
+export type TopResultSubjectStudent = TopResultStudentWithClass & {
+  classIndex: number | null;
+  medium: Medium["name"] | null;
+  status: MarkStatus | null;
+};
 export interface TopResultSubject {
   id: Subject["id"];
   name: Subject["name"];
-  topResult: (TopResultStudentWithClass & {
-    medium: Medium["name"] | null;
-    status: MarkStatus | null;
-  })[];
+  topResult: TopResultSubjectStudent[];
 }
 
 export interface IExamTopResults {

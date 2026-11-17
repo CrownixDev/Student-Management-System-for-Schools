@@ -98,7 +98,7 @@ async function ResultsContent({ exam }: { exam: IExamListItem }) {
             description={"There are no subject results available for this exam."}
           />
         ) : (
-          <ExamResultsSubjects subjects={results.bySubject} exam={exam} />
+          <ExamResultsSubjects results={results} exam={exam} />
         )}
       </TabsContent>
     </Tabs>

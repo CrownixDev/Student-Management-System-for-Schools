@@ -1,6 +1,5 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
 import {
   studentEnrollmentSelect,
   studentListSelect,
@@ -8,7 +7,6 @@ import {
   studentProfuileSelect,
   studentSelect,
 } from "./students.types";
-import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
 import {
   StudentCreateInput,
   StudentJsonFieldCreateInput,
@@ -16,7 +14,10 @@ import {
   StudentUpdateInput,
   StudentWhereInput,
 } from "@/generated/prisma/models";
+import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
 import { DOBFilter, GenderFilter } from "./student.cache";
+import { prisma } from "@/lib/prisma";
+import { DbNull } from "@prisma/client/runtime/client";
 
 export type IStudentProfileListFilters = IQueryParams & { gender: GenderFilter; dobFrom: DOBFilter; dobTo: DOBFilter };
 
@@ -204,10 +205,8 @@ export class StudentsRepository {
 
   async getRelationsForJsonField(name: string) {
     return await prisma.student.findMany({
-      where: { json: { string_contains: name } },
-      select: {
-        enrollments: { select: { id: true } },
-      },
+      where: { json: { path: name, not: DbNull } },
+      select: { id: true, json: true },
     });
   }
 

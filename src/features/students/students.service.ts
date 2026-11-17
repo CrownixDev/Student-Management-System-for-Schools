@@ -1,7 +1,5 @@
 import "server-only";
 
-import { ApiErrorV2 } from "@/lib/ApiError";
-import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
 import {
   IStudent,
   IStudentEnrollment,
@@ -12,9 +10,13 @@ import {
   IStudentsListItem,
   IStudentsListWithSubjectsItem,
 } from "./students.types";
-import { IQueryParams } from "@/lib/filter";
+import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
 import { studentJsonFieldSchema, studentSchema } from "./student.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { InputJsonValue, JsonObject } from "@/generated/prisma/internal/prismaNamespace";
+import { IQueryParams } from "@/lib/filter";
+import { ApiErrorV2 } from "@/lib/ApiError";
+import { prisma } from "@/lib/prisma";
 import z from "zod";
 
 export class StudentsService {
@@ -190,10 +192,16 @@ export class StudentsService {
       throw new ApiErrorV2("Data validation failed");
     }
 
+    const newJsonObj: Record<string, InputJsonValue> = {};
+    Object.entries(parsedData.data.json ?? {}).map(([key, value]) => {
+      newJsonObj[key] = value ? value : null;
+    });
+
     try {
       await this.repository.update(studentId, {
         ...parsedData.data,
         dob: parsedData.data.dob ? new Date(parsedData.data.dob) : undefined,
+        json: newJsonObj,
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -281,7 +289,10 @@ export class StudentsService {
     }
 
     try {
-      await this.repository.updateJsonField(id, parsedData.data);
+      await this.repository.updateJsonField(id, {
+        name: parsedData.data.name,
+        type: parsedData.data.type,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
@@ -300,12 +311,25 @@ export class StudentsService {
       throw new ApiErrorV2("Record not found");
     }
 
-    const relations = await this.repository.getRelations(current.name);
-    const hasRelations = relations && relations?.enrollments.length > 0;
+    const relations = await this.repository.getRelationsForJsonField(current.name);
 
+    const hasRelations = relations.filter((item) => (item.json as JsonObject)?.[current.name] !== null).length > 0;
     if (hasRelations) {
       throw new ApiErrorV2("This field is currently in use");
     }
+
+    const updateManyList = relations.map((rel) => {
+      // Removing the custom field from all the students
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [current.name]: _we_dont_need_you, ...updatedObj } = rel.json as JsonObject;
+
+      return prisma.student.updateMany({
+        where: { id: rel.id },
+        data: { json: updatedObj },
+      });
+    });
+
+    prisma.$transaction(updateManyList);
 
     try {
       await this.repository.deleteJsonField(id);

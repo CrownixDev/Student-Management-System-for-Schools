@@ -77,6 +77,25 @@ export default function ExamResultsSubjects({ exam, results }: { exam: IExamList
             filteredStudents = subject.topResult.filter((res) => res.class.id === classValue);
           }
 
+          const rankedResults = function getRankedResult() {
+            let prevMarks: number | null = null;
+            let prevPlace = 0;
+            let currentPlace = 0;
+
+            return filteredStudents.map((student) => {
+              currentPlace += 1;
+
+              // if marks equel to previous student, both should get the same place
+              if (student.fullMarks === prevMarks) {
+                return { place: prevPlace, ...student };
+              } else {
+                prevMarks = student.fullMarks;
+                prevPlace = currentPlace;
+                return { place: currentPlace, ...student };
+              }
+            });
+          };
+
           return (
             <TabsContent key={subject.id} value={subject.id} className="min-h-0 overflow-hidden">
               {filteredStudents.length === 0 ? (
@@ -100,16 +119,18 @@ export default function ExamResultsSubjects({ exam, results }: { exam: IExamList
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredStudents.map((student, index) => (
+                    {rankedResults().map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        {classValue !== "all" && <TableCell>{student.classIndex}</TableCell>}
+                        <TableCell className="text-right">{student.place}</TableCell>
+                        {classValue !== "all" && <TableCell className="text-right">{student.classIndex}</TableCell>}
                         <TableCell className="max-w-50 min-w-50 whitespace-normal wrap-break-word">
                           {student.fullName}
                         </TableCell>
                         <TableCell>{student.admissionNo}</TableCell>
                         {classValue === "all" && <TableCell>{student.class.name}</TableCell>}
-                        <TableCell>{student.status === "present" ? student.fullMarks : "Absent"}</TableCell>
+                        <TableCell className="text-right">
+                          {student.status === "present" ? student.fullMarks : "Absent"}
+                        </TableCell>
                         <TableCell>{student.medium}</TableCell>
                         <TableCell>
                           <StudentDetailsViewButton

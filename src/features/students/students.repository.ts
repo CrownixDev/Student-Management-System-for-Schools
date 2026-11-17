@@ -1,6 +1,5 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
 import {
   studentEnrollmentSelect,
   studentListSelect,
@@ -8,9 +7,17 @@ import {
   studentProfuileSelect,
   studentSelect,
 } from "./students.types";
+import {
+  StudentCreateInput,
+  StudentJsonFieldCreateInput,
+  StudentJsonFieldUpdateInput,
+  StudentUpdateInput,
+  StudentWhereInput,
+} from "@/generated/prisma/models";
 import { getCleanSearch, getPagination, IQueryParams } from "@/lib/filter";
-import { StudentCreateInput, StudentUpdateInput, StudentWhereInput } from "@/generated/prisma/models";
 import { DOBFilter, GenderFilter } from "./student.cache";
+import { prisma } from "@/lib/prisma";
+import { DbNull } from "@prisma/client/runtime/client";
 
 export type IStudentProfileListFilters = IQueryParams & { gender: GenderFilter; dobFrom: DOBFilter; dobTo: DOBFilter };
 
@@ -166,5 +173,46 @@ export class StudentsRepository {
 
   async delete(id: string) {
     return await prisma.student.delete({ where: { id } });
+  }
+
+  async getJsonFields() {
+    return await prisma.studentJsonField.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  async getJsonFieldById(id: string) {
+    return await prisma.studentJsonField.findUnique({
+      where: { id },
+    });
+  }
+  async getJsonFieldByName(name: string) {
+    return await prisma.studentJsonField.findFirst({
+      where: { name },
+    });
+  }
+
+  async createJsonField(data: StudentJsonFieldCreateInput) {
+    return await prisma.studentJsonField.create({ data });
+  }
+
+  async updateJsonField(id: string, data: StudentJsonFieldUpdateInput) {
+    return await prisma.studentJsonField.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async getRelationsForJsonField(name: string) {
+    return await prisma.student.findMany({
+      where: { json: { path: name, not: DbNull } },
+      select: { id: true, json: true },
+    });
+  }
+
+  async deleteJsonField(id: string) {
+    return await prisma.studentJsonField.delete({
+      where: { id },
+    });
   }
 }

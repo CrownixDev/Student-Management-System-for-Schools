@@ -1,19 +1,22 @@
 import "server-only";
 
-import { ApiErrorV2 } from "@/lib/ApiError";
-import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
 import {
   IStudent,
   IStudentEnrollment,
+  IStudentJsonField,
   IStudentList,
   IStudentProfile,
   IStudentProfileList,
   IStudentsListItem,
   IStudentsListWithSubjectsItem,
 } from "./students.types";
-import { IQueryParams } from "@/lib/filter";
-import { studentSchema } from "./student.schema";
+import { IStudentProfileListFilters, StudentsRepository } from "./students.repository";
+import { studentJsonFieldSchema, studentSchema } from "./student.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { InputJsonValue, JsonObject } from "@/generated/prisma/internal/prismaNamespace";
+import { IQueryParams } from "@/lib/filter";
+import { ApiErrorV2 } from "@/lib/ApiError";
+import { prisma } from "@/lib/prisma";
 import z from "zod";
 
 export class StudentsService {
@@ -118,6 +121,7 @@ export class StudentsService {
       guardianName: student.guardianName,
       guardianPhone: student.guardianPhone,
       status: student.status,
+      json: student.json,
       enrollment: {
         id: enrollment.id,
         status: enrollment.status,
@@ -166,7 +170,10 @@ export class StudentsService {
     }
 
     try {
-      await this.repository.create(parsedData.data);
+      await this.repository.create({
+        ...parsedData.data,
+        dob: parsedData.data.dob ? new Date(parsedData.data.dob) : undefined,
+      });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -185,10 +192,16 @@ export class StudentsService {
       throw new ApiErrorV2("Data validation failed");
     }
 
+    const newJsonObj: Record<string, InputJsonValue> = {};
+    Object.entries(parsedData.data.json ?? {}).map(([key, value]) => {
+      newJsonObj[key] = value ? value : null;
+    });
+
     try {
       await this.repository.update(studentId, {
         ...parsedData.data,
         dob: parsedData.data.dob ? new Date(parsedData.data.dob) : undefined,
+        json: newJsonObj,
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -224,6 +237,109 @@ export class StudentsService {
         }
         if (error.code === "P2003") {
           throw new ApiErrorV2("This Student is currently in use");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async getJsonFields(): Promise<IStudentJsonField[]> {
+    return await this.repository.getJsonFields();
+  }
+
+  async createJsonField(data: z.infer<typeof studentJsonFieldSchema>) {
+    const parsedData = studentJsonFieldSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    const existing = await this.repository.getJsonFieldByName(parsedData.data.name);
+    if (existing) {
+      throw new ApiErrorV2("A custom field with this name already exists");
+    }
+
+    try {
+      await this.repository.createJsonField(parsedData.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateJsonField(id: string, data: z.infer<typeof studentJsonFieldSchema>) {
+    if (!id) throw new ApiErrorV2("Field id is required");
+    const parsedData = studentJsonFieldSchema.safeParse(data);
+    if (!parsedData.success) {
+      throw new ApiErrorV2("Data validation failed");
+    }
+
+    const current = await this.repository.getJsonFieldById(id);
+    if (!current) {
+      throw new ApiErrorV2("Record not found");
+    }
+    if (current.type === "date" && (parsedData.data.type === "text" || parsedData.data.type === "bigText")) {
+      throw new ApiErrorV2("You cannot change the type of a date field to text field");
+    }
+    if (current.type !== "date" && parsedData.data.type === "date") {
+      throw new ApiErrorV2("You cannot change the type of a text field to date field");
+    }
+
+    const existing = await this.repository.getJsonFieldByName(parsedData.data.name);
+    if (existing && existing.id !== id) {
+      throw new ApiErrorV2("A custom field with this name already exists");
+    }
+
+    try {
+      await this.repository.updateJsonField(id, {
+        name: parsedData.data.name,
+        type: parsedData.data.type,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async deleteJsonField(id: string) {
+    if (!id) throw new ApiErrorV2("Student id is required");
+
+    const current = await this.repository.getJsonFieldById(id);
+    if (!current) {
+      throw new ApiErrorV2("Record not found");
+    }
+
+    const relations = await this.repository.getRelationsForJsonField(current.name);
+
+    const hasRelations = relations.filter((item) => (item.json as JsonObject)?.[current.name] !== null).length > 0;
+    if (hasRelations) {
+      throw new ApiErrorV2("This field is currently in use");
+    }
+
+    const updateManyList = relations.map((rel) => {
+      // Removing the custom field from all the students
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [current.name]: _we_dont_need_you, ...updatedObj } = rel.json as JsonObject;
+
+      return prisma.student.updateMany({
+        where: { id: rel.id },
+        data: { json: updatedObj },
+      });
+    });
+
+    prisma.$transaction(updateManyList);
+
+    try {
+      await this.repository.deleteJsonField(id);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new ApiErrorV2("Record not found");
+        }
+        if (error.code === "P2003") {
+          throw new ApiErrorV2("This field is currently in use");
         }
       }
       throw error;

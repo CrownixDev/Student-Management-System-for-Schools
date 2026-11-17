@@ -1,22 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import { IStudentProfile } from "@/features/students";
+import { IStudentJsonField, IStudentProfile } from "@/features/students";
 import { genderSelectOptions, studentStatusSelectOptions } from "@/lib/select-options";
-import { getHtmlDateString } from "@/lib/utils";
-import { EditIcon, Trash2Icon, XIcon } from "lucide-react";
+import { getHtmlDateString, StrictOmit } from "@/lib/utils";
+import { EditIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { studentSchema } from "@/features/students/student.schema";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createStudentAction, deleteStudentAction, updateStudentAction } from "@/features/students/students.actions";
+import {
+  createStudentAction,
+  deleteStudentAction,
+  getStudentJsonFieldsAction,
+  updateStudentAction,
+} from "@/features/students/students.actions";
 import { toast } from "react-toastify";
 import DeleteConfirmationDialog from "@/components/dialog/delete-confirmation-dialog";
+import AddCustomFieldDialog from "./add-custom-field-dialog";
+import { STUDENT_CUSTOM_FIELDS } from "@/lib/query-keys";
 import z from "zod";
 
 interface Props {
@@ -46,6 +54,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
     guardianName: data?.guardianName ?? "",
     guardianPhone: data?.guardianPhone ?? "",
     status: data?.status ?? "active",
+    json: (data?.json as Record<string, string>) ?? {},
   };
 
   const form = useForm({
@@ -55,6 +64,23 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
 
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [addCustomField, setAddCustomField] = useState<{
+    open: boolean;
+    data?: StrictOmit<IStudentJsonField, "createdAt" | "updatedAt">;
+  }>({ open: false });
+
+  const { data: customFields = [] } = useQuery({
+    enabled: open,
+    queryKey: [STUDENT_CUSTOM_FIELDS],
+    queryFn: async () => {
+      const res = await getStudentJsonFieldsAction();
+      if (!res.success) {
+        toast.error(res.message);
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+  });
 
   function handleDiscard() {
     if (confirm("Are you sure you want to discard changes?")) {
@@ -107,7 +133,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
           <DialogHeader>
             <DialogTitle>Student details</DialogTitle>
           </DialogHeader>
-          <div className="min-h-0 overflow-y-auto py-1 pr-2 scrollbar-thin">
+          <div className="-mr-4 min-h-0 overflow-y-auto py-1 pr-4 pl-1 scrollbar-thin">
             {isViewingStudent && (
               <div className="space-y-6">
                 <section className="space-y-3">
@@ -144,6 +170,33 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                   <dl className="grid grid-cols-2 gap-3">
                     <ReadOnlyValue label="Name" value={data.guardianName || "Not provided"} />
                     <ReadOnlyValue label="Phone" value={data.guardianPhone || "Not provided"} />
+                  </dl>
+                </section>
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">Custom fields</h3>
+                  <dl className="grid grid-cols-2 gap-3">
+                    {customFields.map((field) => {
+                      const rawValue = (data.json as Record<string, unknown>)?.[field.name];
+                      let displayValue = "Not provided";
+                      if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
+                        if (
+                          field.type === "date" &&
+                          (typeof rawValue === "string" || typeof rawValue === "number" || rawValue instanceof Date)
+                        ) {
+                          displayValue = getHtmlDateString(new Date(rawValue));
+                        } else {
+                          displayValue = String(rawValue);
+                        }
+                      }
+                      return (
+                        <div key={field.id} className="col-span-2">
+                          <ReadOnlyValue label={field.name} value={displayValue} />
+                        </div>
+                      );
+                    })}
+                    {customFields.length === 0 && (
+                      <p className="col-span-2 text-sm text-muted-foreground">No custom fields added yet.</p>
+                    )}
                   </dl>
                 </section>
               </div>
@@ -356,6 +409,124 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
                       />
                     </FieldGroup>
                   </FieldSet>
+                  <FieldSet>
+                    <FieldLegend>Custom Fields</FieldLegend>
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                      {customFields.map((cf) => {
+                        if (cf.type === "bigText") {
+                          return (
+                            <Controller
+                              key={cf.id}
+                              name={`json.${cf.name}`}
+                              control={form.control}
+                              defaultValue={(data?.json as Record<string, string>)?.[cf.name] ?? ""}
+                              render={({ field, fieldState }) => (
+                                <Field className="col-span-2" data-invalid={fieldState.invalid}>
+                                  <FieldLabel htmlFor={`student-cf-${cf.id}`}>{cf.name}</FieldLabel>
+                                  <Textarea
+                                    {...field}
+                                    id={`student-cf-${cf.id}`}
+                                    value={field.value ?? ""}
+                                    placeholder={`Enter ${cf.name.toLowerCase()}`}
+                                    aria-invalid={fieldState.invalid}
+                                    disabled={isSubmitting}
+                                  />
+                                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="secondary"
+                                      onClick={() => setAddCustomField({ open: true, data: cf })}
+                                    >
+                                      <EditIcon />
+                                      Edit Field
+                                    </Button>
+                                  </div>
+                                </Field>
+                              )}
+                            />
+                          );
+                        }
+                        if (cf.type === "date") {
+                          return (
+                            <Controller
+                              key={cf.id}
+                              name={`json.${cf.name}`}
+                              control={form.control}
+                              defaultValue={(data?.json as Record<string, string>)?.[cf.name] ?? ""}
+                              render={({ field, fieldState }) => (
+                                <Field className="col-span-2" data-invalid={fieldState.invalid}>
+                                  <FieldLabel htmlFor={`student-cf-${cf.id}`}>{cf.name}</FieldLabel>
+                                  <Input
+                                    {...field}
+                                    id={`student-cf-${cf.id}`}
+                                    type="date"
+                                    value={field.value ?? ""}
+                                    aria-invalid={fieldState.invalid}
+                                    disabled={isSubmitting}
+                                  />
+                                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="secondary"
+                                      onClick={() => setAddCustomField({ open: true, data: cf })}
+                                    >
+                                      <EditIcon />
+                                      Edit Field
+                                    </Button>
+                                  </div>
+                                </Field>
+                              )}
+                            />
+                          );
+                        }
+                        return (
+                          <Controller
+                            key={cf.id}
+                            name={`json.${cf.name}`}
+                            control={form.control}
+                            defaultValue={(data?.json as Record<string, string>)?.[cf.name] ?? ""}
+                            render={({ field, fieldState }) => (
+                              <Field className="col-span-2" data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor={`student-cf-${cf.id}`}>{cf.name}</FieldLabel>
+                                <Input
+                                  {...field}
+                                  id={`student-cf-${cf.id}`}
+                                  value={field.value ?? ""}
+                                  placeholder={`Enter ${cf.name.toLowerCase()}`}
+                                  aria-invalid={fieldState.invalid}
+                                  disabled={isSubmitting}
+                                />
+                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => setAddCustomField({ open: true, data: cf })}
+                                  >
+                                    <EditIcon />
+                                    Edit Field
+                                  </Button>
+                                </div>
+                              </Field>
+                            )}
+                          />
+                        );
+                      })}
+                      {customFields.length === 0 && (
+                        <p className="col-span-2 text-sm text-muted-foreground">No custom fields added yet.</p>
+                      )}
+                      <div className="col-span-2 pt-1 mx-auto">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-fit hover:no-underline"
+                          onClick={() => setAddCustomField({ open: true })}
+                        >
+                          <PlusIcon />
+                          Add new field
+                        </Button>
+                      </div>
+                    </FieldGroup>
+                  </FieldSet>
                 </FieldGroup>
               </form>
             )}
@@ -417,6 +588,10 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
           description="Are you sure you want to delete this student?"
           onConfirm={handleDelete}
         />
+      )}
+
+      {addCustomField.open && (
+        <AddCustomFieldDialog open onOpenChange={(open) => setAddCustomField({ open })} data={addCustomField.data} />
       )}
     </>
   );

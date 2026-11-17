@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/ta
 import { IExamListItem, IExamTopResults } from "@/features/exams";
 import { IClassListWithSubjectsItem } from "@/features/class";
 import { exportExcelSheet } from "@/lib/excell";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Button } from "@/components/shadcn/button";
 
@@ -47,15 +47,6 @@ const gradeColumns: ExportColumn[] = [
   { key: "admissionNo", label: "Addmission No." },
   { key: "class", label: "Class" },
   { key: "fullMarks", label: "Full Marks" },
-];
-
-const subjectColumns: ExportColumn[] = [
-  { key: "place", label: "Place" },
-  { key: "fullName", label: "Full Name" },
-  { key: "admissionNo", label: "Addmission No." },
-  { key: "class", label: "Class" },
-  { key: "fullMarks", label: "Full Marks" },
-  { key: "medium", label: "Medium" },
 ];
 
 const sortingOptions = [
@@ -167,9 +158,35 @@ export default function ExportResultsDialog({
     bySubject: { key: null, direction: null },
   });
 
+  useEffect(() => {
+    (() => {
+      if (activeTab === "bySubject") {
+        setSelectedClassId("all");
+      } else {
+        setSelectedClassId(results.byClass[0]?.id ?? "");
+      }
+    })();
+  }, [activeTab, setSelectedClassId, results.byClass]);
+
   const selectedClass = results.byClass.find((classResult) => classResult.id === selectedClassId);
   const selectedSubject = results.bySubject.find((subjectResult) => subjectResult.id === selectedSubjectId);
   const classSubjects = classesWithSubjects.find((classItem) => classItem.id === selectedClass?.id)?.subjects ?? [];
+
+  const subjectColumns: ExportColumn[] = [
+    { key: "place", label: "Place" },
+    { key: "fullName", label: "Full Name" },
+    { key: "admissionNo", label: "Addmission No." },
+    { key: "fullMarks", label: "Full Marks" },
+    { key: "medium", label: "Medium" },
+  ];
+
+  if (selectedClassId === "all") {
+    subjectColumns.splice(2, 0, { key: "class", label: "Class" });
+  }
+
+  if (selectedClassId !== "all") {
+    subjectColumns.splice(1, 0, { key: "classIndex", label: "Class Index" });
+  }
 
   const classColumns: ExportColumn[] = [
     { key: "place", label: "Place" },
@@ -220,14 +237,22 @@ export default function ExportResultsDialog({
   })();
 
   const subjectRows: ExportRow[] =
-    selectedSubject?.topResult.map((student, index) => ({
-      place: index + 1,
-      fullName: student.fullName,
-      admissionNo: student.admissionNo,
-      class: student.class.name,
-      fullMarks: student.status === "present" ? student.fullMarks : "Absent",
-      medium: getDisplayValue(student.medium),
-    })) ?? [];
+    selectedSubject?.topResult
+      .filter((res) => {
+        if (selectedClassId !== "all") {
+          return res.class.id === selectedClassId;
+        }
+        return res;
+      })
+      .map((student, index) => ({
+        place: index + 1,
+        classIndex: getDisplayValue(student.classIndex),
+        fullName: student.fullName,
+        admissionNo: student.admissionNo,
+        class: student.class.name,
+        fullMarks: student.status === "present" ? student.fullMarks : "Absent",
+        medium: getDisplayValue(student.medium),
+      })) ?? [];
 
   function updatePreference(key: string, preference: ColumnPreference) {
     setPreferences((current) => ({ ...current, [key]: preference }));
@@ -283,6 +308,7 @@ export default function ExportResultsDialog({
         exam.name,
         exam.gradeLevel.name,
         ...(activeTab === "byClass" && selectedClass ? [selectedClass.name] : []),
+        ...(activeTab === "bySubject" && selectedClassId !== "all" && selectedClass ? [selectedClass.name] : []),
         ...(activeTab === "bySubject" && selectedSubject ? [selectedSubject.name] : []),
       ].join(" - "),
       sheetName: config.sheetName,
@@ -360,7 +386,34 @@ export default function ExportResultsDialog({
           </TabsContent>
           <TabsContent value="bySubject" className="-mr-4 mt-4 min-h-0 overflow-y-auto pr-4">
             <label className="mb-4 flex items-center gap-3">
-              <span className="shrink-0">Subject</span>
+              <span className="shrink-0 w-15">Class</span>
+
+              <Select
+                items={[
+                  { value: "all", label: "All" },
+                  ...results.byClass.map((cls) => ({ value: cls.id, label: cls.name })),
+                ]}
+                value={selectedClassId}
+                onValueChange={(value) => (value ? setSelectedClassId(value) : undefined)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">All</SelectItem>
+                    {results.byClass.map((classItem) => (
+                      <SelectItem key={classItem.id} value={classItem.id}>
+                        {classItem.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label className="mb-4 flex items-center gap-3">
+              <span className="shrink-0 w-15">Subject</span>
 
               <Select
                 items={results.bySubject.map((sub) => ({ value: sub.id, label: sub.name }))}
@@ -382,7 +435,7 @@ export default function ExportResultsDialog({
               </Select>
             </label>
             {selectedSubject ? (
-              renderSettings("bySubject", subjectColumns)
+              renderSettings("bySubject", subjectColumns, selectedClassId !== "all" ? ["place", "classIndex"] : [])
             ) : (
               <p className="text-muted-foreground">No subject results are available to export.</p>
             )}

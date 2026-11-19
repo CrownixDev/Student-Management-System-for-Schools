@@ -6,21 +6,21 @@ import { Label } from "@/components/shadcn/label";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
-import { getAcademicYearListAction } from "@/features/academic-years/year.actions";
 import { getBatchListAction } from "@/features/batch/batch.action";
-import { IAcademicYear } from "@/features/academic-years";
 import { IBatchListItem } from "@/features/batch";
 import { BatchType } from "@/generated/prisma/enums";
 import { idParsers } from "@/lib/nuqs/id";
-import { BATCH_LIST, YEAR_LIST } from "@/lib/query-keys";
+import { BATCH_LIST } from "@/lib/query-keys";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDaysIcon, CheckIcon, ChevronsUpDownIcon, LinkIcon } from "lucide-react";
+import { CalendarDaysIcon, CheckIcon, ChevronsUpDownIcon, LinkIcon, OctagonAlertIcon } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { TypographyH2 } from "@/components/ui/typography";
+import { rpcTanStack } from "@/lib/orpc/client";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
+import { ORPCError } from "@orpc/client";
 
 interface Props {
   allow?: {
@@ -38,18 +38,24 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
   const [section, setSection] = useState<"years" | "batches">("years");
   const [batchType, setBatchType] = useState<BatchType>("al");
 
-  const { data: yearList = [], isPending: isYearListPending } = useQuery<IAcademicYear[]>({
-    enabled: allowYear,
-    queryFn: async () => {
-      const result = await getAcademicYearListAction({});
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data ?? [];
-    },
-    queryKey: [YEAR_LIST],
-  });
+  const {
+    data: yearList = [],
+    isPending: isYearListPending,
+    isError: isYearListError,
+    error: yearListError,
+    refetch: refetchYearList,
+  } = useQuery(
+    rpcTanStack.academicYear.getlist.queryOptions({
+      enabled: allowYear,
+      input: { search: "" },
+    }),
+  );
+
+  useEffect(() => {
+    if (yearListError instanceof ORPCError) {
+      toast.error(yearListError.message);
+    }
+  }, [yearListError]);
 
   const {
     data: batchLists = {
@@ -132,6 +138,18 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
             <TabsContent value="years" className="min-h-0 flex flex-col">
               {isYearListPending ? (
                 <LoadingIndicator />
+              ) : isYearListError ? (
+                <EmptyState
+                  noBorder
+                  icon={OctagonAlertIcon}
+                  title="Error loading academic years"
+                  description="Failed to load academic years. Please try again."
+                  action={
+                    <Button type="button" variant="outline" onClick={() => refetchYearList()}>
+                      Retry
+                    </Button>
+                  }
+                />
               ) : (
                 <div className="min-h-0 flex-1 overflow-y-auto rounded-md border">
                   <RadioGroup value={selectedYear?.id ?? ""} onValueChange={(yearId) => handleSelectYear(yearId)}>

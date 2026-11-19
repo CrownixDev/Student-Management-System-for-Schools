@@ -5,12 +5,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/shadcn/label";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { IAcademicYear } from "@/features/academic-years";
-import { getAcademicYearListAction } from "@/features/academic-years/year.actions";
 import { useQuery } from "@tanstack/react-query";
-import { CheckIcon, CalendarDaysIcon } from "lucide-react";
+import { CheckIcon, CalendarDaysIcon, OctagonAlertIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "react-toastify";
-import { YEAR_LIST } from "@/lib/query-keys";
+import { rpcTanStack } from "@/lib/orpc/client";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
@@ -29,18 +27,17 @@ export default function YearPickerDialog({
   const [search, setSearch] = useState("");
   const [yearId, setYearId] = useState(selectedYearId ?? "");
 
-  const { data: years = [], isPending } = useQuery({
-    enabled: open,
-    queryKey: [YEAR_LIST, search],
-    queryFn: async () => {
-      const result = await getAcademicYearListAction({ search: search.trim() || null });
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-  });
+  const {
+    data: years = [],
+    isPending,
+    isError,
+    refetch,
+  } = useQuery(
+    rpcTanStack.academicYear.getlist.queryOptions({
+      enabled: open,
+      input: { search: search.trim() },
+    }),
+  );
 
   function confirmSelection() {
     const year = years.find((item) => item.id === yearId);
@@ -63,6 +60,18 @@ export default function YearPickerDialog({
         />
         {isPending ? (
           <LoadingIndicator />
+        ) : isError ? (
+          <EmptyState
+            noBorder
+            icon={OctagonAlertIcon}
+            title="Error loading academic years"
+            description="Failed to load academic years. Please try again."
+            action={
+              <Button type="button" variant="outline" onClick={() => refetch()}>
+                Retry
+              </Button>
+            }
+          />
         ) : (
           <div className="max-h-[45dvh] flex-1 overflow-y-auto rounded-md border">
             <RadioGroup value={yearId} onValueChange={setYearId}>

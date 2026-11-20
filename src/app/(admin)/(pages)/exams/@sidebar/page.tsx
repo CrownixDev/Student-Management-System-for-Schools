@@ -1,4 +1,4 @@
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { classService, IClassList } from "@/features/class";
 import { examService, IExamListItem } from "@/features/exams";
@@ -9,9 +9,11 @@ import SidebarGradeContent from "@/components/pages/exams/sidebar/sidebar-grade-
 import SidebarClassContent from "@/components/pages/exams/sidebar/sidebar-class-content";
 import SidebarExamContent from "@/components/pages/exams/sidebar/sidebar-exam-content";
 import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
+  const caller = await getServerCaller();
 
   const awaitedParams = await searchParams;
   const isViewing = awaitedParams.type === "view";
@@ -22,7 +24,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
   let examList: IExamListItem[] | null = null;
 
   try {
-    if (yearId) yearData = await academicYearsService.getListItemById(yearId);
+    if (yearId) yearData = await caller.academicYear.getListItemById({ id: yearId });
     if (yearId) gradeList = await gradesService.getListByYear({ yearId });
     if (gradeId) classList = await classService.getList(gradeId);
     if (gradeId) examList = await examService.getList(gradeId);

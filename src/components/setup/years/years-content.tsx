@@ -1,24 +1,31 @@
 import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { filterCache } from "@/lib/nuqs/filter";
+import { CalendarsIcon, OctagonAlertIcon } from "lucide-react";
+import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
+import { safe } from "@orpc/client";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import PagePagination from "@/components/ui/page/page-pagination";
+import EmptyState from "@/components/ui/empty-state";
 import YearsEditBtn from "./buttons/years-edit-btn";
 import YearsSetCurrentBtn from "./buttons/years-set-current-btn";
-import { filterCache } from "@/lib/nuqs/filter";
-import { redirect } from "next/navigation";
-import EmptyState from "@/components/ui/empty-state";
-import { CalendarsIcon } from "lucide-react";
-import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
-import PagePagination from "@/components/ui/page/page-pagination";
 
 export default async function YearsContent() {
   const search = filterCache.get("search");
-  let years: IAcademicYear[] | null = null;
+  const caller = await getServerCaller();
+  const { data: years, error, definedError } = await safe(caller.academicYear.getlist({ search }));
 
-  try {
-    years = await academicYearsService.getList({ search });
-  } catch (error) {
-    console.error("Failed to load academic years from service:", error);
-    redirect("/setup");
+  if (error) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center absolute backdrop-blur-xs top-0 left-0">
+        <EmptyState
+          noBorder
+          icon={OctagonAlertIcon}
+          title={definedError ? error.message : "Error loading academic years"}
+          description="Failed to load academic years. Please try reloading the page. If the problem persists, contact support (+94 77 65 65 800)."
+        />
+      </div>
+    );
   }
 
   return (

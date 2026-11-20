@@ -1,5 +1,5 @@
 import { TypographyH1, TypographyH2 } from "@/components/ui/typography";
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { examService, IExamListItem } from "@/features/exams";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { GraduationCapIcon, NotebookPenIcon } from "lucide-react";
@@ -9,8 +9,10 @@ import ExamNewBtn from "./button/exam-new-btn";
 import { idCache } from "@/lib/nuqs/id";
 import { redirect } from "next/navigation";
 import { Separator } from "@/components/shadcn/separator";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function ExamsDetails() {
+  const caller = await getServerCaller();
   const gradeId = idCache.get("gradeId");
 
   let activeYear: IAcademicYear | null = null;
@@ -25,7 +27,7 @@ export default async function ExamsDetails() {
   }
 
   try {
-    activeYear = await academicYearsService.getActiveYear();
+    activeYear = await caller.academicYear.getActiveYear();
   } catch (err) {
     console.error("Failed to load active year:", err);
     redirect("/setup");

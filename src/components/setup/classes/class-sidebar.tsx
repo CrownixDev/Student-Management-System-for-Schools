@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeWithClassesItem } from "@/features/grades";
 import { GraduationCapIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
@@ -13,14 +13,16 @@ import { Separator } from "@/components/shadcn/separator";
 import ClassSidebarItem from "./class-sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import ClassSidebarHeader from "./class-sidebar-header";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function ClassSidebar() {
+  const caller = await getServerCaller();
   const search = filterCache.get("search");
   let activeYear: IAcademicYear | null = null;
   let grades: IGradeWithClassesItem[] | null = null;
 
   try {
-    activeYear = await academicYearsService.getActiveYear();
+    activeYear = await caller.academicYear.getActiveYear();
     grades = await gradesService.getListWithClasses(activeYear.id);
   } catch (error) {
     console.log("Error fetching active year or grades:", error);

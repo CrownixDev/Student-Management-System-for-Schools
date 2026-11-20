@@ -1,4 +1,4 @@
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { PageSidebar, PageSidebarContent } from "@/components/ui/page/page-sidebar";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { GraduationCapIcon } from "lucide-react";
@@ -9,6 +9,7 @@ import SetupSidebarHearder from "../../setup-sidebar-hearder";
 import GradeSidebarItem from "./sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 
 async function SidebarContent({ year }: { year: IAcademicYear }) {
   const { search } = filterCache.all();
@@ -46,10 +47,11 @@ async function SidebarContent({ year }: { year: IAcademicYear }) {
 }
 
 export default async function ExamsSidebar() {
+  const caller = await getServerCaller();
   let activeYear: IAcademicYear | null = null;
 
   try {
-    activeYear = await academicYearsService.getActiveYear();
+    activeYear = await caller.academicYear.getActiveYear();
   } catch (error) {
     console.log("Error fetching active year:", error);
     redirect("/setup");

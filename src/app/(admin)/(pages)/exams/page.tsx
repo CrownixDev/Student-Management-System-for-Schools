@@ -1,6 +1,6 @@
 import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
 import { examService, IExamClassData, IExamListItem, IExamSubject } from "@/features/exams";
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { MousePointerClickIcon } from "lucide-react";
 import { classService, IClass } from "@/features/class";
 import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
@@ -8,8 +8,10 @@ import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
 import ExamResultsPage from "@/components/pages/exams/exam-results-page";
 import EmptyState from "@/components/ui/empty-state";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
+  const caller = await getServerCaller();
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
 
   const awaitedParams = await searchParams;
@@ -67,7 +69,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     }
 
     if (yearId && gradeId && classId && examId) {
-      activeYear = await academicYearsService.getActiveYear();
+      activeYear = await caller.academicYear.getActiveYear();
       examDataForClass = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
       studentsWithEnrolledSubjects = await studentsService.getListForClassWithSubjects(classId);
       classSubjects = await classService.getSubjectsById(classId);

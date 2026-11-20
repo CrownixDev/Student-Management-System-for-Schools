@@ -1,43 +1,67 @@
+import {
+  yearIdRequiredError,
+  yearNotFoundError,
+  activeYearNotFoundError,
+  invalidDataProvidedError,
+  yearNameAlreadyExistError,
+  yearUsingByOthersError,
+} from "./year.errors";
 import { academicYearsService } from ".";
 import { protectedProcedure } from "@/lib/orpc/base";
 import { academicYearSchema } from "./year.schema";
 import { roleGuard } from "@/lib/orpc/middleware/role-guard";
 import { z } from "zod";
 
+const academicYearProcedure = protectedProcedure.errors({
+  [yearIdRequiredError.code]: yearIdRequiredError,
+  [yearNotFoundError.code]: yearNotFoundError,
+  [activeYearNotFoundError.code]: activeYearNotFoundError,
+  [invalidDataProvidedError.code]: invalidDataProvidedError,
+  [yearNameAlreadyExistError.code]: yearNameAlreadyExistError,
+  [yearUsingByOthersError.code]: yearUsingByOthersError,
+});
+
 export const academicYearProcedures = {
-  getlist: protectedProcedure
+  getlist: academicYearProcedure
     .use(roleGuard.adaptInput(() => ["admin"]))
-    .input(z.object({ search: z.string() }))
+    .input(z.object({ search: z.string().nullable() }))
     .handler(async ({ input }) => {
       return academicYearsService.getList(input);
     }),
 
-  getActiveYear: protectedProcedure.use(roleGuard.adaptInput(() => ["admin"])).handler(async () => {
+  getListItemById: academicYearProcedure
+    .use(roleGuard.adaptInput(() => ["admin"]))
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input }) => {
+      return academicYearsService.getListItemById(input.id);
+    }),
+
+  getActiveYear: academicYearProcedure.use(roleGuard.adaptInput(() => ["admin"])).handler(async () => {
     return academicYearsService.getActiveYear();
   }),
 
-  setAsCurrent: protectedProcedure
+  setAsCurrent: academicYearProcedure
     .use(roleGuard.adaptInput(() => ["admin"]))
     .input(z.object({ id: z.string() }))
     .handler(async ({ input }) => {
       return academicYearsService.setAsCurrent(input.id);
     }),
 
-  create: protectedProcedure
+  create: academicYearProcedure
     .use(roleGuard.adaptInput(() => ["admin"]))
     .input(academicYearSchema)
     .handler(async ({ input }) => {
       return academicYearsService.create(input);
     }),
 
-  update: protectedProcedure
+  update: academicYearProcedure
     .use(roleGuard.adaptInput(() => ["admin"]))
     .input(z.object({ id: z.string(), data: academicYearSchema }))
     .handler(async ({ input }) => {
       return academicYearsService.update(input.id, input.data);
     }),
 
-  delete: protectedProcedure
+  delete: academicYearProcedure
     .use(roleGuard.adaptInput(() => ["admin"]))
     .input(z.object({ id: z.string() }))
     .handler(async ({ input }) => {

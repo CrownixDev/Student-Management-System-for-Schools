@@ -12,8 +12,7 @@ import {
 import { CheckIcon, CircleUserIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ACTIVE_YEAR, CLASS_LIST } from "@/lib/query-keys";
-import { getActiveAcademicYearAction } from "@/features/academic-years/year.actions";
+import { CLASS_LIST } from "@/lib/query-keys";
 import { toast } from "react-toastify";
 import { getClassListAction } from "@/features/class/class.actions";
 import { IClassList, IClassListItem } from "@/features/class";
@@ -21,6 +20,7 @@ import { IGradeListItem } from "@/features/grades";
 import GradePickerDialog from "@/components/dialog/grade-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
+import { rpcTanStack } from "@/lib/orpc/client";
 
 export default function ClassPickerDialog({
   open,
@@ -35,19 +35,11 @@ export default function ClassPickerDialog({
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [selectedClasses, setSelectedClasses] = useState<IClassList>([]);
 
-  const { data: activeYear, isPending: isLoadingYear } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getActiveAcademicYearAction();
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [ACTIVE_YEAR],
-  });
+  const { data: activeYear, isPending: isLoadingYear } = useQuery(
+    rpcTanStack.academicYear.getActiveYear.queryOptions({
+      enabled: open,
+    }),
+  );
 
   const { data: classList, isPending: isLoadingClasses } = useQuery({
     enabled: open && !!grade && !isLoadingYear && !!activeYear,

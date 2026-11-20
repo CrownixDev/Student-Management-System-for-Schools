@@ -20,7 +20,6 @@ import { TypographyH2 } from "@/components/ui/typography";
 import { rpcTanStack } from "@/lib/orpc/client";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
-import { ORPCError } from "@orpc/client";
 
 interface Props {
   allow?: {
@@ -42,7 +41,6 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
     data: yearList = [],
     isPending: isYearListPending,
     isError: isYearListError,
-    error: yearListError,
     refetch: refetchYearList,
   } = useQuery(
     rpcTanStack.academicYear.getlist.queryOptions({
@@ -50,12 +48,6 @@ export default function YearBatchSelectorDialog({ allow }: Props) {
       input: { search: "" },
     }),
   );
-
-  useEffect(() => {
-    if (yearListError instanceof ORPCError) {
-      toast.error(yearListError.message);
-    }
-  }, [yearListError]);
 
   const {
     data: batchLists = {

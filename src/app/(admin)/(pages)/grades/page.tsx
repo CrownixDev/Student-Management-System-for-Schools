@@ -1,6 +1,7 @@
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { batchService, IBatch } from "@/features/batch";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 import { SidebarInset } from "@/components/shadcn/sidebar";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
@@ -9,6 +10,7 @@ import GradesPage from "./grades-page";
 
 export default async function page({ searchParams }: PageProps<"/grades">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
+  const caller = await getServerCaller();
 
   let yearData: IAcademicYear | null = null;
   let batchData: IBatch | null = null;
@@ -16,7 +18,7 @@ export default async function page({ searchParams }: PageProps<"/grades">) {
 
   try {
     if (yearId) {
-      yearData = await academicYearsService.getListItemById(yearId);
+      yearData = await caller.academicYear.getListItemById({ id: yearId });
       gradelist = await gradesService.getListByYear({ yearId });
     }
     if (batchId) batchData = await batchService.getById(batchId);

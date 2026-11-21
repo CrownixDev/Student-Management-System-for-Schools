@@ -2,23 +2,22 @@ import {
   yearIdRequiredError,
   yearNotFoundError,
   activeYearNotFoundError,
-  invalidDataProvidedError,
   yearNameAlreadyExistError,
-  yearUsingByOthersError,
 } from "./year.errors";
 import { academicYearsService } from ".";
 import { protectedProcedure } from "@/lib/orpc/base";
 import { academicYearSchema } from "./year.schema";
 import { roleGuard } from "@/lib/orpc/middleware/role-guard";
 import { z } from "zod";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
 
 const academicYearProcedure = protectedProcedure.errors({
   [yearIdRequiredError.code]: yearIdRequiredError,
   [yearNotFoundError.code]: yearNotFoundError,
   [activeYearNotFoundError.code]: activeYearNotFoundError,
-  [invalidDataProvidedError.code]: invalidDataProvidedError,
   [yearNameAlreadyExistError.code]: yearNameAlreadyExistError,
-  [yearUsingByOthersError.code]: yearUsingByOthersError,
+  [invalidDataProvidedError.code]: invalidDataProvidedError,
+  [recordInUseError.code]: recordInUseError,
 });
 
 export const academicYearProcedures = {

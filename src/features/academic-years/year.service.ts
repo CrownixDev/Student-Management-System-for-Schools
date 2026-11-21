@@ -2,12 +2,11 @@ import "server-only";
 
 import {
   activeYearNotFoundError,
-  invalidDataProvidedError,
   yearIdRequiredError,
   yearNameAlreadyExistError,
   yearNotFoundError,
-  yearUsingByOthersError,
 } from "./year.errors";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { AcademicYearsRepository } from "./year.repository";
 import { academicYearSchema } from "./year.schema";
@@ -99,7 +98,7 @@ export class AcademicYearsService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2003") {
-          throw new yearUsingByOthersError();
+          throw new recordInUseError();
         }
       }
       throw error;

@@ -14,7 +14,7 @@ import {
 import { IAcademicYear } from "@/features/academic-years";
 import { ArrowLeftIcon, HousesIcon } from "lucide-react";
 import { gradesService, IGradeListItem } from "@/features/grades";
-import { batchService, IBatchListItem } from "@/features/batch";
+import { IBatchListItem } from "@/features/batch";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { classService } from "@/features/class";
 import { redirect } from "next/navigation";
@@ -36,7 +36,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
   try {
     if (yearId) yearData = await caller.academicYear.getListItemById({ id: yearId });
     if (gradeId) gradeData = await gradesService.getListItemById(gradeId);
-    if (batchId) batchData = await batchService.getListItemById(batchId);
+    if (batchId) batchData = await caller.batch.getListItemById({ id: batchId });
   } catch {
     redirect("/");
   }

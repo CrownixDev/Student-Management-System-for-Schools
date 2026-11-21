@@ -7,7 +7,7 @@ import { Input } from "@/components/shadcn/input";
 import { useState } from "react";
 import { IAcademicYear } from "@/features/academic-years";
 import { getHtmlDateString } from "@/lib/utils";
-import { TrashIcon } from "lucide-react";
+import { Loader2Icon, TrashIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { academicYearSchema } from "@/features/academic-years/year.schema";
@@ -82,11 +82,11 @@ export default function AcademicYearDialog({
     }),
   );
 
-  function handleSubmit(formData: z.infer<typeof academicYearSchema>) {
+  async function handleSubmit(formData: z.infer<typeof academicYearSchema>) {
     if (isEditing && data && data.id) {
-      updateMutation.mutate({ id: data.id, data: formData });
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      createMutation.mutate(formData);
+      await createMutation.mutateAsync(formData);
     }
   }
 
@@ -201,6 +201,7 @@ export default function AcademicYearDialog({
                   Cancel
                 </Button>
                 <Button type="submit" form="year-data-form" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting && <Loader2Icon className="animate-spin" />}
                   {isEditing ? "Save Changes" : "Create Academic Year"}
                 </Button>
               </div>

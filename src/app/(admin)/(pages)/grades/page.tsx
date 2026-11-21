@@ -1,5 +1,5 @@
 import { IAcademicYear } from "@/features/academic-years";
-import { batchService, IBatch } from "@/features/batch";
+import { IBatch } from "@/features/batch";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { getServerCaller } from "@/lib/orpc/server-caller";
 import { SidebarInset } from "@/components/shadcn/sidebar";
@@ -21,7 +21,7 @@ export default async function page({ searchParams }: PageProps<"/grades">) {
       yearData = await caller.academicYear.getListItemById({ id: yearId });
       gradelist = await gradesService.getListByYear({ yearId });
     }
-    if (batchId) batchData = await batchService.getById(batchId);
+    if (batchId) batchData = await caller.batch.getById({ id: batchId });
   } catch {
     redirect("/");
   }

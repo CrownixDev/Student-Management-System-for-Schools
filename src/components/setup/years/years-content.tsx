@@ -1,7 +1,7 @@
 import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { filterCache } from "@/lib/nuqs/filter";
-import { CalendarsIcon, OctagonAlertIcon } from "lucide-react";
+import { CalendarsIcon } from "lucide-react";
 import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
 import { safe } from "@orpc/client";
 import { getServerCaller } from "@/lib/orpc/server-caller";
@@ -9,6 +9,7 @@ import PagePagination from "@/components/ui/page/page-pagination";
 import EmptyState from "@/components/ui/empty-state";
 import YearsEditBtn from "./buttons/years-edit-btn";
 import YearsSetCurrentBtn from "./buttons/years-set-current-btn";
+import ErrorState from "@/components/ui/error-state";
 
 export default async function YearsContent() {
   const search = filterCache.get("search");
@@ -17,14 +18,10 @@ export default async function YearsContent() {
 
   if (error) {
     return (
-      <div className="flex h-screen w-full items-center justify-center absolute backdrop-blur-xs top-0 left-0">
-        <EmptyState
-          noBorder
-          icon={OctagonAlertIcon}
-          title={definedError ? error.message : "Error loading academic years"}
-          description="Failed to load academic years. Please try reloading the page. If the problem persists, contact support (+94 77 65 65 800)."
-        />
-      </div>
+      <ErrorState
+        title={definedError ? error.message : "Error loading academic years"}
+        description="Failed to load academic years. Please try reloading the page."
+      />
     );
   }
 

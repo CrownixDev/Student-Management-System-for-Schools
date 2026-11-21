@@ -5,15 +5,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { CheckIcon, LinkIcon } from "lucide-react";
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BATCH_LIST } from "@/lib/query-keys";
-import { toast } from "react-toastify";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Label } from "@/components/shadcn/label";
 import { IBatchListItem } from "@/features/batch";
-import { getBatchListAction } from "@/features/batch/batch.action";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../shadcn/tabs";
 import { BatchType } from "@/generated/prisma/enums";
+import { rpcTanStack } from "@/lib/orpc/client";
 import SearchInput from "../ui/search-input";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
@@ -35,20 +33,13 @@ export default function BatchPickerDialog({
   const [batchType, setBatchType] = useState<BatchType>("al");
   const [search, setSearch] = useState("");
 
-  const { data = [], isPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getBatchListAction({ search: search.trim(), type: batchType });
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    placeholderData: keepPreviousData,
-    queryKey: [BATCH_LIST, search, batchType],
-  });
+  const { data = [], isPending } = useQuery(
+    rpcTanStack.batch.getList.queryOptions({
+      enabled: open,
+      input: { search: search.trim(), type: batchType },
+      placeholderData: keepPreviousData,
+    }),
+  );
 
   function confirmSelection() {
     const batch = data.find((batch) => batch.id === batchId);

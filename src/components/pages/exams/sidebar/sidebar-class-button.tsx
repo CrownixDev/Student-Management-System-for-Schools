@@ -6,7 +6,7 @@ import { SidebarMenuButton, SidebarMenuItem } from "../../../shadcn/sidebar";
 import { IClassListItem } from "@/features/class";
 
 export default function SidebarClassButton({ classItem }: { classItem: IClassListItem }) {
-  const [_, setQuery] = useQueryStates(idParsers);
+  const [, setQuery] = useQueryStates(idParsers);
   return (
     <SidebarMenuItem key={classItem.id}>
       <SidebarMenuButton onClick={() => setQuery({ classId: classItem.id })}>

@@ -97,7 +97,7 @@ function DeleteConfirmationInner({
             />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2">
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
@@ -118,7 +118,7 @@ function DeleteConfirmationInner({
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="gap-2 sm:gap-0">
+          <AlertDialogFooter className="gap-2">
             <Button
               variant="outline"
               type="button"

@@ -18,9 +18,9 @@ import { IClass } from "@/features/class";
 import { AlertTriangleIcon, BookOpenIcon, EditIcon, Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getMediumOptionsAction } from "@/features/medium/medium.actions";
 import { toast } from "react-toastify";
-import { MEDIUM_OPTIONS } from "@/lib/query-keys";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { cn } from "cn";
 import { ISubjectListItem } from "@/features/subjects";
 import { classSubjectsSchema } from "@/features/class/class.schema";
 import { deleteClassSubjectAction, updateClassSubjectsAction } from "@/features/class/class.actions";
@@ -29,7 +29,6 @@ import SubjectPickerDialog from "@/components/dialog/subject-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import TooltipButton from "@/components/ui/tooltip-button";
-import { cn } from "cn";
 
 interface ClassSubject {
   id: string;
@@ -62,19 +61,11 @@ export default function ClassSubjectsDialog({
   });
   const [errors, setErrors] = useState<string[]>([]);
 
-  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getMediumOptionsAction();
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [MEDIUM_OPTIONS],
-  });
+  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery(
+    rpcTanStack.medium.getAsOptions.queryOptions({
+      enabled: open,
+    }),
+  );
 
   useEffect(() => {
     function setMedium() {

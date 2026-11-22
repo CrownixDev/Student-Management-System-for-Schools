@@ -7,12 +7,10 @@ import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { IClass } from "@/features/class";
-import { getMediumOptionsAction } from "@/features/medium/medium.actions";
-import { MEDIUM_OPTIONS } from "@/lib/query-keys";
 import { getStudentListForClassWithSubjectsAction } from "@/features/students/students.actions";
 import { IStudentsListItem, IStudentsListWithSubjectsItem } from "@/features/students";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangleIcon, Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import StudentPickerDialog, { SelectedStudent } from "@/components/dialog/student-picker-dialog";
@@ -36,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import TooltipButton from "@/components/ui/tooltip-button";
+import { rpcTanStack } from "@/lib/orpc/client";
 
 type SubjectColumnState = Record<string, boolean>;
 type StudentSubjectState = Record<string, Record<string, boolean>>;
@@ -94,18 +93,11 @@ export default function ClassStudentDialog({
     queryKey: ["class-students", classData.gradeLevel.id, classData.id],
   });
 
-  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const result = await getMediumOptionsAction();
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-    queryKey: [MEDIUM_OPTIONS],
-  });
+  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery(
+    rpcTanStack.medium.getAsOptions.queryOptions({
+      enabled: open,
+    }),
+  );
 
   const studentsById = new Map<string, ClassStudent>();
   for (const student of enrolledStudents) {
@@ -400,27 +392,34 @@ export default function ClassStudentDialog({
                                 }
                                 className="aria-disabled:opacity-50"
                               />
-                              <Select
-                                items={mediumOptions}
-                                value={mediumId}
-                                disabled={!enrolled || columnDisabled || isMediumPending}
-                                onValueChange={(value) => {
-                                  if (value !== null) void changeStudentMedium(student.id, subject.id, value);
-                                }}
-                              >
-                                <SelectTrigger className="h-8 w-full min-w-0">
-                                  <SelectValue placeholder="Select medium" className="truncate" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {mediumOptions.map((medium) => (
-                                    <SelectItem key={medium.value} value={medium.value}>
-                                      <span className="max-w-48 truncate" title={medium.label}>
-                                        {medium.label}
-                                      </span>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              {isMediumPending ? (
+                                <div className="flex h-8 min-w-0 items-center gap-2 truncate rounded-md border px-3 text-sm text-muted-foreground">
+                                  <Loader2Icon className="size-4 shrink-0 animate-spin" />
+                                  <span className="truncate">Getting medium list...</span>
+                                </div>
+                              ) : (
+                                <Select
+                                  items={mediumOptions}
+                                  value={mediumId}
+                                  disabled={!enrolled || columnDisabled || isMediumPending}
+                                  onValueChange={(value) => {
+                                    if (value !== null) void changeStudentMedium(student.id, subject.id, value);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 w-full min-w-0">
+                                    <SelectValue placeholder="Select medium" className="truncate" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {mediumOptions.map((medium) => (
+                                      <SelectItem key={medium.value} value={medium.value}>
+                                        <span className="max-w-48 truncate" title={medium.label}>
+                                          {medium.label}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
                           </TableCell>
                         );

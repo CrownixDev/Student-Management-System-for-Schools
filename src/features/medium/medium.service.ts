@@ -4,8 +4,9 @@ import { MediumRepository } from "./medium.repository";
 import { IQueryParams } from "@/lib/filter";
 import { IMediumListItem, IMediumOption } from "./medium.types";
 import { mediumSchema } from "./medium.schema";
-import { ApiErrorV2 } from "@/lib/ApiError";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
+import { mediumIdRequiredError, mediumNameExistsError, mediumNotFoundError } from "./medium.errors";
 import z from "zod";
 
 export class MediumService {
@@ -23,7 +24,7 @@ export class MediumService {
   async create(data: z.infer<typeof mediumSchema>) {
     const parsedData = mediumSchema.safeParse(data);
     if (!parsedData.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -33,7 +34,7 @@ export class MediumService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Medium name is already exists");
+          throw new mediumNameExistsError();
         }
       }
       throw error;
@@ -41,11 +42,11 @@ export class MediumService {
   }
 
   async update(mediumId: string, data: z.infer<typeof mediumSchema>) {
-    if (!mediumId) throw new ApiErrorV2("Medium id is required");
+    if (!mediumId) throw new mediumIdRequiredError();
 
     const parsedData = mediumSchema.safeParse(data);
     if (!parsedData.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -55,10 +56,10 @@ export class MediumService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Medium name is already exists");
+          throw new mediumNameExistsError();
         }
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new mediumNotFoundError();
         }
       }
       throw error;
@@ -66,15 +67,15 @@ export class MediumService {
   }
 
   async delete(mediumId: string) {
-    if (!mediumId) throw new ApiErrorV2("Medium id is required");
+    if (!mediumId) throw new mediumIdRequiredError();
 
     const medium = await this.repository.getRelations(mediumId);
-    if (!medium) throw new ApiErrorV2("medium not found");
+    if (!medium) throw new mediumNotFoundError();
 
     const hasRelations = medium.classSubjects.length > 0 || medium.enrollmentSubjects.length > 0;
 
     if (hasRelations) {
-      throw new ApiErrorV2("This medium is currently in use");
+      throw new recordInUseError();
     }
 
     try {
@@ -82,10 +83,10 @@ export class MediumService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new mediumNotFoundError();
         }
         if (error.code === "P2003") {
-          throw new ApiErrorV2("This medium is currently in use");
+          throw new recordInUseError();
         }
       }
       throw error;

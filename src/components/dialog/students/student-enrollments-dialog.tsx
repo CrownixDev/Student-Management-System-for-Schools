@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDownIcon, ExternalLinkIcon } from "lucide-react";
-import { getStudentEnrollmentsAction } from "@/features/students/students.actions";
 import { IStudentEnrollment, IStudentsListItem } from "@/features/students";
 import { Badge } from "@/components/shadcn/badge";
 import { buttonVariants } from "@/components/shadcn/button";
@@ -9,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/ca
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { STUDENT_ENROLLMENTS } from "@/lib/query-keys";
-import { toast } from "react-toastify";
+import { rpcTanStack } from "@/lib/orpc/client";
 import Link from "next/link";
 
 interface Props {
@@ -93,18 +91,11 @@ export default function StudentEnrollmentsDialog({ open, onOpenChange, student }
     data: enrollments = [],
     isPending,
     isError,
-  } = useQuery({
-    queryFn: async () => {
-      const res = await getStudentEnrollmentsAction(student.id);
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [STUDENT_ENROLLMENTS, student.id],
-  });
+  } = useQuery(
+    rpcTanStack.student.getEnrollmentsById.queryOptions({
+      input: { studentId: student.id },
+    }),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

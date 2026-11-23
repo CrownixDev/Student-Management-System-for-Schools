@@ -2,7 +2,6 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { getStudentListAction, getStudentListForClassAction } from "@/features/students/students.actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { BookUserIcon, CheckIcon, EditIcon, UsersIcon } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -11,7 +10,6 @@ import { IStudentsListItem } from "@/features/students";
 import { IGradeListItem } from "@/features/grades";
 import { IAcademicYear } from "@/features/academic-years";
 import { IClassOption } from "@/features/class/class.types";
-import { RESULT_LIMIT } from "@/constraints";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { useState } from "react";
@@ -25,6 +23,7 @@ import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
 import DialogPagination from "@/components/ui/dialog/dialog-pagination";
+import { rpcTanStack } from "@/lib/orpc/client";
 
 type PickerTab = "all-students" | "by-class";
 
@@ -62,23 +61,13 @@ export default function StudentPickerDialog({
   const [isGradePickerOpen, setIsGradePickerOpen] = useState(false);
   const [selectAllInClass, setSelectAllInClass] = useState(false);
 
-  const studentListQuery = useQuery({
-    enabled: open && activeTab === "all-students",
-    placeholderData: keepPreviousData,
-    queryKey: ["student-picker-list", search, page],
-    queryFn: async () => {
-      const result = await getStudentListAction({
-        search: search.trim(),
-        page,
-        limit: RESULT_LIMIT,
-      });
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-  });
+  const studentListQuery = useQuery(
+    rpcTanStack.student.getList.queryOptions({
+      input: { search: search.trim(), page },
+      enabled: open && activeTab === "all-students",
+      placeholderData: keepPreviousData,
+    }),
+  );
 
   const classOptionsQuery = useQuery({
     enabled: open && activeTab === "by-class" && Boolean(year && grade),
@@ -93,18 +82,12 @@ export default function StudentPickerDialog({
     },
   });
 
-  const classStudentsQuery = useQuery({
-    enabled: open && activeTab === "by-class" && Boolean(classId),
-    queryKey: ["student-picker-class-students", classId],
-    queryFn: async () => {
-      const result = await getStudentListForClassAction(classId);
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-  });
+  const classStudentsQuery = useQuery(
+    rpcTanStack.student.getListForClass.queryOptions({
+      input: { classId },
+      enabled: open && activeTab === "by-class" && Boolean(classId),
+    }),
+  );
 
   const studentsInSelectedClass = classStudentsQuery.data ?? [];
   const availableClassStudents = studentsInSelectedClass.filter((student) => !selectedStudentIds.includes(student.id));

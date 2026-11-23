@@ -6,12 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/s
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { IClass } from "@/features/class";
-import { getStudentListForClassWithSubjectsAction } from "@/features/students/students.actions";
 import { IStudentsListItem, IStudentsListWithSubjectsItem } from "@/features/students";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangleIcon, Loader2Icon, Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { IClass } from "@/features/class";
 import { toast } from "react-toastify";
 import StudentPickerDialog, { SelectedStudent } from "@/components/dialog/student-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
@@ -80,18 +79,12 @@ export default function ClassStudentDialog({
     }
   };
 
-  const { data: enrolledStudents = [], isPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const result = await getStudentListForClassWithSubjectsAction(classData.id);
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-    queryKey: ["class-students", classData.gradeLevel.id, classData.id],
-  });
+  const { data: enrolledStudents = [], isPending } = useQuery(
+    rpcTanStack.student.getListForClassWithSubjects.queryOptions({
+      enabled: open,
+      input: { classId: classData.id },
+    }),
+  );
 
   const { data: mediumOptions = [], isPending: isMediumPending } = useQuery(
     rpcTanStack.medium.getAsOptions.queryOptions({

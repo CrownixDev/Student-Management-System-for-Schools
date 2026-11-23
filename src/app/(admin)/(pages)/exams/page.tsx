@@ -1,4 +1,4 @@
-import { IStudentsListWithSubjectsItem, studentsService } from "@/features/students";
+import { IStudentsListWithSubjectsItem } from "@/features/students";
 import { examService, IExamClassData, IExamListItem, IExamSubject } from "@/features/exams";
 import { IAcademicYear } from "@/features/academic-years";
 import { MousePointerClickIcon } from "lucide-react";
@@ -71,7 +71,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     if (yearId && gradeId && classId && examId) {
       activeYear = await caller.academicYear.getActiveYear();
       examDataForClass = await examService.getExamDataForClass(yearId, gradeId, classId, examId);
-      studentsWithEnrolledSubjects = await studentsService.getListForClassWithSubjects(classId);
+      studentsWithEnrolledSubjects = await caller.student.getListForClassWithSubjects({ classId });
       classSubjects = await classService.getSubjectsById(classId);
       examSubjects = await examService.getExamSubjects(examId);
     }

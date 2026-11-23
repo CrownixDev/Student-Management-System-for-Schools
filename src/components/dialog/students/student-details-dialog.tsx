@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/shadcn/field";
@@ -15,16 +15,12 @@ import { EditIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { studentSchema } from "@/features/students/student.schema";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  createStudentAction,
-  deleteStudentAction,
-  getStudentJsonFieldsAction,
-  updateStudentAction,
-} from "@/features/students/students.actions";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import { toast } from "react-toastify";
 import DeleteConfirmationDialog from "@/components/dialog/delete-confirmation-dialog";
 import AddCustomFieldDialog from "./add-custom-field-dialog";
-import { STUDENT_CUSTOM_FIELDS } from "@/lib/query-keys";
 import z from "zod";
 
 interface Props {
@@ -62,6 +58,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
     resolver: zodResolver(studentSchema),
   });
 
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [addCustomField, setAddCustomField] = useState<{
@@ -69,18 +66,11 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
     data?: StrictOmit<IStudentJsonField, "createdAt" | "updatedAt">;
   }>({ open: false });
 
-  const { data: customFields = [] } = useQuery({
-    enabled: open,
-    queryKey: [STUDENT_CUSTOM_FIELDS],
-    queryFn: async () => {
-      const res = await getStudentJsonFieldsAction();
-      if (!res.success) {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-      return res.data;
-    },
-  });
+  const { data: customFields = [] } = useQuery(
+    rpcTanStack.student.getJsonFields.queryOptions({
+      enabled: open,
+    }),
+  );
 
   function handleDiscard() {
     if (confirm("Are you sure you want to discard changes?")) {
@@ -89,37 +79,67 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
     }
   }
 
-  async function handleCreate(formData: z.infer<typeof studentSchema>) {
-    const res = await createStudentAction(formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const createMutation = useMutation(
+    rpcTanStack.student.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+        toast.success("Student Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    rpcTanStack.student.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+        toast.success("Student Updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof studentSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync(formData);
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof studentSchema>) {
-    if (!data?.id) return;
-    const res = await updateStudentAction(data.id, formData);
-    if (res.success) {
-      setIsEditing(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteStudentAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.student.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+        toast.success("Student Deleted");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   const isCreatingStudent = !data;
   const isViewingStudent = data && !isEditing;
@@ -203,7 +223,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
             )}
 
             {(isCreatingStudent || isEditingStudent) && (
-              <form id="student-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+              <form id="student-form" onSubmit={form.handleSubmit(handleSubmit)}>
                 <FieldGroup>
                   <FieldSet>
                     <FieldGroup className="grid grid-cols-2 gap-4">
@@ -586,7 +606,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, data }: Props
           onOpenChange={setDeleteOpen}
           title={`Delete student '${data.fullName}'`}
           description="Are you sure you want to delete this student?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
 

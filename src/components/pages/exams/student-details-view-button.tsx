@@ -39,6 +39,7 @@ export default function StudentDetailsViewButton({
   const { data, isPending } = useQuery({
     enabled: open,
     queryFn: async () => {
+      // TODO:Replace this after implement exam procedures
       const res = await getStudentDetailsAction(studentId, classId);
       if (res.success) {
         return res.data;

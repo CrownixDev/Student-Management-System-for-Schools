@@ -2,10 +2,10 @@ import { teacherIdRequiredError, teacherNotFoundError } from "./teachers.errors"
 import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
 import { protectedProcedure } from "@/lib/orpc/base";
 import { roleGuard } from "@/lib/orpc/middleware/role-guard";
-import z from "zod";
 import { teachersService } from ".";
 import { teacherSchema } from "./teachers.schema";
-import { RESULT_LIMIT } from "@/constraints";
+import { queryParamsSchema } from "@/lib/filter";
+import z from "zod";
 
 const teacherProcedure = protectedProcedure.errors({
   [teacherIdRequiredError.code]: teacherIdRequiredError,
@@ -17,19 +17,9 @@ const teacherProcedure = protectedProcedure.errors({
 export const teacherProcedures = {
   getList: teacherProcedure
     .use(roleGuard.adaptInput(() => ["admin"]))
-    .input(
-      z.object({
-        search: z.string().nullable(),
-        page: z.number().positive().nullable(),
-        limit: z.number().positive().default(RESULT_LIMIT).nullable(),
-      }),
-    )
+    .input(queryParamsSchema)
     .handler(({ input }) => {
-      return teachersService.getList({
-        search: input.search,
-        limit: input.limit,
-        page: input.page,
-      });
+      return teachersService.getList(input);
     }),
 
   getById: teacherProcedure

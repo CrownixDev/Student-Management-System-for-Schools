@@ -1,11 +1,18 @@
 import { RESULT_LIMIT } from "@/constraints";
 import { StrictOmit } from "./utils";
+import z from "zod";
 
 export interface IQueryParams {
   search?: string | null;
   page?: number | null;
   limit?: number | null;
 }
+
+export const queryParamsSchema = z.object({
+  search: z.string().nullable(),
+  page: z.number().positive().nullable(),
+  limit: z.number().positive().default(RESULT_LIMIT).nullable(),
+});
 
 /**
  * This function returns the pagination details

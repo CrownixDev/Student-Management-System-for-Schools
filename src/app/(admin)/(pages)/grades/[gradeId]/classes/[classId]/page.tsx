@@ -1,6 +1,6 @@
 import { examService, IExamByEnrollmentId } from "@/features/exams";
 import { ISubjectListItem } from "@/features/subjects";
-import { IStudent, studentsService } from "@/features/students";
+import { IStudent } from "@/features/students";
 import { classService, IClass } from "@/features/class";
 import { UsersRoundIcon } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -29,7 +29,7 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
   try {
     classData = await classService.getById(classId);
     if (studentId) {
-      student = await studentsService.getById(classId, studentId);
+      student = await caller.student.getById({ classId, studentId });
       if (student) {
         examData = await examService.getDataByEnrollmentId(student.enrollment.id);
         subjectList = await caller.subject.getListByEnrollmentId({ id: student.enrollment.id });

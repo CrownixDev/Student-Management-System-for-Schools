@@ -11,11 +11,14 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { subjectSchema } from "@/features/subjects/subject.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createSubjectAction, deleteSubjectAction, updateSubjectAction } from "@/features/subjects/subject.actions";
 import { toast } from "react-toastify";
 import TooltipButton from "@/components/ui/tooltip-button";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 
 export default function SubjectDialog({
   open,
@@ -26,7 +29,9 @@ export default function SubjectDialog({
   onOpenChange: (open: boolean) => void;
   data?: Partial<Pick<ISubject, "id" | "name" | "code" | "category">>;
 }) {
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
+
   const form = useForm<z.infer<typeof subjectSchema>>({
     defaultValues: {
       name: data?.name ?? "",
@@ -38,37 +43,67 @@ export default function SubjectDialog({
   const isEditing = Boolean(data?.id);
   const isSubmitting = form.formState.isSubmitting;
 
-  async function handleCreate(formData: z.infer<typeof subjectSchema>) {
-    const res = await createSubjectAction(formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const createMutation = useMutation(
+    rpcTanStack.subject.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.subject.key() });
+        toast.success("Subject Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    rpcTanStack.subject.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.subject.key() });
+        toast.success("Subject Updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof subjectSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync(formData);
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof subjectSchema>) {
-    if (!data?.id) return;
-    const res = await updateSubjectAction(data.id, formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteSubjectAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.subject.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.subject.key() });
+        toast.success("Subject Deleted");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -77,7 +112,7 @@ export default function SubjectDialog({
           <DialogHeader>
             <DialogTitle>{data ? "Edit subject" : "Add subject"}</DialogTitle>
           </DialogHeader>
-          <form id="subject-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="subject-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup>
               <Controller
                 name="name"
@@ -192,7 +227,7 @@ export default function SubjectDialog({
           onOpenChange={setIsDeleting}
           title={`Delete Subject '${data.name}'`}
           description="Are you sure you want to delete this subject?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

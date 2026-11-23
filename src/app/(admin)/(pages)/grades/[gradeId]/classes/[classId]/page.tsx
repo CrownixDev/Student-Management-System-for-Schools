@@ -1,5 +1,5 @@
 import { examService, IExamByEnrollmentId } from "@/features/exams";
-import { ISubjectListItem, subjectService } from "@/features/subjects";
+import { ISubjectListItem } from "@/features/subjects";
 import { IStudent, studentsService } from "@/features/students";
 import { classService, IClass } from "@/features/class";
 import { UsersRoundIcon } from "lucide-react";
@@ -8,8 +8,10 @@ import { idCache } from "@/lib/nuqs/id";
 import StudentDetails from "@/components/pages/classes/student-details";
 import ClassSidebar from "@/components/pages/classes/class-sidebar";
 import EmptyState from "@/components/ui/empty-state";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function ClassPage({ params, searchParams }: PageProps<"/grades/[gradeId]/classes/[classId]">) {
+  const caller = await getServerCaller();
   const { yearId, studentId } = await idCache.parse(searchParams);
   const { gradeId, classId } = await params;
 
@@ -30,7 +32,7 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
       student = await studentsService.getById(classId, studentId);
       if (student) {
         examData = await examService.getDataByEnrollmentId(student.enrollment.id);
-        subjectList = await subjectService.getListByEnrollmentId(student.enrollment.id);
+        subjectList = await caller.subject.getListByEnrollmentId({ id: student.enrollment.id });
       }
     }
   } catch {

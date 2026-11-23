@@ -9,16 +9,14 @@ import { subjectCategories } from "@/features/subjects/subject.enums";
 import { SubjectCategory } from "@/generated/prisma/enums";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SUBJECT_LIST } from "@/lib/query-keys";
-import { getSubjectListAction } from "@/features/subjects/subject.actions";
-import { toast } from "react-toastify";
 import { Field, FieldLabel } from "../shadcn/field";
 import { Badge } from "../shadcn/badge";
-import LoadingIndicator from "../ui/loading-indicator";
 import { LibraryBigIcon, Loader2Icon } from "lucide-react";
+import { ISubjectListItem } from "@/features/subjects";
+import { rpcTanStack } from "@/lib/orpc/client";
+import LoadingIndicator from "../ui/loading-indicator";
 import EmptyState from "../ui/empty-state";
 import SearchInput from "../ui/search-input";
-import { ISubjectListItem } from "@/features/subjects";
 
 export default function SubjectPickerDialog({
   open,
@@ -42,18 +40,11 @@ export default function SubjectPickerDialog({
     data: subjects = [],
     isPending,
     isFetching,
-  } = useQuery({
-    queryFn: async () => {
-      const res = await getSubjectListAction({ search, category });
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [SUBJECT_LIST, category, search],
-  });
+  } = useQuery(
+    rpcTanStack.subject.getList.queryOptions({
+      input: { search, category },
+    }),
+  );
 
   const availableSubjects = subjects.filter((subject) => !selectedSubjectIds.includes(subject.id));
 

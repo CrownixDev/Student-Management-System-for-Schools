@@ -1,11 +1,12 @@
 import "server-only";
 
-import { IQueryParams } from "@/lib/filter";
-import { ApiErrorV2 } from "@/lib/ApiError";
-import { TeachersRepository } from "./teachers.repository";
-import { ITeacher, ITeacherList } from "./teachers.types";
-import { teacherSchema } from "./teachers.schema";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
+import { teacherIdRequiredError, teacherNotFoundError } from "./teachers.errors";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { ITeacher, ITeacherList } from "./teachers.types";
+import { TeachersRepository } from "./teachers.repository";
+import { teacherSchema } from "./teachers.schema";
+import { IQueryParams } from "@/lib/filter";
 import z from "zod";
 
 export class TeachersService {
@@ -17,10 +18,10 @@ export class TeachersService {
   }
 
   async getById(teacherId: string): Promise<ITeacher> {
-    if (!teacherId) throw new ApiErrorV2("Teacher id is required");
+    if (!teacherId) throw new teacherIdRequiredError();
 
     const teacher = await this.repository.getById(teacherId);
-    if (!teacher) throw new ApiErrorV2("Teacher Not Found");
+    if (!teacher) throw new teacherNotFoundError();
     return {
       id: teacher.id,
       fullName: teacher.fullName,
@@ -49,7 +50,7 @@ export class TeachersService {
   async create(data: z.infer<typeof teacherSchema>) {
     const parsedData = teacherSchema.safeParse(data);
     if (!parsedData.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -60,11 +61,11 @@ export class TeachersService {
   }
 
   async update(teacherId: string, data: z.infer<typeof teacherSchema>) {
-    if (!teacherId) throw new ApiErrorV2("Teacher id is required");
+    if (!teacherId) throw new teacherIdRequiredError();
 
     const parsedData = teacherSchema.safeParse(data);
     if (!parsedData.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -72,7 +73,7 @@ export class TeachersService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new teacherNotFoundError();
         }
       }
       throw error;
@@ -80,15 +81,15 @@ export class TeachersService {
   }
 
   async delete(teacherId: string) {
-    if (!teacherId) throw new ApiErrorV2("Teacher id is required");
+    if (!teacherId) throw new teacherIdRequiredError();
 
     const teacher = await this.repository.getRelations(teacherId);
-    if (!teacher) throw new ApiErrorV2("Teacher not found");
+    if (!teacher) throw new teacherNotFoundError();
 
     const hasRelations = teacher.classSubjects.length > 0 || teacher.classesAsClassTeacher.length > 0;
 
     if (hasRelations) {
-      throw new ApiErrorV2("This Teacher is currently in use");
+      throw new recordInUseError();
     }
 
     try {
@@ -96,10 +97,10 @@ export class TeachersService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new teacherNotFoundError();
         }
         if (error.code === "P2003") {
-          throw new ApiErrorV2("This Teacher is currently in use");
+          throw new recordInUseError();
         }
       }
       throw error;

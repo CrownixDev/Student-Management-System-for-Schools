@@ -13,7 +13,7 @@ import {
 } from "@/components/shadcn/sidebar";
 import { IAcademicYear } from "@/features/academic-years";
 import { ArrowLeftIcon, HousesIcon } from "lucide-react";
-import { gradesService, IGradeListItem } from "@/features/grades";
+import { IGradeListItem } from "@/features/grades";
 import { IBatchListItem } from "@/features/batch";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { classService } from "@/features/class";
@@ -35,7 +35,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
 
   try {
     if (yearId) yearData = await caller.academicYear.getListItemById({ id: yearId });
-    if (gradeId) gradeData = await gradesService.getListItemById(gradeId);
+    if (gradeId) gradeData = await caller.grade.getListItemById({ gradeId });
     if (batchId) batchData = await caller.batch.getListItemById({ id: batchId });
   } catch {
     redirect("/");

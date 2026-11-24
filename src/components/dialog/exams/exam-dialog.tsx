@@ -168,11 +168,12 @@ export default function ExamDialog({ open, onOpenChange, grade, data }: ExamDial
   );
 
   async function handleSubmit(formData: z.infer<typeof examSchema>) {
-    if (!grade) return;
     if (isEditing && data && data.id) {
       await updateMutation.mutateAsync({ examId: data.id, data: formData });
     } else {
-      await createMutation.mutateAsync({ gradeId: grade.id, data: formData });
+      if (grade) {
+        await createMutation.mutateAsync({ gradeId: grade.id, data: formData });
+      }
     }
   }
 

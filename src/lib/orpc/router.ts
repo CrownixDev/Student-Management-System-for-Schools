@@ -1,6 +1,7 @@
 import { academicYearProcedures } from "@/features/academic-years/year.procedures";
 import { batchProcedures } from "@/features/batch/batch.procedures,";
 import { examProcedures } from "@/features/exams/exams.procedures";
+import { gradeProcedures } from "@/features/grades/grades.procedures";
 import { mediumProcedures } from "@/features/medium/medium.procedures";
 import { studentProcedures } from "@/features/students/student.procedures";
 import { subjectProcedures } from "@/features/subjects/subject.procedures";
@@ -14,6 +15,7 @@ export const router = {
   subject: subjectProcedures,
   student: studentProcedures,
   exam: examProcedures,
+  grade: gradeProcedures,
 };
 
 export type AppRouter = typeof router;

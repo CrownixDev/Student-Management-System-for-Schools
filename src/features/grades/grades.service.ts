@@ -1,11 +1,12 @@
 import "server-only";
 
-import { ApiErrorV2 } from "@/lib/ApiError";
 import { GradesRepository } from "./grades.repository";
 import { IGradeListItem, IGradeListItemForYear, IGradeWithClassesItem } from "./grades.types";
 import { IQueryParams } from "@/lib/filter";
 import { gradeSchema } from "@/features/grades/grades.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { gradeIdRequiredError, gradeNameExistsError, gradeNotFoundError, yearIdRequiredError } from "./grades.errors";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
 import z from "zod";
 
 export class GradesService {
@@ -15,10 +16,9 @@ export class GradesService {
     search,
     yearId,
   }: Pick<IQueryParams, "search"> & { yearId: string }): Promise<IGradeListItemForYear[]> {
-    if (!yearId) throw new ApiErrorV2("Year id is required");
+    if (!yearId) throw new yearIdRequiredError();
 
     const gradeData = await this.repository.getListByYear({ search, yearId });
-    if (!gradeData) throw new ApiErrorV2("Invalid year id");
 
     return gradeData
       .map((grade) => ({
@@ -30,15 +30,15 @@ export class GradesService {
   }
 
   async getListItemById(gradeId: string): Promise<IGradeListItem> {
-    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    if (!gradeId) throw new gradeIdRequiredError();
 
     const grade = await this.repository.getListItemById(gradeId);
-    if (!grade) throw new ApiErrorV2("Grade Not Found");
+    if (!grade) throw new gradeNotFoundError();
     return grade;
   }
 
   async getListWithClasses(yearId: string): Promise<IGradeWithClassesItem[]> {
-    if (!yearId) throw new ApiErrorV2("Year id is required");
+    if (!yearId) throw new yearIdRequiredError();
 
     const grades = await this.repository.getListWithClasses(yearId);
     return grades
@@ -59,7 +59,7 @@ export class GradesService {
   async create(yearId: string, data: z.infer<typeof gradeSchema>) {
     const parsedRes = gradeSchema.safeParse(data);
     if (!parsedRes.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -70,7 +70,7 @@ export class GradesService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Grade name is already exists");
+          throw new gradeNameExistsError();
         }
       }
       throw error;
@@ -78,11 +78,11 @@ export class GradesService {
   }
 
   async update(gradeId: string, data: z.infer<typeof gradeSchema>) {
-    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    if (!gradeId) throw new gradeIdRequiredError();
 
     const parsedRes = gradeSchema.safeParse(data);
     if (!parsedRes.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -92,10 +92,10 @@ export class GradesService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Grade name is already exists");
+          throw new gradeNameExistsError();
         }
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new gradeNotFoundError();
         }
       }
       throw error;
@@ -103,17 +103,17 @@ export class GradesService {
   }
 
   async delete(gradeId: string) {
-    if (!gradeId) throw new ApiErrorV2("Grade id is required");
+    if (!gradeId) throw new gradeIdRequiredError();
 
     try {
       await this.repository.delete(gradeId);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new gradeNotFoundError();
         }
         if (error.code === "P2003") {
-          throw new ApiErrorV2("This grade is currently in use");
+          throw new recordInUseError();
         }
       }
       throw error;

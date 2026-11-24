@@ -1,5 +1,5 @@
 import { IAcademicYear } from "@/features/academic-years";
-import { gradesService, IGradeListItemForYear } from "@/features/grades";
+import { IGradeListItemForYear } from "@/features/grades";
 import { classService, IClassList } from "@/features/class";
 import { IExamListItem } from "@/features/exams";
 import { redirect } from "next/navigation";
@@ -25,7 +25,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
 
   try {
     if (yearId) yearData = await caller.academicYear.getListItemById({ id: yearId });
-    if (yearId) gradeList = await gradesService.getListByYear({ yearId });
+    if (yearId) gradeList = await caller.grade.getList({ yearId, search: null });
     if (gradeId) classList = await classService.getList(gradeId);
     if (gradeId) examList = await caller.exam.getList({ gradeId });
   } catch {

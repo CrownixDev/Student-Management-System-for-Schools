@@ -16,13 +16,12 @@ import { ArrowLeftIcon, HousesIcon } from "lucide-react";
 import { IGradeListItem } from "@/features/grades";
 import { IBatchListItem } from "@/features/batch";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
-import { classService } from "@/features/class";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
-import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
-import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
@@ -47,7 +46,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
     redirect("/");
   }
 
-  const classList = await classService.getList(gradeId);
+  const classList = await caller.class.getList({ gradeId });
   return (
     <Sidebar>
       <SidebarHeader>

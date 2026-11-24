@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { BookUserIcon, CheckIcon, EditIcon, UsersIcon } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { getClassOptionsAction } from "@/features/class/class.actions";
 import { IStudentsListItem } from "@/features/students";
 import { IGradeListItem } from "@/features/grades";
 import { IAcademicYear } from "@/features/academic-years";
@@ -14,7 +13,6 @@ import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
-import { toast } from "react-toastify";
 import { Badge } from "@/components/shadcn/badge";
 import { Label } from "@/components/shadcn/label";
 import GradePickerDialog from "@/components/dialog/grade-picker-dialog";
@@ -69,18 +67,12 @@ export default function StudentPickerDialog({
     }),
   );
 
-  const classOptionsQuery = useQuery({
-    enabled: open && activeTab === "by-class" && Boolean(year && grade),
-    queryKey: ["student-picker-class-options", year?.id, grade?.id],
-    queryFn: async () => {
-      const result = await getClassOptionsAction(grade!.id);
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-  });
+  const classOptionsQuery = useQuery(
+    rpcTanStack.class.getAsOptions.queryOptions({
+      input: { gradeId: grade!.id },
+      enabled: open && activeTab === "by-class" && Boolean(year && grade),
+    }),
+  );
 
   const classStudentsQuery = useQuery(
     rpcTanStack.student.getListForClass.queryOptions({

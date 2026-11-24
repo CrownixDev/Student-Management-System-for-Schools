@@ -10,9 +10,12 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { classDetailsDialogSchema, classDetailsSchema } from "@/features/class/class.schema";
-import { createClassAction, deleteClassAction, updateClassmAction } from "@/features/class/class.actions";
+import { classDetailsDialogSchema } from "@/features/class/class.schema";
 import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
@@ -43,51 +46,76 @@ export default function ClassDetailsDialog({
 
   const isEditing = Boolean(data?.id);
   const isSubmitting = form.formState.isSubmitting;
+  const queryClient = useQueryClient();
 
-  async function handleCreate(formData: z.infer<typeof classDetailsDialogSchema>) {
-    const parsedRes = classDetailsSchema.safeParse({ ...formData, teacherId: formData.teacher?.id ?? null });
-    if (!parsedRes.success) {
-      toast.error("Invalid data provided");
-      return;
-    }
+  const createMutation = useMutation(
+    rpcTanStack.class.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.class.key() });
+        toast.success("Class Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
-    const res = await createClassAction(grade.id, parsedRes.data);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const updateMutation = useMutation(
+    rpcTanStack.class.updateDetails.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.class.key() });
+        toast.success("Class details updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof classDetailsDialogSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({
+        id: data.id,
+        data: { ...formData, teacherId: formData.teacher?.id ?? null },
+      });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync({
+        gradeId: grade.id,
+        data: { ...formData, teacherId: formData.teacher?.id ?? null },
+      });
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof classDetailsDialogSchema>) {
-    if (!data?.id) return;
-    const parsedRes = classDetailsSchema.safeParse({ ...formData, teacherId: formData.teacher?.id ?? null });
-    if (!parsedRes.success) {
-      toast.error("Invalid data provided");
-      return;
-    }
-
-    const res = await updateClassmAction(data.id, parsedRes.data);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteClassAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      router.replace("/setup/classes");
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.class.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.class.key() });
+        toast.success("Class deleted");
+        router.replace("/setup/classes");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -97,7 +125,7 @@ export default function ClassDetailsDialog({
             <DialogTitle>{data ? `Edit class: ${data.name}` : "Create class"}</DialogTitle>
           </DialogHeader>
 
-          <form id="class-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="class-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup className="gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <Field>
@@ -188,7 +216,7 @@ export default function ClassDetailsDialog({
           onOpenChange={setIsDeleting}
           title={`Delete '${data.name}' Class`}
           description="Are you sure you want to delete this class?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

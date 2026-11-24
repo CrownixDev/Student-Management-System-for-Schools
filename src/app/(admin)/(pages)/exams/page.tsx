@@ -2,13 +2,13 @@ import { IStudentsListWithSubjectsItem } from "@/features/students";
 import { IExamClassData, IExamListItem, IExamSubject } from "@/features/exams";
 import { IAcademicYear } from "@/features/academic-years";
 import { MousePointerClickIcon } from "lucide-react";
-import { classService, IClass } from "@/features/class";
+import { IClass } from "@/features/class";
 import { ExamMarksPage } from "@/components/pages/exams/exam-marks-page";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 import ExamResultsPage from "@/components/pages/exams/exam-results-page";
 import EmptyState from "@/components/ui/empty-state";
-import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const caller = await getServerCaller();
@@ -72,7 +72,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
       activeYear = await caller.academicYear.getActiveYear();
       examDataForClass = await caller.exam.getExamDataForClass({ classId, examId });
       studentsWithEnrolledSubjects = await caller.student.getListForClassWithSubjects({ classId });
-      classSubjects = await classService.getSubjectsById(classId);
+      classSubjects = await caller.class.getSubjectsById({ id: classId });
       examSubjects = await caller.exam.getExamSubjects({ examId });
     }
   } catch {

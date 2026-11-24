@@ -1,7 +1,7 @@
 import { IExamByEnrollmentId } from "@/features/exams";
 import { ISubjectListItem } from "@/features/subjects";
 import { IStudent } from "@/features/students";
-import { classService, IClass } from "@/features/class";
+import { IClass } from "@/features/class";
 import { UsersRoundIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
@@ -27,7 +27,7 @@ export default async function ClassPage({ params, searchParams }: PageProps<"/gr
   let subjectList: ISubjectListItem[] | null = null;
 
   try {
-    classData = await classService.getById(classId);
+    classData = await caller.class.getById({ id: classId });
     if (studentId) {
       student = await caller.student.getById({ classId, studentId });
       if (student) {

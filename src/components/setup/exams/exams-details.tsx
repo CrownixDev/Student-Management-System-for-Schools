@@ -1,6 +1,6 @@
 import { TypographyH1, TypographyH2 } from "@/components/ui/typography";
 import { IAcademicYear } from "@/features/academic-years";
-import { examService, IExamListItem } from "@/features/exams";
+import { IExamListItem } from "@/features/exams";
 import { gradesService, IGradeListItem } from "@/features/grades";
 import { GraduationCapIcon, NotebookPenIcon } from "lucide-react";
 import EmptyState from "@/components/ui/empty-state";
@@ -35,7 +35,7 @@ export default async function ExamsDetails() {
 
   if (gradeId) {
     try {
-      exams = await examService.getList(gradeId);
+      exams = await caller.exam.getList({ gradeId });
     } catch (err) {
       console.error("Failed to load exams list:", err);
       redirect("/setup");

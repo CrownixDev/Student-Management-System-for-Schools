@@ -1,15 +1,15 @@
 import { IAcademicYear } from "@/features/academic-years";
 import { gradesService, IGradeListItemForYear } from "@/features/grades";
 import { classService, IClassList } from "@/features/class";
-import { examService, IExamListItem } from "@/features/exams";
+import { IExamListItem } from "@/features/exams";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/shadcn/sidebar";
 import { idCache } from "@/lib/nuqs/id";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 import SidebarGradeContent from "@/components/pages/exams/sidebar/sidebar-grade-content";
 import SidebarClassContent from "@/components/pages/exams/sidebar/sidebar-class-content";
 import SidebarExamContent from "@/components/pages/exams/sidebar/sidebar-exam-content";
 import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
-import { getServerCaller } from "@/lib/orpc/server-caller";
 
 export default async function page({ searchParams }: PageProps<"/exams">) {
   const { yearId, gradeId, classId, examId } = await idCache.parse(searchParams);
@@ -27,7 +27,7 @@ export default async function page({ searchParams }: PageProps<"/exams">) {
     if (yearId) yearData = await caller.academicYear.getListItemById({ id: yearId });
     if (yearId) gradeList = await gradesService.getListByYear({ yearId });
     if (gradeId) classList = await classService.getList(gradeId);
-    if (gradeId) examList = await examService.getList(gradeId);
+    if (gradeId) examList = await caller.exam.getList({ gradeId });
   } catch {
     redirect("/");
   }

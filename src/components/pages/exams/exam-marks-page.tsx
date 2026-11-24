@@ -12,9 +12,11 @@ import { useRouter } from "next/navigation";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
 import { IStudentsListWithSubjectsItem } from "@/features/students";
 import { IClass } from "@/features/class";
-import { updateExamMarksAction } from "@/features/exams/exams.actions";
-import { examMarksSchema } from "@/features/exams/exams.schema";
 import { toast } from "react-toastify";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 
 type Student = IExamClassData["students"][number];
 type Subject = IClass["subjects"][number];
@@ -334,7 +336,7 @@ function MarkCell({
   onInputKeyDown: (event: KeyboardEvent<HTMLInputElement>, student: Student, subjectId: string) => void;
 }) {
   if (!isInExam) {
-    return <TableCell className="bg-muted/50 text-muted-foreground">—</TableCell>;
+    return <TableCell className="bg-muted/50 text-muted-foreground">-</TableCell>;
   }
 
   if (!isEnrolled) {
@@ -353,7 +355,7 @@ function MarkCell({
         {draft.status === "absent" ? (
           <Badge variant="outline">Absent</Badge>
         ) : draft.value.trim() === "" ? (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground">-</span>
         ) : (
           draft.value
         )}
@@ -438,8 +440,29 @@ export function ExamMarksPage({
   const [message, setMessage] = useState("");
   const inputRefs = useRef(new Map<CellKey, HTMLInputElement>());
   const drafts = draftState.source === examData ? draftState.values : {};
-
+  const queryClient = useQueryClient();
   const router = useRouter();
+
+  const updateMarksMutation = useMutation(
+    rpcTanStack.exam.updateMarks.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/exams");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.exam.key() });
+        setIsEditing((current) => !current);
+        router.refresh();
+        toast.success("Exam marks Updated");
+      },
+      onError: (error) => {
+        setIsSaving(false);
+        toast.error("Marks cannot be saved. Please try again. Reloading will discard your edits.");
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   const subjects = classSubjects;
   const isSubjectInExam = (subjectId: string) =>
@@ -580,26 +603,10 @@ export function ExamMarksPage({
     }
 
     setIsSaving(true);
-    try {
-      const parsedRes = examMarksSchema.safeParse(marks);
-      if (!parsedRes.success) {
-        toast.error("Invalid marks provided");
-        return;
-      }
 
-      const res = await updateExamMarksAction(exam.id, parsedRes.data);
-      if (res.success) {
-        setIsEditing((current) => !current);
-        router.refresh();
-        toast.success(res.message);
-      } else {
-        toast.error(res.message);
-      }
-    } catch {
-      toast.error("Marks cannot be saved. Please try again. Reloading will discard your edits.");
-    } finally {
-      setIsSaving(false);
-    }
+    await updateMarksMutation.mutateAsync({ examId: exam.id, data: marks });
+
+    setIsSaving(false);
   }
 
   const eligibleCount = examData.students.reduce(

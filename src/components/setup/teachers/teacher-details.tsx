@@ -96,7 +96,7 @@ export default async function TeacherDetails() {
                   <TableRow key={`${subject.class}-${subject.name}-${subject.medium ?? "no-medium"}-${index}`}>
                     <TableCell>{subject.class}</TableCell>
                     <TableCell className="font-medium">{subject.name}</TableCell>
-                    <TableCell>{subject.medium ?? "—"}</TableCell>
+                    <TableCell>{subject.medium ?? "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

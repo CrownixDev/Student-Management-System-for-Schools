@@ -15,6 +15,7 @@ export default async function MediumTable() {
   if (error) {
     return (
       <ErrorState
+        type="absolute"
         title={definedError ? error.message : "Error loading medium list"}
         description="Failed to load medium list. Please try reloading the page."
       />

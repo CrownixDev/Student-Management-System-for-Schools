@@ -20,6 +20,7 @@ async function SidebarContent() {
     return (
       <PageSidebarContent>
         <ErrorState
+          type="absolute"
           title={definedError ? error.message : "Error loading teachers list"}
           description="Failed to load teacher list. Please try reloading the page."
         />

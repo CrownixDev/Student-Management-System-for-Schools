@@ -19,6 +19,7 @@ export default async function YearsContent() {
   if (error) {
     return (
       <ErrorState
+        type="absolute"
         title={definedError ? error.message : "Error loading academic years"}
         description="Failed to load academic years. Please try reloading the page."
       />

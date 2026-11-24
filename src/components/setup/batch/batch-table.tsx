@@ -18,6 +18,7 @@ export default async function BatchTable({ type }: { type: BatchType }) {
   if (error) {
     return (
       <ErrorState
+        type="absolute"
         title={definedError ? error.message : "Error loading batch list"}
         description="Failed to load batch list. Please try reloading the page."
       />

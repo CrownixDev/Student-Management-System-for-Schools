@@ -11,9 +11,12 @@ import { Controller, useForm } from "react-hook-form";
 import { teacherSchema } from "@/features/teachers/teachers.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TrashIcon } from "lucide-react";
-import { createTeacherAction, deleteTeacherAction, updateTeacherAction } from "@/features/teachers/teachers.actions";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
 
@@ -29,6 +32,7 @@ export default function TeacherDialog({
   const isEditing = Boolean(data?.id);
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof teacherSchema>>({
     defaultValues: {
@@ -39,38 +43,68 @@ export default function TeacherDialog({
     resolver: zodResolver(teacherSchema),
   });
 
-  async function handleCreate(formData: z.infer<typeof teacherSchema>) {
-    const res = await createTeacherAction(formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const createMutation = useMutation(
+    rpcTanStack.teacher.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.teacher.key() });
+        toast.success("Teacher Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    rpcTanStack.teacher.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.teacher.key() });
+        toast.success("Teacher Updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof teacherSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync(formData);
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof teacherSchema>) {
-    if (!data?.id) return;
-    const res = await updateTeacherAction(data.id, formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteTeacherAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      router.replace("/setup/teachers");
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.teacher.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.teacher.key() });
+        router.replace("/setup/teachers");
+        toast.success("Teacher Deleted");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -79,7 +113,7 @@ export default function TeacherDialog({
           <DialogHeader>
             <DialogTitle>{data ? "Edit teacher" : "Add teacher"}</DialogTitle>
           </DialogHeader>
-          <form id="teacher-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="teacher-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup>
               <Controller
                 name="fullName"
@@ -171,7 +205,7 @@ export default function TeacherDialog({
           onOpenChange={setIsDeleting}
           title={`Delete '${data.fullName}'?`}
           description="Are you sure you want to delete this teacher?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

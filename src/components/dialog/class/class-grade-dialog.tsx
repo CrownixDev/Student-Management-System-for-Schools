@@ -10,9 +10,12 @@ import { TrashIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { gradeSchema } from "@/features/grades/grades.schema";
-import { createGradeAction, deleteGradeAction, updateGradeAction } from "@/features/grades/grades.actions";
 import { toast } from "react-toastify";
 import { IAcademicYear } from "@/features/academic-years";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
 
@@ -28,6 +31,7 @@ export default function ClassGradeDialog({
   onSave?: Partial<IGradeListItem>;
   year?: IAcademicYear;
 }) {
+  const queryClient = useQueryClient();
   const isEditing = Boolean(data?.id);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -38,38 +42,69 @@ export default function ClassGradeDialog({
     resolver: zodResolver(gradeSchema),
   });
 
-  async function handleCreate(formData: z.infer<typeof gradeSchema>) {
-    if (!year) return;
-    const res = await createGradeAction(year.id, formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const createMutation = useMutation(
+    rpcTanStack.grade.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.grade.key() });
+        toast.success("Grade Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    rpcTanStack.grade.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.grade.key() });
+        toast.success("Grade Updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof gradeSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      if (year) {
+        await createMutation.mutateAsync({ yearId: year.id, data: formData });
+      }
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof gradeSchema>) {
-    if (!data?.id) return;
-    const res = await updateGradeAction(data.id, formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteGradeAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.grade.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.grade.key() });
+        toast.success("Grade Deleted");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -79,7 +114,7 @@ export default function ClassGradeDialog({
             <DialogTitle>{isEditing ? "Edit Grade" : "Add Grade"}</DialogTitle>
           </DialogHeader>
 
-          <form id="grade-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="grade-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup className="space-y-3">
               <Controller
                 name="name"
@@ -138,7 +173,7 @@ export default function ClassGradeDialog({
           onOpenChange={setIsDeleting}
           title={`Delete ${data.name}?`}
           description="Are you sure you want to delete this grade?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

@@ -17,19 +17,18 @@ import { FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { IClass } from "@/features/class";
 import { AlertTriangleIcon, BookOpenIcon, EditIcon, Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getMediumOptionsAction } from "@/features/medium/medium.actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
-import { MEDIUM_OPTIONS } from "@/lib/query-keys";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { cn } from "cn";
 import { ISubjectListItem } from "@/features/subjects";
-import { classSubjectsSchema } from "@/features/class/class.schema";
-import { deleteClassSubjectAction, updateClassSubjectsAction } from "@/features/class/class.actions";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import TeacherPickerDialog from "@/components/dialog/teacher-picker-dialog";
 import SubjectPickerDialog from "@/components/dialog/subject-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import DialogErrors from "@/components/ui/dialog/dialog-errors";
 import TooltipButton from "@/components/ui/tooltip-button";
-import { cn } from "cn";
 
 interface ClassSubject {
   id: string;
@@ -51,6 +50,7 @@ export default function ClassSubjectsDialog({
   onOpenChange: (open: boolean) => void;
   data: IClass;
 }) {
+  const queryClient = useQueryClient();
   const [subjects, setSubjects] = useState<ClassSubject[]>(
     data.subjects.map((sub) => ({ ...sub, mediumId: sub.medium.id })),
   );
@@ -62,19 +62,49 @@ export default function ClassSubjectsDialog({
   });
   const [errors, setErrors] = useState<string[]>([]);
 
-  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getMediumOptionsAction();
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [MEDIUM_OPTIONS],
-  });
+  const { data: mediumOptions = [], isPending: isMediumPending } = useQuery(
+    rpcTanStack.medium.getAsOptions.queryOptions({
+      enabled: open,
+    }),
+  );
+
+  const updateSubjectsMutation = useMutation(
+    rpcTanStack.class.updateSubjects.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.class.key() });
+        toast.success("Subjects updated successfully");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const deleteSubjectMutation = useMutation(
+    rpcTanStack.class.deleteSubject.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.class.key() });
+        handleCancelDeleteSubject();
+        setSubjects((prev) => prev.filter((sub) => sub.id !== isSubjectDeleting.id));
+        toast.success("Subject removed from class");
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+        handleCancelDeleteSubject();
+      },
+    }),
+  );
 
   useEffect(() => {
     function setMedium() {
@@ -126,14 +156,7 @@ export default function ClassSubjectsDialog({
 
   async function handleConfirmDeleteSubject() {
     if (isSubjectDeleting.id === null) return;
-    const res = await deleteClassSubjectAction(data.id, isSubjectDeleting.id);
-    if (res.success) {
-      setSubjects((prev) => prev.filter((sub) => sub.id !== isSubjectDeleting.id));
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-    handleCancelDeleteSubject();
+    await deleteSubjectMutation.mutateAsync({ classId: data.id, subjectId: isSubjectDeleting.id });
   }
 
   async function saveSubjects() {
@@ -142,26 +165,13 @@ export default function ClassSubjectsDialog({
       return;
     }
 
-    const parsedRes = classSubjectsSchema.safeParse(
-      subjects.map((sub) => ({
-        subjectId: sub.id,
-        mediumId: sub.mediumId,
-        teacherId: sub.teacher?.id ?? null,
-      })),
-    );
+    const subjectsData = subjects.map((sub) => ({
+      subjectId: sub.id,
+      mediumId: sub.mediumId!,
+      teacherId: sub.teacher?.id ?? null,
+    }));
 
-    if (!parsedRes.success) {
-      toast.error("Invalid data provided");
-      return;
-    }
-
-    const res = await updateClassSubjectsAction(data.id, parsedRes.data);
-    if (res.success) {
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-
+    await updateSubjectsMutation.mutateAsync({ classId: data.id, data: subjectsData });
     onOpenChange(false);
   }
 
@@ -301,10 +311,11 @@ export default function ClassSubjectsDialog({
                   onOpenChange(false);
                 }
               }}
+              disabled={updateSubjectsMutation.isPending}
             >
               Cancel
             </Button>
-            <Button type="button" onClick={saveSubjects}>
+            <Button type="button" onClick={saveSubjects} disabled={updateSubjectsMutation.isPending}>
               Save subjects
             </Button>
           </DialogFooter>

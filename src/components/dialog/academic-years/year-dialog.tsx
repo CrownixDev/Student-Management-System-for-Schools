@@ -7,19 +7,15 @@ import { Input } from "@/components/shadcn/input";
 import { useState } from "react";
 import { IAcademicYear } from "@/features/academic-years";
 import { getHtmlDateString } from "@/lib/utils";
-import { TrashIcon } from "lucide-react";
+import { Loader2Icon, TrashIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { academicYearSchema } from "@/features/academic-years/year.schema";
-import {
-  createAcademicYearAction,
-  deleteAcademicYearAction,
-  updateAcademicYearAction,
-} from "@/features/academic-years/year.actions";
 import { toast } from "react-toastify";
-import { useQueryClient } from "@tanstack/react-query";
-import { ACTIVE_YEAR } from "@/lib/query-keys";
-import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isDefinedError } from "@orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { rpcTanStack } from "@/lib/orpc/client";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
 
@@ -34,7 +30,6 @@ export default function AcademicYearDialog({
   onSave?: Partial<IAcademicYear>;
 }) {
   const queryClient = useQueryClient();
-  const router = useRouter();
   const form = useForm<z.infer<typeof academicYearSchema>>({
     defaultValues: {
       name: data?.name ?? "",
@@ -47,43 +42,73 @@ export default function AcademicYearDialog({
   const [isDeleting, setIsDeleting] = useState(false);
   const isEditing = Boolean(data?.id);
 
-  async function handleCreate(formData: z.infer<typeof academicYearSchema>) {
-    const res = await createAcademicYearAction(formData);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
-      router.refresh();
-      onOpenChange(false);
-      toast.success(res.message);
+  const createMutation = useMutation(
+    rpcTanStack.academicYear.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({
+          queryKey: rpcTanStack.academicYear.key(),
+        });
+        onOpenChange(false);
+        toast.success("Academic year created");
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknown error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    rpcTanStack.academicYear.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({
+          queryKey: rpcTanStack.academicYear.key(),
+        });
+        onOpenChange(false);
+        toast.success("Academic year updated");
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknown error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof academicYearSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync(formData);
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof academicYearSchema>) {
-    if (!data?.id) return;
-    const res = await updateAcademicYearAction(data.id, formData);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
-      router.refresh();
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteAcademicYearAction(data.id);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
-      router.refresh();
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.academicYear.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({
+          queryKey: rpcTanStack.academicYear.key(),
+        });
+        onOpenChange(false);
+        toast.success("Academic year deleted");
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknown error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -93,11 +118,7 @@ export default function AcademicYearDialog({
             <DialogTitle>{isEditing ? "Edit Academic Year" : "Add Academic Year"}</DialogTitle>
           </DialogHeader>
 
-          <form
-            id="year-data-form"
-            className="py-2"
-            onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}
-          >
+          <form id="year-data-form" className="py-2" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup className="space-y-3">
               <Controller
                 name="name"
@@ -180,6 +201,7 @@ export default function AcademicYearDialog({
                   Cancel
                 </Button>
                 <Button type="submit" form="year-data-form" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting && <Loader2Icon className="animate-spin" />}
                   {isEditing ? "Save Changes" : "Create Academic Year"}
                 </Button>
               </div>
@@ -194,7 +216,7 @@ export default function AcademicYearDialog({
           onOpenChange={setIsDeleting}
           title={`Delete ${data.name}?`}
           description="Are you sure you want to delete this academic year?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data?.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

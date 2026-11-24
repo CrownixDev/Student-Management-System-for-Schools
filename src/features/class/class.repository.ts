@@ -68,9 +68,9 @@ export class ClassRepository {
     });
   }
 
-  async getStudentsWithExamData(yearId: string, gradeId: string, classId: string, examId: string) {
+  async getStudentsWithExamData(classId: string, examId: string) {
     return await prisma.class.findUnique({
-      where: { id: classId, gradeLevelId: gradeId, gradeLevel: { academicYearId: yearId } },
+      where: { id: classId },
       select: {
         id: true,
         name: true,

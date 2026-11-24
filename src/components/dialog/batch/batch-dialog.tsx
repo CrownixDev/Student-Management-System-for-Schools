@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { Input } from "@/components/shadcn/input";
 import { IBatchListItem } from "@/features/batch";
-import { TrashIcon } from "lucide-react";
+import { Loader2Icon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { batchTypeOptions } from "@/features/batch/batch.enums";
@@ -13,7 +13,10 @@ import { Controller, useForm } from "react-hook-form";
 import { batchSchema } from "@/features/batch/batch.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
-import { createBatchAction, deleteBatchAction, updateBatchAction } from "@/features/batch/batch.action";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import z from "zod";
 
@@ -25,6 +28,7 @@ interface BatchDialogProps {
 
 export default function BatchDialog({ open, onOpenChange, data }: BatchDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof batchSchema>>({
     defaultValues: {
@@ -37,37 +41,67 @@ export default function BatchDialog({ open, onOpenChange, data }: BatchDialogPro
   const isEditing = Boolean(data?.id);
   const isFormSubmitting = form.formState.isSubmitting;
 
-  async function handleCreate(formData: z.infer<typeof batchSchema>) {
-    const res = await createBatchAction(formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const createMutation = useMutation(
+    rpcTanStack.batch.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.batch.key() });
+        toast.success("Batch Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    rpcTanStack.batch.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.batch.key() });
+        toast.success("Batch Updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof batchSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync(formData);
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof batchSchema>) {
-    if (!data?.id) return;
-    const res = await updateBatchAction(data.id, formData);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteBatchAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.batch.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.batch.key() });
+        toast.success("Batch Deleted");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -77,7 +111,7 @@ export default function BatchDialog({ open, onOpenChange, data }: BatchDialogPro
             <DialogTitle>{isEditing ? "Edit Batch" : "Add Batch"}</DialogTitle>
           </DialogHeader>
 
-          <form id="batch-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="batch-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup>
               <Controller
                 name="name"
@@ -145,6 +179,7 @@ export default function BatchDialog({ open, onOpenChange, data }: BatchDialogPro
                   Cancel
                 </Button>
                 <Button type="submit" form="batch-form" disabled={isFormSubmitting}>
+                  {isFormSubmitting && <Loader2Icon className="animate-spin" />}
                   {isEditing ? "Save Changes" : "Create Batch"}
                 </Button>
               </div>
@@ -159,7 +194,7 @@ export default function BatchDialog({ open, onOpenChange, data }: BatchDialogPro
           onOpenChange={setIsDeleting}
           title={`Delete ${data.name} Batch`}
           description="Are you sure you want to delete this batch?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

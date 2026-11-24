@@ -6,12 +6,14 @@ export default function EmptyState({
   icon,
   title,
   description,
+  description2,
   action,
   noBorder = false,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
+  description2?: string;
   action?: React.ReactNode;
   noBorder?: boolean;
 }) {
@@ -24,6 +26,7 @@ export default function EmptyState({
             {Icon && <Icon className="size-10" aria-hidden="true" />}
             <EmptyTitle>{title}</EmptyTitle>
             <EmptyDescription className="wrap-anywhere">{description}</EmptyDescription>
+            <EmptyDescription className="wrap-anywhere">{description2}</EmptyDescription>
           </EmptyHeader>
           {action}
         </Empty>

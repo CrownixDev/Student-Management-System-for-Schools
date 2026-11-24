@@ -5,8 +5,7 @@ import { IClass } from "@/features/class";
 import Fuse from "fuse.js";
 import { useState } from "react";
 import SearchInput from "@/components/ui/search-input";
-import { Button } from "@/components/shadcn/button";
-import { DownloadIcon } from "lucide-react";
+
 export default function ClassStudentsTable({ enrollments }: { enrollments: IClass["enrollments"] }) {
   const [search, setSearch] = useState("");
 

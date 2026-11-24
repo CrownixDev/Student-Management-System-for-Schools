@@ -7,7 +7,7 @@ import { Badge } from "../../../shadcn/badge";
 import { IGradeListItemForYear } from "@/features/grades";
 
 export default function SidebarGradeButton({ gradeItem }: { gradeItem: IGradeListItemForYear }) {
-  const [_, setQuery] = useQueryStates(idParsers);
+  const [, setQuery] = useQueryStates(idParsers);
   return (
     <SidebarMenuItem key={gradeItem.id}>
       <SidebarMenuButton isActive={false} onClick={() => setQuery({ gradeId: gradeItem.id })}>

@@ -6,3 +6,6 @@ allowBuilds:
   prisma: true
   sharp: false
   unrs-resolver: false
+
+overrides:
+  "@tanstack/query-core": "5.108.0"

@@ -13,48 +13,44 @@ import {
 } from "@/components/shadcn/alert-dialog";
 import { Button } from "@/components/shadcn/button";
 import { IAcademicYear } from "@/features/academic-years";
-import { setCurrentAcademicYearAction } from "@/features/academic-years/year.actions";
 import { DialogRootActions } from "@base-ui/react";
 import { Loader2, StarIcon } from "lucide-react";
 import { useRef } from "react";
-import { useFormStatus } from "react-dom";
 import { toast } from "react-toastify";
-import { useQueryClient } from "@tanstack/react-query";
-import { ACTIVE_YEAR } from "@/lib/query-keys";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-
-function FormButtons() {
-  const { pending } = useFormStatus();
-
-  return (
-    <>
-      <AlertDialogCancel type="button" disabled={pending}>
-        Cancel
-      </AlertDialogCancel>
-      <AlertDialogAction type="submit" disabled={pending}>
-        {pending && <Loader2 className="animate-spin" />}
-        Yes
-      </AlertDialogAction>
-    </>
-  );
-}
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 
 export default function SetAsCurrentYearDialog({ year }: { year: IAcademicYear }) {
   const ref = useRef<DialogRootActions | null>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  async function handleOnSet(e: React.SubmitEvent) {
+  const { mutate, isPending, isSuccess } = useMutation(
+    rpcTanStack.academicYear.setAsCurrent.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.academicYear.key() });
+        router.refresh();
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknown error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     if (!year?.id) return;
-    const res = await setCurrentAcademicYearAction(year.id);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [ACTIVE_YEAR] });
-      router.refresh();
+    mutate({ id: year.id });
+    if (isSuccess) {
       ref.current?.close();
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
     }
   }
 
@@ -69,7 +65,7 @@ export default function SetAsCurrentYearDialog({ year }: { year: IAcademicYear }
         }
       />
       <AlertDialogContent size="sm">
-        <form onSubmit={handleOnSet}>
+        <form onSubmit={handleSubmit}>
           <AlertDialogHeader>
             <AlertDialogTitle>Set {year.name} as Current Academic Year</AlertDialogTitle>
             <AlertDialogDescription>
@@ -78,7 +74,13 @@ export default function SetAsCurrentYearDialog({ year }: { year: IAcademicYear }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <FormButtons />
+            <AlertDialogCancel type="button" disabled={isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="animate-spin" />}
+              Yes
+            </AlertDialogAction>
           </AlertDialogFooter>
         </form>
       </AlertDialogContent>

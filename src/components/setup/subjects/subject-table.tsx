@@ -1,22 +1,27 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { filterCache } from "@/lib/nuqs/filter";
-import { redirect } from "next/navigation";
 import { SubjectCategory } from "@/generated/prisma/enums";
-import EmptyState from "@/components/ui/empty-state";
 import { LibraryBig } from "lucide-react";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import { safe } from "@orpc/client";
+import EmptyState from "@/components/ui/empty-state";
 import SubjectEditBtn from "./buttons/subject-edit-btn";
-import { ISubjectListItem, subjectService } from "@/features/subjects";
+import ErrorState from "@/components/ui/error-state";
 
 export default async function SubjectTable({ category }: { category: SubjectCategory }) {
   const search = filterCache.get("search");
+  const caller = await getServerCaller();
+  const { data: subjects, error, definedError } = await safe(caller.subject.getList({ search, category }));
 
-  let subjects: ISubjectListItem[] | null = null;
-
-  try {
-    subjects = await subjectService.getList({ search, category });
-  } catch (error) {
-    console.error("Failed to load batches:", error);
-    redirect("/setup");
+  if (error) {
+    return (
+      <ErrorState
+        noBorder
+        type="normal"
+        title={definedError ? error.message : "Error loading subject list"}
+        description="Failed to load subject list. Please try reloading the page."
+      />
+    );
   }
 
   return (

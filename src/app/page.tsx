@@ -1,13 +1,29 @@
-import { GraduationCapIcon, NotebookPenIcon, Wrench } from "lucide-react";
-import { academicYearsService } from "@/features/academic-years";
+import { GraduationCapIcon, NotebookPenIcon, OctagonAlertIcon, Wrench } from "lucide-react";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 import { Button } from "@/components/shadcn/button";
+import { safe } from "@orpc/client";
+import EmptyState from "@/components/ui/empty-state";
 import Image from "next/image";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function page() {
-  const yearList = await academicYearsService.getList({});
+  const caller = await getServerCaller();
+  const { data: yearList, error, definedError } = await safe(caller.academicYear.getlist({ search: "" }));
+
+  if (error) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <EmptyState
+          noBorder
+          icon={OctagonAlertIcon}
+          title={definedError ? error.message : "Error loading academic years"}
+          description="Failed to load academic years. Please try reloading the page. If the problem persists, contact support (+94 77 65 65 800)."
+        />
+      </div>
+    );
+  }
 
   let yearId = "";
 

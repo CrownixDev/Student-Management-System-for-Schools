@@ -1,36 +1,42 @@
 import { BookOpenIcon, GraduationCapIcon, UsersIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Table, TableBody, TableCell, TableRow } from "@/components/shadcn/table";
-import { classService, IClass } from "@/features/class";
 import { TypographyH1 } from "@/components/ui/typography";
 import { Separator } from "@/components/shadcn/separator";
 import { idCache } from "@/lib/nuqs/id";
-import { redirect } from "next/navigation";
-import EmptyState from "@/components/ui/empty-state";
-import ClassEditBtn from "./buttons/class-edit-btn";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import { safe } from "@orpc/client";
 import ClassStudentsTable from "./class-students-table";
-import ClassSubjectTable from "./class-subject-table";
 import ClassStudentAddBtn from "./buttons/class-student-add-btn";
 import ClassSubjectAddBtn from "./buttons/class-subjects-add-btn";
+import ClassSubjectTable from "./class-subject-table";
+import ClassEditBtn from "./buttons/class-edit-btn";
+import EmptyState from "@/components/ui/empty-state";
+import ErrorState from "@/components/ui/error-state";
 
 export default async function ClassDetails() {
   const classId = idCache.get("classId");
+  const caller = await getServerCaller();
 
-  let classData: IClass | null = null;
-
-  try {
-    if (classId) classData = await classService.getById(classId);
-  } catch (error) {
-    console.log("Error fetching class data:", error);
-    redirect("/setup/classes", "replace");
-  }
-
-  if (!classData) {
+  if (!classId) {
     return (
       <EmptyState
         icon={GraduationCapIcon}
         title="Select a class"
         description="Choose a class from the grades list to view its subjects and students."
+      />
+    );
+  }
+
+  const { data: classData, error, definedError } = await safe(caller.class.getById({ id: classId }));
+
+  if (error) {
+    return (
+      <ErrorState
+        noBorder
+        type="normal"
+        title={definedError ? error.message : "Error loading class data"}
+        description="Failed to load class data. Please try selecting another class or try reloading the page."
       />
     );
   }

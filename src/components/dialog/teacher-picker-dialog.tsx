@@ -5,13 +5,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { CheckIcon, UserRoundXIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { getTeachersListAction } from "@/features/teachers/teachers.actions";
-import { TEACHERS_LIST } from "@/lib/query-keys";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Label } from "@/components/shadcn/label";
-import { RESULT_LIMIT } from "@/constraints";
 import { ITeacherListItem } from "@/features/teachers";
-import { toast } from "react-toastify";
+import { rpcTanStack } from "@/lib/orpc/client";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import EmptyState from "@/components/ui/empty-state";
 import SearchInput from "../ui/search-input";
@@ -39,20 +36,12 @@ export default function TeacherPickerDialog({
     data = { count: 0, list: [] },
     isPending,
     isPlaceholderData,
-  } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getTeachersListAction({ search: search.trim(), page, limit: RESULT_LIMIT });
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    placeholderData: keepPreviousData,
-    queryKey: [TEACHERS_LIST, page, search],
-  });
+  } = useQuery(
+    rpcTanStack.teacher.getList.queryOptions({
+      input: { search: search.trim(), page },
+      placeholderData: keepPreviousData,
+    }),
+  );
 
   function confirmSelection() {
     const teacher = data.list.find((teacher) => teacher.id === teacherId);
@@ -76,7 +65,10 @@ export default function TeacherPickerDialog({
             setSearch(search);
             setPage(1);
           }}
-          onClear={() => setSearch("")}
+          onClear={() => {
+            setSearch("");
+            setPage(1);
+          }}
         />
 
         {isPending && <LoadingIndicator />}

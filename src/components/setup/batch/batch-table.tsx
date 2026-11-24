@@ -1,24 +1,27 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { batchService, IBatchListItem } from "@/features/batch";
 import { filterCache } from "@/lib/nuqs/filter";
-import { redirect } from "next/navigation";
 import { BatchType } from "@/generated/prisma/enums";
 import { EyeIcon, LinkIcon } from "lucide-react";
 import { buttonVariants } from "@/components/shadcn/button";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import { safe } from "@orpc/client";
 import EmptyState from "@/components/ui/empty-state";
 import BatchEditBtn from "./batch-edit-btn";
 import TooltipLink from "@/components/ui/tooltip-link";
+import ErrorState from "@/components/ui/error-state";
 
 export default async function BatchTable({ type }: { type: BatchType }) {
   const search = filterCache.get("search");
+  const caller = await getServerCaller();
+  const { data: batches, error, definedError } = await safe(caller.batch.getList({ search, type }));
 
-  let batches: IBatchListItem[] | null = null;
-
-  try {
-    batches = await batchService.getList({ search, type });
-  } catch (error) {
-    console.error("Failed to load batches:", error);
-    redirect("/setup");
+  if (error) {
+    return (
+      <ErrorState
+        title={definedError ? error.message : "Error loading batch list"}
+        description="Failed to load batch list. Please try reloading the page."
+      />
+    );
   }
 
   return (

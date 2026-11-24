@@ -1,10 +1,11 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { examService, IExamListItem, IExamTopResults } from "@/features/exams";
+import { IExamListItem, IExamTopResults } from "@/features/exams";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
 import { ClipboardListIcon } from "lucide-react";
 import { SidebarTrigger } from "@/components/shadcn/sidebar";
-import { classService, IClassListWithSubjectsItem } from "@/features/class";
+import { IClassListWithSubjectsItem } from "@/features/class";
+import { getServerCaller } from "@/lib/orpc/server-caller";
 import { Separator } from "@/components/shadcn/separator";
 import { Suspense } from "react";
 import StudentDetailsViewButton from "./student-details-view-button";
@@ -15,12 +16,13 @@ import EmptyState from "@/components/ui/empty-state";
 import ExportResultsBtn from "./buttons/export-results-btn";
 
 async function ResultsContent({ exam }: { exam: IExamListItem }) {
+  const caller = await getServerCaller();
   let results: IExamTopResults | null = null;
   let classesWithSubjects: IClassListWithSubjectsItem[] | null = null;
 
   try {
-    results = await examService.getTopResults(exam.gradeLevel.id, exam.id);
-    classesWithSubjects = await classService.getListWithSubjects(exam.gradeLevel.id);
+    results = await caller.exam.getTopResults({ gradeId: exam.gradeLevel.id, examId: exam.id });
+    classesWithSubjects = await caller.class.getListWithSubjects({ gradeId: exam.gradeLevel.id });
   } catch {
     return (
       <EmptyState icon={ClipboardListIcon} title="No results available" description={"Could not get exam results"} />

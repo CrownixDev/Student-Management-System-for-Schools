@@ -5,13 +5,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/shadcn/label";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { IGradeListItem } from "@/features/grades";
-import { getGradesListAction } from "@/features/grades/grades.actions";
 import { useQuery } from "@tanstack/react-query";
 import { CheckIcon, GraduationCapIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "react-toastify";
-import { GRADE_OPTIONS } from "@/lib/query-keys";
 import { IAcademicYear } from "@/features/academic-years";
+import { rpcTanStack } from "@/lib/orpc/client";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import SearchInput from "@/components/ui/search-input";
@@ -32,18 +30,12 @@ export default function GradePickerDialog({
   const [search, setSearch] = useState("");
   const [gradeId, setGradeId] = useState(selectedGradeId ?? "");
 
-  const { data: grades = [], isPending } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const result = await getGradesListAction({ yearId: year.id, search: search.trim() || null });
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-    queryKey: [GRADE_OPTIONS, search, year.id],
-  });
+  const { data: grades = [], isPending } = useQuery(
+    rpcTanStack.grade.getList.queryOptions({
+      enabled: open,
+      input: { yearId: year.id, search: null },
+    }),
+  );
 
   function confirmSelection() {
     const grade = grades.find((item) => item.id === gradeId);

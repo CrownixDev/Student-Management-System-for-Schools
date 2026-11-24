@@ -1,12 +1,13 @@
-import { studentsService } from "@/features/students";
 import { filterCache } from "@/lib/nuqs/filter";
-import { redirect } from "next/navigation";
 import { CircleUserIcon } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { studentFilterCach } from "@/features/students/student.cache";
 import { getHtmlDateString } from "@/lib/utils";
 import { PageLayoutContent, PageLayoutFooter } from "@/components/ui/page/page-layout";
+import { safe } from "@orpc/client";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import ErrorState from "@/components/ui/error-state";
 import EmptyState from "@/components/ui/empty-state";
 import StudentsEditBtn from "./buttons/students-edit-btn";
 import PagePagination from "@/components/ui/page/page-pagination";
@@ -15,14 +16,22 @@ import StudentsEnrollmentsBtn from "./buttons/students-enrollments-btn";
 export default async function StudentsTable() {
   const { search, page, limit } = filterCache.all();
   const { gender, dobFrom, dobTo } = studentFilterCach.all();
+  const caller = await getServerCaller();
 
-  let students;
+  const {
+    data: students,
+    error,
+    definedError,
+  } = await safe(caller.student.getProfileList({ search, page, limit, gender, dobFrom, dobTo }));
 
-  try {
-    students = await studentsService.getProfileList({ search, page, limit, gender, dobFrom, dobTo });
-  } catch (error) {
-    console.error("Failed to load students from service:", error);
-    redirect("/setup");
+  if (error) {
+    return (
+      <ErrorState
+        type="absolute"
+        title={definedError ? error.message : "Error loading students"}
+        description="Failed to load students data. Please try reloading the page."
+      />
+    );
   }
 
   return (

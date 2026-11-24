@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "react-toastify";
 import { CircleAlertIcon, UsersRoundIcon } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Checkbox } from "@/components/shadcn/checkbox";
@@ -18,15 +17,9 @@ import { Input } from "@/components/shadcn/input";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import { IClass } from "@/features/class";
-import {
-  getStudentJsonFieldsAction,
-  getStudentProfileListForClassAction,
-} from "@/features/students/students.actions";
 import { IStudentProfile } from "@/features/students";
 import { exportExcelSheet } from "@/lib/excell";
-import { STUDENT_CUSTOM_FIELDS } from "@/lib/query-keys";
-
-const CLASS_STUDENT_PROFILES = "class-student-profiles";
+import { rpcTanStack } from "@/lib/orpc/client";
 
 type ExcelCell = string | number | boolean | Date | null | undefined;
 
@@ -69,58 +62,47 @@ export default function ExportStudentsDialog({
     isPending: isStudentsPending,
     isError: isStudentsError,
     refetch: refetchStudents,
-  } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const result = await getStudentProfileListForClassAction(classData.id);
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-    queryKey: [CLASS_STUDENT_PROFILES, classData.id],
-  });
+  } = useQuery(
+    rpcTanStack.student.getProfileListForClass.queryOptions({
+      enabled: open,
+      input: { classId: classData.id },
+    }),
+  );
 
   const {
     data: customFields = [],
     isPending: isCustomFieldsPending,
     isError: isCustomFieldsError,
     refetch: refetchCustomFields,
-  } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const result = await getStudentJsonFieldsAction();
-      if (!result.success) {
-        toast.error(result.message);
-        throw new Error(result.message);
-      }
-      return result.data;
-    },
-    queryKey: [STUDENT_CUSTOM_FIELDS],
-  });
+  } = useQuery(
+    rpcTanStack.student.getJsonFields.queryOptions({
+      enabled: open,
+    }),
+  );
 
   const allFields: ExportFieldItem[] = [
     ...baseStudentFields,
-    ...customFields.map((cf): ExportFieldItem => ({
-      key: `custom_${cf.name}`,
-      label: cf.name,
-      getValue: (student: IStudentProfile): ExcelCell => {
-        const val = (student.json as Record<string, unknown>)?.[cf.name];
-        if (val === undefined || val === null || val === "") return "-";
-        if (cf.type === "date" && (typeof val === "string" || typeof val === "number" || val instanceof Date)) {
-          try {
-            return new Date(val);
-          } catch {
-            return String(val);
+    ...customFields.map(
+      (cf): ExportFieldItem => ({
+        key: `custom_${cf.name}`,
+        label: cf.name,
+        getValue: (student: IStudentProfile): ExcelCell => {
+          const val = (student.json as Record<string, unknown>)?.[cf.name];
+          if (val === undefined || val === null || val === "") return "-";
+          if (cf.type === "date" && (typeof val === "string" || typeof val === "number" || val instanceof Date)) {
+            try {
+              return new Date(val);
+            } catch {
+              return String(val);
+            }
           }
-        }
-        if (typeof val === "string" || typeof val === "number" || typeof val === "boolean" || val instanceof Date) {
-          return val;
-        }
-        return String(val);
-      },
-    })),
+          if (typeof val === "string" || typeof val === "number" || typeof val === "boolean" || val instanceof Date) {
+            return val;
+          }
+          return String(val);
+        },
+      }),
+    ),
   ];
 
   const isPending = isStudentsPending || isCustomFieldsPending;

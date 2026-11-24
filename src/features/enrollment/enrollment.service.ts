@@ -6,8 +6,16 @@ import {
 } from "./enrollment.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { EnrollmentRepository } from "./enrollment.repository";
-import { ApiErrorV2 } from "@/lib/ApiError";
 import { prisma } from "@/lib/prisma";
+import {
+  classIdRequiredError,
+  classSubjectNotFoundError,
+  enrollmentNotFoundError,
+  studentAlreadyEnrolledError,
+  subjectInUseError,
+} from "./enrollment.errors";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
+import { studentIdRequiredError } from "../students/student.errors";
 import z from "zod";
 
 export class EnrollmentService {
@@ -16,7 +24,7 @@ export class EnrollmentService {
   async create(classId: string, data: z.infer<typeof enrollmentCreateSchema>) {
     const parsedRes = enrollmentCreateSchema.safeParse(data);
     if (!parsedRes.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -37,7 +45,7 @@ export class EnrollmentService {
                 data: await Promise.all(
                   st.subjects.map(async (s) => {
                     const classSubject = await this.repository.getClassSubject(classId, s.subjectId);
-                    if (!classSubject) throw new ApiErrorV2("Class subject not found");
+                    if (!classSubject) throw new classSubjectNotFoundError();
                     return { classSubjectId: classSubject.id, mediumId: s.mediumId };
                   }),
                 ),
@@ -49,7 +57,7 @@ export class EnrollmentService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Student already enrolled this class");
+          throw new studentAlreadyEnrolledError();
         }
       }
       throw error;
@@ -57,22 +65,23 @@ export class EnrollmentService {
   }
 
   async updateIndex(classId: string, studentId: string, data: z.infer<typeof enrollmentIndexUpdateSchema>) {
-    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
+    if (!classId) throw new classIdRequiredError();
+    if (!studentId) throw new studentIdRequiredError();
 
     const parsedRes = enrollmentIndexUpdateSchema.safeParse(data);
     if (!parsedRes.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
       const enrollmentId = await this.repository.getId(classId, studentId);
-      if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+      if (!enrollmentId) throw new enrollmentNotFoundError();
 
       await this.repository.update(enrollmentId, { classIndex: parsedRes.data.classIndex });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new enrollmentNotFoundError();
         }
       }
       throw error;
@@ -84,46 +93,44 @@ export class EnrollmentService {
     studentId: string,
     data: z.infer<typeof enrollmentSubjectUpdateSchema>,
   ) {
-    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
+    if (!classId) throw new classIdRequiredError();
+    if (!studentId) throw new studentIdRequiredError();
 
     const parsedRes = enrollmentSubjectUpdateSchema.safeParse(data);
     if (!parsedRes.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
       if (parsedRes.data.enrolled) {
-        const enrollmentId = await this.repository.getId(classId, studentId);
-        if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+        const [enrollmentId, classSubject] = await Promise.all([
+          this.repository.getId(classId, studentId),
+          this.repository.getClassSubject(classId, parsedRes.data.subjectId),
+        ]);
 
-        const classSubject = await this.repository.getClassSubject(classId, parsedRes.data.subjectId);
-        if (!classSubject) throw new ApiErrorV2("Class subject not found");
+        if (!enrollmentId) throw new enrollmentNotFoundError();
+        if (!classSubject) throw new classSubjectNotFoundError();
 
         await this.repository.createSubject(enrollmentId, classSubject.id, classSubject.mediumId);
       } else {
         const enrollmentId = await this.repository.getId(classId, studentId);
-        if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+        if (!enrollmentId) throw new enrollmentNotFoundError();
 
         const enrollmentRelations = await this.repository.getSubjectRelations(enrollmentId, parsedRes.data.subjectId);
-        if (!enrollmentRelations) throw new ApiErrorV2("Enrollment not found");
+        if (!enrollmentRelations) throw new enrollmentNotFoundError();
 
         // Do not delete the enrolled subject if student has any marks related to that
         const hasRelations = enrollmentRelations.marks.length > 0;
         if (hasRelations) {
-          throw new ApiErrorV2("This subject is currently in use");
+          throw new subjectInUseError();
         }
 
         const classSubject = await this.repository.getClassSubject(classId, parsedRes.data.subjectId);
-        if (!classSubject) throw new ApiErrorV2("Class subject not found");
+        if (!classSubject) throw new classSubjectNotFoundError();
 
         await this.repository.deleteSubject(enrollmentId, classSubject.id);
       }
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
-        }
-      }
       throw error;
     }
   }
@@ -133,19 +140,20 @@ export class EnrollmentService {
     studentId: string,
     data: z.infer<typeof enrollmentSubjectMediumUpdateSchema>,
   ) {
-    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
+    if (!classId) throw new classIdRequiredError();
+    if (!studentId) throw new studentIdRequiredError();
 
     const parsedRes = enrollmentSubjectMediumUpdateSchema.safeParse(data);
     if (!parsedRes.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
       const enrollmentId = await this.repository.getId(classId, studentId);
-      if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+      if (!enrollmentId) throw new enrollmentNotFoundError();
 
       const classSubject = await this.repository.getClassSubject(classId, parsedRes.data.subjectId);
-      if (!classSubject) throw new ApiErrorV2("Class subject not found");
+      if (!classSubject) throw new classSubjectNotFoundError();
 
       await this.repository.updateSubject(enrollmentId, classSubject.id, {
         medium: { connect: { id: parsedRes.data.mediumId } },
@@ -153,7 +161,7 @@ export class EnrollmentService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new enrollmentNotFoundError();
         }
       }
       throw error;
@@ -161,17 +169,18 @@ export class EnrollmentService {
   }
 
   async delete(classId: string, studentId: string) {
-    if (!studentId || !classId) throw new ApiErrorV2("Class and Student ids are required");
+    if (!classId) throw new classIdRequiredError();
+    if (!studentId) throw new studentIdRequiredError();
 
     const enrollmentId = await this.repository.getId(classId, studentId);
-    if (!enrollmentId) throw new ApiErrorV2("Enrollment not found");
+    if (!enrollmentId) throw new enrollmentNotFoundError();
 
     const relations = await this.repository.getRelations(enrollmentId);
-    if (!relations) throw new ApiErrorV2("Enrollment not found");
+    if (!relations) throw new enrollmentNotFoundError();
 
     const hasRelations = relations.marks.length > 0;
     if (hasRelations) {
-      throw new ApiErrorV2("This enrollment is currently in use");
+      throw new recordInUseError();
     }
 
     try {
@@ -182,10 +191,10 @@ export class EnrollmentService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new enrollmentNotFoundError();
         }
         if (error.code === "P2003") {
-          throw new ApiErrorV2("This enrollment is currently in use");
+          throw new recordInUseError();
         }
       }
       throw error;

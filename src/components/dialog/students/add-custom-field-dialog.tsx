@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
@@ -14,21 +14,18 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import {
-  createStudentJsonFieldAction,
-  deleteFieldAction,
-  updateStudentJsonFieldAction,
-} from "@/features/students/students.actions";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/shadcn/field";
 import { IStudentJsonField, StudentJsonFieldType } from "@/features/students";
 import { studentJsonFieldSchema } from "@/features/students/student.schema";
-import { STUDENT_CUSTOM_FIELDS } from "@/lib/query-keys";
 import { cn, StrictOmit } from "@/lib/utils";
 import { Input } from "@/components/shadcn/input";
-import z from "zod";
 import { TrashIcon } from "lucide-react";
-import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import { useState } from "react";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
+import DeleteConfirmationDialog from "../delete-confirmation-dialog";
+import z from "zod";
 
 interface Props {
   open: boolean;
@@ -51,53 +48,67 @@ export default function AddCustomFieldDialog({ open, onOpenChange, data }: Props
     resolver: zodResolver(studentJsonFieldSchema),
   });
 
-  async function handleCreate(formData: z.infer<typeof studentJsonFieldSchema>) {
-    const parsedRes = studentJsonFieldSchema.safeParse(formData);
-    if (!parsedRes.success) {
-      toast.error("Invalid data provided");
-      return;
-    }
+  const createMutation = useMutation(
+    rpcTanStack.student.createJsonField.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.getJsonFields.key() });
+        toast.success("Custom field created successfully");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
-    const res = await createStudentJsonFieldAction(parsedRes.data);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [STUDENT_CUSTOM_FIELDS] });
-      onOpenChange(false);
-      toast.success(res.message);
+  const updateMutation = useMutation(
+    rpcTanStack.student.updateJsonField.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.getJsonFields.key() });
+        toast.success("Custom field updated successfully");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof studentJsonFieldSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ id: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      await createMutation.mutateAsync(formData);
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof studentJsonFieldSchema>) {
-    if (!data?.id) return;
-
-    const parsedRes = studentJsonFieldSchema.safeParse(formData);
-    if (!parsedRes.success) {
-      toast.error("Invalid data provided");
-      return;
-    }
-
-    const res = await updateStudentJsonFieldAction(data.id, parsedRes.data);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [STUDENT_CUSTOM_FIELDS] });
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteFieldAction(data.id);
-    if (res.success) {
-      await queryClient.invalidateQueries({ queryKey: [STUDENT_CUSTOM_FIELDS] });
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.student.deleteJsonField.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.getJsonFields.key() });
+        toast.success("Custom field deleted successfully");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -123,7 +134,7 @@ export default function AddCustomFieldDialog({ open, onOpenChange, data }: Props
             <DialogDescription>Create a new custom field to capture additional student details.</DialogDescription>
           </DialogHeader>
 
-          <form id="add-custom-field-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="add-custom-field-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup className="space-y-4">
               <Controller
                 name="name"
@@ -211,7 +222,7 @@ export default function AddCustomFieldDialog({ open, onOpenChange, data }: Props
           onOpenChange={setIsDeleting}
           title={`Delete ${data.name} Field`}
           description="Are you sure you want to delete this field from student form?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ id: data.id }) : undefined)}
         />
       )}
     </>

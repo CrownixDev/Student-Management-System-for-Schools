@@ -1,11 +1,17 @@
 import "server-only";
 
-import { IAcademicYear } from "./year.types";
-import { AcademicYearsRepository } from "./year.repository";
-import { ApiErrorV2 } from "@/lib/ApiError";
-import { IQueryParams } from "@/lib/filter";
-import { academicYearSchema } from "./year.schema";
+import {
+  activeYearNotFoundError,
+  yearIdRequiredError,
+  yearNameAlreadyExistError,
+  yearNotFoundError,
+} from "./year.errors";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { AcademicYearsRepository } from "./year.repository";
+import { academicYearSchema } from "./year.schema";
+import { IAcademicYear } from "./year.types";
+import { IQueryParams } from "@/lib/filter";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
 
@@ -19,21 +25,21 @@ export class AcademicYearsService {
   }
 
   async getListItemById(yearId: string): Promise<IAcademicYear> {
-    if (!yearId) throw new ApiErrorV2("Year is is required");
+    if (!yearId) throw new yearIdRequiredError();
     const year = await this.repository.getListItemById(yearId);
-    if (!year) throw new ApiErrorV2("Year not found");
+    if (!year) throw new yearNotFoundError();
     return year;
   }
 
   async getActiveYear(): Promise<IAcademicYear> {
     const year = await this.repository.getActiveYear();
-    if (!year) throw new ApiErrorV2("No active years found");
+    if (!year) throw new activeYearNotFoundError();
     return year;
   }
 
   async create(data: z.infer<typeof academicYearSchema>) {
     const result = z.safeParse(academicYearSchema, data);
-    if (!result.success) throw new ApiErrorV2("Invalid data provided");
+    if (!result.success) throw new invalidDataProvidedError();
 
     try {
       await this.repository.create({
@@ -44,7 +50,7 @@ export class AcademicYearsService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Name already exists");
+          throw new yearNameAlreadyExistError();
         }
       }
       throw error;
@@ -52,9 +58,9 @@ export class AcademicYearsService {
   }
 
   async update(yearId: string, data: z.infer<typeof academicYearSchema>) {
-    if (!yearId) throw new ApiErrorV2("Year id is required");
+    if (!yearId) throw new yearIdRequiredError();
     const result = z.safeParse(academicYearSchema, data);
-    if (!result.success) throw new ApiErrorV2("Invalid data provided");
+    if (!result.success) throw new invalidDataProvidedError();
 
     try {
       await this.repository.update(yearId, {
@@ -65,7 +71,7 @@ export class AcademicYearsService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Name already exists");
+          throw new yearNameAlreadyExistError();
         }
       }
       throw error;
@@ -73,7 +79,7 @@ export class AcademicYearsService {
   }
 
   async setAsCurrent(yearId: string) {
-    if (!yearId) throw new ApiErrorV2("Year id is required");
+    if (!yearId) throw new yearIdRequiredError();
     try {
       // Only one academic year should be active no matter what
       await prisma.$transaction(async (transaction) => {
@@ -86,13 +92,13 @@ export class AcademicYearsService {
   }
 
   async delete(yearId: string) {
-    if (!yearId) throw new ApiErrorV2("Year id is required");
+    if (!yearId) throw new yearIdRequiredError();
     try {
       await this.repository.delete(yearId);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2003") {
-          throw new ApiErrorV2("This year is using my many records");
+          throw new recordInUseError();
         }
       }
       throw error;

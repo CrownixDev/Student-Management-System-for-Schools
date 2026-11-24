@@ -1,20 +1,24 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { IMediumListItem, mediumService } from "@/features/medium";
-import { redirect } from "next/navigation";
 import { filterCache } from "@/lib/nuqs/filter";
 import { Languages } from "lucide-react";
+import { safe } from "@orpc/client";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import ErrorState from "@/components/ui/error-state";
 import MediumEditBtn from "./buttons/medium-edit-btn";
 import EmptyState from "@/components/ui/empty-state";
 
 export default async function MediumTable() {
   const search = filterCache.get("search");
-  let mediums: IMediumListItem[] | null = null;
+  const caller = await getServerCaller();
+  const { data: mediums, error, definedError } = await safe(caller.medium.getList({ search }));
 
-  try {
-    mediums = await mediumService.getList({ search });
-  } catch (error) {
-    console.error("Failed to load mediums:", error);
-    redirect("/setup");
+  if (error) {
+    return (
+      <ErrorState
+        title={definedError ? error.message : "Error loading medium list"}
+        description="Failed to load medium list. Please try reloading the page."
+      />
+    );
   }
 
   return (

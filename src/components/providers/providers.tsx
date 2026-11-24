@@ -1,11 +1,22 @@
 "use client";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastContainer, Bounce, toast } from "react-toastify";
 import { TooltipProvider } from "@/components/shadcn/tooltip";
-import { ToastContainer, Bounce } from "react-toastify";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        queryCache: new QueryCache({
+          // show a global error toast if any error occured while fetching and those errors are defined
+          onError(error) {
+            toast.error(error.message);
+          },
+        }),
+      }),
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -22,6 +33,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           pauseOnHover
           theme="colored"
           transition={Bounce}
+          limit={5}
         />
         <NuqsAdapter>{children}</NuqsAdapter>
       </TooltipProvider>

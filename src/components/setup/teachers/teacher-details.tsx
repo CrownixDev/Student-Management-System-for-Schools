@@ -2,29 +2,37 @@ import { Badge } from "@/components/shadcn/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
 import { UsersRoundIcon } from "lucide-react";
-import TeacherEditBtn from "./teacher-edit-btn";
-import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
-import { ITeacher, teachersService } from "@/features/teachers";
-import EmptyState from "@/components/ui/empty-state";
 import { Separator } from "@/components/shadcn/separator";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import { safe } from "@orpc/client";
+import TeacherEditBtn from "./teacher-edit-btn";
+import EmptyState from "@/components/ui/empty-state";
+import ErrorState from "@/components/ui/error-state";
 
 export default async function TeacherDetails() {
   const teacherId = idCache.get("teacherId");
-  let teacher: ITeacher | null = null;
+  const caller = await getServerCaller();
 
-  try {
-    if (teacherId) teacher = await teachersService.getById(teacherId);
-  } catch {
-    redirect("/setup/teachers");
-  }
-
-  if (!teacher) {
+  if (!teacherId) {
     return (
       <EmptyState
         icon={UsersRoundIcon}
         title="Select a teacher"
         description="Choose a teacher from the list to see their class and subject assignments."
+      />
+    );
+  }
+
+  const { data: teacher, error, definedError } = await safe(caller.teacher.getById({ id: teacherId }));
+
+  if (error) {
+    return (
+      <ErrorState
+        noBorder
+        type="normal"
+        title={definedError ? error.message : "Error loading teacher details"}
+        description="Failed to load teacher details. Please try selecting another one or try reloading the page."
       />
     );
   }
@@ -88,7 +96,7 @@ export default async function TeacherDetails() {
                   <TableRow key={`${subject.class}-${subject.name}-${subject.medium ?? "no-medium"}-${index}`}>
                     <TableCell>{subject.class}</TableCell>
                     <TableCell className="font-medium">{subject.name}</TableCell>
-                    <TableCell>{subject.medium ?? "—"}</TableCell>
+                    <TableCell>{subject.medium ?? "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -1,24 +1,31 @@
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { PageSidebar, PageSidebarContent } from "@/components/ui/page/page-sidebar";
-import { gradesService, IGradeListItem } from "@/features/grades";
 import { GraduationCapIcon } from "lucide-react";
 import { filterCache } from "@/lib/nuqs/filter";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import { safe } from "@orpc/client";
 import SetupSidebarHearder from "../../setup-sidebar-hearder";
 import GradeSidebarItem from "./sidebar-item";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
+import ErrorState from "@/components/ui/error-state";
 
 async function SidebarContent({ year }: { year: IAcademicYear }) {
+  const caller = await getServerCaller();
   const { search } = filterCache.all();
-  let gradesList: IGradeListItem[] | null = null;
+  const { data: gradesList, error, definedError } = await safe(caller.grade.getList({ yearId: year.id, search }));
 
-  try {
-    gradesList = await gradesService.getListByYear({ yearId: year.id, search });
-  } catch (err) {
-    console.error("Failed to load grades:", err);
-    redirect("/setup");
+  if (error) {
+    return (
+      <ErrorState
+        noBorder
+        type="normal"
+        title={definedError ? error.message : "Error loading grade list"}
+        description="Failed to load grade list. Please try reloading the page."
+      />
+    );
   }
 
   return (
@@ -46,10 +53,11 @@ async function SidebarContent({ year }: { year: IAcademicYear }) {
 }
 
 export default async function ExamsSidebar() {
+  const caller = await getServerCaller();
   let activeYear: IAcademicYear | null = null;
 
   try {
-    activeYear = await academicYearsService.getActiveYear();
+    activeYear = await caller.academicYear.getActiveYear();
   } catch (error) {
     console.log("Error fetching active year:", error);
     redirect("/setup");

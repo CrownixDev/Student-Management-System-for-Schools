@@ -1,33 +1,34 @@
 import "server-only";
 
-import { ApiErrorV2 } from "@/lib/ApiError";
 import { BatchRepository } from "./batch.repository";
 import { IBatch, IBatchListItem } from "./batch.types";
 import { IQueryParams } from "@/lib/filter";
 import { BatchType } from "@/generated/prisma/enums";
 import { batchSchema } from "./batch.schema";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { batchIdRequiredError, batchNameExistsError, batchNotFoundError, batchTypeRequiredError } from "./batch.errors";
+import { invalidDataProvidedError, recordInUseError } from "@/lib/orpc/errors";
 import z from "zod";
 
 export class BatchService {
   constructor(private repository: BatchRepository) {}
 
   async getList({ search, type }: Pick<IQueryParams, "search"> & { type: BatchType }): Promise<IBatchListItem[]> {
-    if (!type) throw new ApiErrorV2("Batch type is required");
+    if (!type) throw new batchTypeRequiredError();
     return await this.repository.getList({ search, type });
   }
 
   async getListItemById(batchId: string): Promise<IBatchListItem> {
-    if (!batchId) throw new ApiErrorV2("Batch id is required");
+    if (!batchId) throw new batchIdRequiredError();
     const batch = await this.repository.getListItemById(batchId);
-    if (!batch) throw new ApiErrorV2("Batch Not Found");
+    if (!batch) throw new batchNotFoundError();
     return batch;
   }
 
   async getById(batchId: string): Promise<IBatch> {
-    if (!batchId) throw new ApiErrorV2("Batch id is required");
+    if (!batchId) throw new batchIdRequiredError();
     const batchData = await this.repository.getById(batchId);
-    if (!batchData) throw new ApiErrorV2("Batch not found");
+    if (!batchData) throw new batchNotFoundError();
 
     const academicYearMap = new Map<string, IBatch["academicYears"][number]>();
 
@@ -59,7 +60,7 @@ export class BatchService {
   async create(data: z.infer<typeof batchSchema>) {
     const parsedData = batchSchema.safeParse(data);
     if (!parsedData.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -70,7 +71,7 @@ export class BatchService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Batch name is already exists");
+          throw new batchNameExistsError();
         }
       }
       throw error;
@@ -78,11 +79,11 @@ export class BatchService {
   }
 
   async update(batchId: string, data: z.infer<typeof batchSchema>) {
-    if (!batchId) throw new ApiErrorV2("Batch id is required");
+    if (!batchId) throw new batchIdRequiredError();
 
     const parsedData = batchSchema.safeParse(data);
     if (!parsedData.success) {
-      throw new ApiErrorV2("Data validation failed");
+      throw new invalidDataProvidedError();
     }
 
     try {
@@ -93,10 +94,10 @@ export class BatchService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ApiErrorV2("Batch name is already exists");
+          throw new batchNameExistsError();
         }
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new batchNotFoundError();
         }
       }
       throw error;
@@ -104,12 +105,12 @@ export class BatchService {
   }
 
   async delete(batchId: string) {
-    if (!batchId) throw new ApiErrorV2("Batch id is required");
+    if (!batchId) throw new batchIdRequiredError();
     const batch = await this.repository.getById(batchId);
-    if (!batch) throw new ApiErrorV2("Batch not found");
+    if (!batch) throw new batchNotFoundError();
 
     if (batch.grades.length > 0) {
-      throw new ApiErrorV2("This Batch is currently in use");
+      throw new recordInUseError();
     }
 
     try {
@@ -117,10 +118,10 @@ export class BatchService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          throw new ApiErrorV2("Record not found");
+          throw new batchNotFoundError();
         }
         if (error.code === "P2003") {
-          throw new ApiErrorV2("This Batch is currently in use");
+          throw new recordInUseError();
         }
       }
       throw error;

@@ -11,30 +11,31 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/shadcn/sidebar";
-import { academicYearsService, IAcademicYear } from "@/features/academic-years";
+import { IAcademicYear } from "@/features/academic-years";
 import { ArrowLeftIcon, HousesIcon } from "lucide-react";
-import { gradesService, IGradeListItem } from "@/features/grades";
-import { batchService, IBatchListItem } from "@/features/batch";
+import { IGradeListItem } from "@/features/grades";
+import { IBatchListItem } from "@/features/batch";
 import { TypographyH2, TypographyP } from "@/components/ui/typography";
-import { classService } from "@/features/class";
 import { redirect } from "next/navigation";
 import { idCache } from "@/lib/nuqs/id";
+import { getServerCaller } from "@/lib/orpc/server-caller";
+import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 import EmptyState from "@/components/ui/empty-state";
 import Link from "next/link";
-import AppSidebarFooter from "@/components/ui/sidebar/sidebar-footer";
 
 export default async function SidebarContentPage({ params, searchParams }: PageProps<"/grades/[gradeId]">) {
   const { yearId, batchId } = await idCache.parse(searchParams);
   const { gradeId } = await params;
+  const caller = await getServerCaller();
 
   let yearData: IAcademicYear | null = null;
   let gradeData: IGradeListItem | null = null;
   let batchData: IBatchListItem | null = null;
 
   try {
-    if (yearId) yearData = await academicYearsService.getListItemById(yearId);
-    if (gradeId) gradeData = await gradesService.getListItemById(gradeId);
-    if (batchId) batchData = await batchService.getListItemById(batchId);
+    if (yearId) yearData = await caller.academicYear.getListItemById({ id: yearId });
+    if (gradeId) gradeData = await caller.grade.getListItemById({ gradeId });
+    if (batchId) batchData = await caller.batch.getListItemById({ id: batchId });
   } catch {
     redirect("/");
   }
@@ -45,7 +46,7 @@ export default async function SidebarContentPage({ params, searchParams }: PageP
     redirect("/");
   }
 
-  const classList = await classService.getList(gradeId);
+  const classList = await caller.class.getList({ gradeId });
   return (
     <Sidebar>
       <SidebarHeader>

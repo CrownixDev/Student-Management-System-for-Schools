@@ -24,13 +24,11 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { examDialogSchema, examSchema } from "@/features/exams/exams.schema";
-import {
-  createExamAction,
-  deleteExamAction,
-  deleteExamSubjectAction,
-  updateExamAction,
-} from "@/features/exams/exams.actions";
 import { toast } from "react-toastify";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
 import DeleteConfirmationDialog from "../delete-confirmation-dialog";
 import SubjectPickerDialog from "../subject-picker-dialog";
 import TooltipButton from "@/components/ui/tooltip-button";
@@ -44,6 +42,7 @@ interface ExamDialogProps {
 }
 
 export default function ExamDialog({ open, onOpenChange, grade, data }: ExamDialogProps) {
+  const queryClient = useQueryClient();
   const [isSelectSubjectsOpen, setIsSelectSubjectsOpen] = useState(false);
   const [isSubjectDeleting, setIsSubjectDeleting] = useState<{ open: boolean; index: number | null }>({
     open: false,
@@ -108,62 +107,93 @@ export default function ExamDialog({ open, onOpenChange, grade, data }: ExamDial
     }
   }
 
+  const deleteSubjectMutation = useMutation(
+    rpcTanStack.exam.deleteExamSubject.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/exams");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.exam.key() });
+        toast.success("Subject deleted from exam");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
   async function handleConfirmDeleteSubject() {
     if (isSubjectDeleting.index === null) return;
-    const res = await deleteExamSubjectAction(examSubjects[isSubjectDeleting.index!].id);
-    if (res.success) {
-      remove(isSubjectDeleting.index);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
+    await deleteSubjectMutation.mutateAsync({ id: examSubjects[isSubjectDeleting.index!].id });
     handleCancelDeleteSubject();
   }
 
-  async function handleCreate(formData: z.infer<typeof examDialogSchema>) {
-    if (!grade) return;
-    const parsedRes = examSchema.safeParse(formData);
-    if (!parsedRes.success) {
-      toast.error("Data validation failed");
-      return;
-    }
+  const createMutation = useMutation(
+    rpcTanStack.exam.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/exams");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.exam.key() });
+        toast.success("Exam Created");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
-    const res = await createExamAction(grade.id, parsedRes.data);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
+  const updateMutation = useMutation(
+    rpcTanStack.exam.update.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/exams");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.exam.key() });
+        toast.success("Exam Updated");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  async function handleSubmit(formData: z.infer<typeof examSchema>) {
+    if (isEditing && data && data.id) {
+      await updateMutation.mutateAsync({ examId: data.id, data: formData });
     } else {
-      toast.error(res.message);
+      if (grade) {
+        await createMutation.mutateAsync({ gradeId: grade.id, data: formData });
+      }
     }
   }
 
-  async function handleUpdate(formData: z.infer<typeof examDialogSchema>) {
-    const parsedRes = examSchema.safeParse(formData);
-    if (!parsedRes.success) {
-      toast.error("Data validation failed");
-      return;
-    }
-
-    if (!data?.id) return;
-    const res = await updateExamAction(data.id, parsedRes.data);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
-  async function handleDelete() {
-    if (!data?.id) return;
-    const res = await deleteExamAction(data.id);
-    if (res.success) {
-      onOpenChange(false);
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
-  }
+  const deleteMutation = useMutation(
+    rpcTanStack.exam.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/exams");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.exam.key() });
+        toast.success("Exam Deleted");
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
 
   return (
     <>
@@ -173,7 +203,7 @@ export default function ExamDialog({ open, onOpenChange, grade, data }: ExamDial
             <DialogTitle>{isEditing ? "Edit Exam" : "Create Exam"}</DialogTitle>
           </DialogHeader>
 
-          <form id="exam-form" onSubmit={form.handleSubmit(isEditing ? handleUpdate : handleCreate)}>
+          <form id="exam-form" onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup className="min-w-0">
               <FieldSet className="min-w-0">
                 <Controller
@@ -396,7 +426,7 @@ export default function ExamDialog({ open, onOpenChange, grade, data }: ExamDial
           onOpenChange={setIsDeletingExam}
           title={`Delete '${data.name}'`}
           description="Are you sure you want to delete this exam?"
-          onConfirm={handleDelete}
+          onConfirm={() => (data && data.id ? deleteMutation.mutate({ examId: data.id }) : undefined)}
         />
       )}
     </>

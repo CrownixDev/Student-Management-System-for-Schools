@@ -12,12 +12,9 @@ import {
 import { CheckIcon, CircleUserIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ACTIVE_YEAR, CLASS_LIST } from "@/lib/query-keys";
-import { getActiveAcademicYearAction } from "@/features/academic-years/year.actions";
-import { toast } from "react-toastify";
-import { getClassListAction } from "@/features/class/class.actions";
 import { IClassList, IClassListItem } from "@/features/class";
 import { IGradeListItem } from "@/features/grades";
+import { rpcTanStack } from "@/lib/orpc/client";
 import GradePickerDialog from "@/components/dialog/grade-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
@@ -35,35 +32,18 @@ export default function ClassPickerDialog({
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [selectedClasses, setSelectedClasses] = useState<IClassList>([]);
 
-  const { data: activeYear, isPending: isLoadingYear } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const res = await getActiveAcademicYearAction();
-      if (res.success) {
-        return res.data;
-      } else {
-        toast.error(res.message);
-        throw new Error(res.message);
-      }
-    },
-    queryKey: [ACTIVE_YEAR],
-  });
+  const { data: activeYear, isPending: isLoadingYear } = useQuery(
+    rpcTanStack.academicYear.getActiveYear.queryOptions({
+      enabled: open,
+    }),
+  );
 
-  const { data: classList, isPending: isLoadingClasses } = useQuery({
-    enabled: open && !!grade && !isLoadingYear && !!activeYear,
-    queryFn: async () => {
-      if (activeYear && grade) {
-        const res = await getClassListAction(grade.id);
-        if (res.success) {
-          return res.data;
-        } else {
-          toast.error(res.message);
-          throw new Error(res.message);
-        }
-      }
-    },
-    queryKey: [CLASS_LIST, grade?.id],
-  });
+  const { data: classList, isPending: isLoadingClasses } = useQuery(
+    rpcTanStack.class.getList.queryOptions({
+      enabled: open && !!grade && !isLoadingYear && !!activeYear,
+      input: { gradeId: grade?.id ?? "" },
+    }),
+  );
 
   function changeOpen(open: boolean) {
     onOpenChange(open);

@@ -7,7 +7,7 @@ import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { IStudentsListItem, IStudentsListWithSubjectsItem } from "@/features/students";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon, Loader2Icon, Trash2Icon, UserPlusIcon, UsersIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { IClass } from "@/features/class";
@@ -15,13 +15,6 @@ import { toast } from "react-toastify";
 import StudentPickerDialog, { SelectedStudent } from "@/components/dialog/student-picker-dialog";
 import EmptyState from "@/components/ui/empty-state";
 import LoadingIndicator from "@/components/ui/loading-indicator";
-import {
-  createEnrollmentsAction,
-  deleteEnrollmentAction,
-  updateStudentIndexAction,
-  updateStudentSubjectEnrollmentAction,
-  updateSubjectMediumAction,
-} from "@/features/enrollment/enrollment.actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +27,9 @@ import {
 } from "@/components/shadcn/alert-dialog";
 import TooltipButton from "@/components/ui/tooltip-button";
 import { rpcTanStack } from "@/lib/orpc/client";
+import { revalidateCache } from "@/lib/actions";
+import { isDefinedError } from "@orpc/client";
+import { enrollmentIndexUpdateSchema } from "@/features/enrollment/enrollment.schema";
 
 type SubjectColumnState = Record<string, boolean>;
 type StudentSubjectState = Record<string, Record<string, boolean>>;
@@ -48,10 +44,11 @@ export default function ClassStudentDialog({
   classData,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
   classData: IClass;
+  onOpenChange: (open: boolean) => void;
   onRemoveStudent?: (studentId: string) => void;
 }) {
+  const queryClient = useQueryClient();
   const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
   const [addedStudents, setAddedStudents] = useState<ClassStudent[]>([]);
   const [removedStudentIds, setRemovedStudentIds] = useState<string[]>([]);
@@ -68,7 +65,6 @@ export default function ClassStudentDialog({
 
   const indexInputRef = useRef<(HTMLInputElement | null)[]>([]);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    console.log(e.key);
     if (e.key === "Enter") {
       e.preventDefault();
       const nextInput = indexInputRef.current[index + 1];
@@ -89,6 +85,88 @@ export default function ClassStudentDialog({
   const { data: mediumOptions = [], isPending: isMediumPending } = useQuery(
     rpcTanStack.medium.getAsOptions.queryOptions({
       enabled: open,
+    }),
+  );
+
+  const createEnrollmentsMutation = useMutation(
+    rpcTanStack.enrollment.create.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.enrollment.key() });
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+        toast.success("Enrollments created successfully");
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateIndexMutation = useMutation(
+    rpcTanStack.enrollment.updateIndex.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.enrollment.key() });
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateSubjectEnrollmentMutation = useMutation(
+    rpcTanStack.enrollment.updateSubjectEnrollment.mutationOptions({
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const updateMediumMutation = useMutation(
+    rpcTanStack.enrollment.updateSubjectMedium.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.enrollment.key() });
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
+    }),
+  );
+
+  const deleteEnrollmentsMutation = useMutation(
+    rpcTanStack.enrollment.delete.mutationOptions({
+      onSuccess: async () => {
+        await revalidateCache("/setup");
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.enrollment.key() });
+        await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+        toast.success("Enrollment deleted successfully");
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          toast.error(error.message);
+        } else {
+          toast.error("Unknow error occured");
+        }
+      },
     }),
   );
 
@@ -128,33 +206,35 @@ export default function ClassStudentDialog({
     }));
     const studentsData = newStudents.map((st, index) => ({ studentId: st.id, subjects, classIndex: index + 1 }));
 
-    const res = await createEnrollmentsAction(classData.id, studentsData);
-
-    if (res.success) {
-      setRemovedStudentIds((current) => current.filter((id) => !newStudents.some((student) => student.id === id)));
-      setClassIndexes((current) => ({ ...current, ...nextIndexes }));
-      setAddedStudents((current) => {
-        const knownIds = new Set(current.map((student) => student.id));
-        return [...current, ...newStudents.filter((student) => !knownIds.has(student.id))];
-      });
-      setStudentSubjectState((current) => {
-        const next = { ...current };
-        for (const student of newStudents) {
-          next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, true]));
-        }
-        return next;
-      });
-      setStudentMediumState((current) => {
-        const next = { ...current };
-        for (const student of newStudents) {
-          next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, subject.medium.id]));
-        }
-        return next;
-      });
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
+    await createEnrollmentsMutation.mutateAsync(
+      { classId: classData.id, data: studentsData },
+      {
+        onSuccess: () => {
+          setRemovedStudentIds((current) => current.filter((id) => !newStudents.some((student) => student.id === id)));
+          setClassIndexes((current) => ({ ...current, ...nextIndexes }));
+          setAddedStudents((current) => {
+            const knownIds = new Set(current.map((student) => student.id));
+            return [...current, ...newStudents.filter((student) => !knownIds.has(student.id))];
+          });
+          setStudentSubjectState((current) => {
+            const next = { ...current };
+            for (const student of newStudents) {
+              next[student.id] = Object.fromEntries(classData.subjects.map((subject) => [subject.id, true]));
+            }
+            return next;
+          });
+          setStudentMediumState((current) => {
+            const next = { ...current };
+            for (const student of newStudents) {
+              next[student.id] = Object.fromEntries(
+                classData.subjects.map((subject) => [subject.id, subject.medium.id]),
+              );
+            }
+            return next;
+          });
+        },
+      },
+    );
   }
 
   function getStudent(studentId: string) {
@@ -187,24 +267,33 @@ export default function ClassStudentDialog({
     subjectId: string,
     enrolled: boolean,
     columnAlreadyDisabled = false,
+    invalidate = true,
   ) {
     if (!columnAlreadyDisabled) {
       setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     }
     try {
-      const res = await updateStudentSubjectEnrollmentAction(classData.id, studentId, {
-        subjectId,
-        enrolled,
-      });
+      await updateSubjectEnrollmentMutation.mutateAsync(
+        {
+          classId: classData.id,
+          studentId,
+          data: { subjectId, enrolled },
+        },
+        {
+          onSuccess: async () => {
+            if (invalidate) {
+              await revalidateCache("/setup");
+              await queryClient.invalidateQueries({ queryKey: rpcTanStack.enrollment.key() });
+              await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
+            }
 
-      if (res.success) {
-        setStudentSubjectState((current) => ({
-          ...current,
-          [studentId]: { ...current[studentId], [subjectId]: enrolled },
-        }));
-      } else {
-        toast.error(res.message);
-      }
+            setStudentSubjectState((current) => ({
+              ...current,
+              [studentId]: { ...current[studentId], [subjectId]: enrolled },
+            }));
+          },
+        },
+      );
     } finally {
       if (!columnAlreadyDisabled) {
         setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
@@ -221,9 +310,12 @@ export default function ClassStudentDialog({
     setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     try {
       for (const student of studentsToUpdate) {
-        await toggleStudentSubject(student.id, subjectId, nextValue, true);
+        await toggleStudentSubject(student.id, subjectId, nextValue, true, false);
       }
     } finally {
+      await revalidateCache("/setup");
+      await queryClient.invalidateQueries({ queryKey: rpcTanStack.enrollment.key() });
+      await queryClient.invalidateQueries({ queryKey: rpcTanStack.student.key() });
       setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
     }
   }
@@ -235,16 +327,17 @@ export default function ClassStudentDialog({
     }
     setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: true }));
     try {
-      const res = await updateSubjectMediumAction(classData.id, studentId, { subjectId, mediumId });
-      if (res.success) {
-        setStudentMediumState((current) => ({
-          ...current,
-          [studentId]: { ...current[studentId], [subjectId]: mediumId ?? "" },
-        }));
-        toast.success(res.message);
-      } else {
-        toast.error(res.message);
-      }
+      await updateMediumMutation.mutateAsync(
+        { classId: classData.id, studentId, data: { subjectId, mediumId } },
+        {
+          onSuccess: () => {
+            setStudentMediumState((current) => ({
+              ...current,
+              [studentId]: { ...current[studentId], [subjectId]: mediumId ?? "" },
+            }));
+          },
+        },
+      );
     } finally {
       setDisabledSubjectColumns((current) => ({ ...current, [subjectId]: false }));
     }
@@ -252,12 +345,15 @@ export default function ClassStudentDialog({
 
   async function changeStudentClassIndex(studentId: string, classIndex: string) {
     if (typeof classIndex === "string" && classIndex !== "") {
-      try {
-        await updateStudentIndexAction(classData.id, studentId, {
-          classIndex: Number.parseInt(classIndex),
-        });
-      } catch {
+      const resultRes = enrollmentIndexUpdateSchema.safeParse({ classIndex: Number.parseInt(classIndex) });
+      if (!resultRes.success) {
         toast.error("Please enter a number as class index");
+      } else {
+        await updateIndexMutation.mutateAsync({
+          classId: classData.id,
+          studentId,
+          data: { classIndex: Number.parseInt(classIndex) },
+        });
       }
     }
   }
@@ -269,18 +365,22 @@ export default function ClassStudentDialog({
   async function handleConfirmDeleteStudent() {
     if (isStudentDeleting.id === null) return;
     const studentId = isStudentDeleting.id;
-    const res = await deleteEnrollmentAction(classData.id, studentId);
-    if (res.success) {
-      setRemovedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]));
-      setAddedStudents((current) => current.filter((student) => student.id !== studentId));
-      toast.success(res.message);
-    } else {
-      toast.error(res.message);
-    }
+
+    await deleteEnrollmentsMutation.mutateAsync(
+      { classId: classData.id, studentId },
+      {
+        onSuccess: () => {
+          setRemovedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]));
+          setAddedStudents((current) => current.filter((student) => student.id !== studentId));
+        },
+      },
+    );
+
     handleCancelDeleteStudent();
   }
 
-  const isActionButtonsDisabled = Object.values(disabledSubjectColumns).some(Boolean);
+  const isActionButtonsDisabled =
+    Object.values(disabledSubjectColumns).some(Boolean) || createEnrollmentsMutation.isPending;
 
   return (
     <>
@@ -291,11 +391,11 @@ export default function ClassStudentDialog({
         >
           <DialogHeader className="shrink-0 flex-row items-center justify-between gap-4 pr-10">
             <DialogTitle className="min-w-0 truncate" title={classData.name}>
-              Students · {classData.name}
+              Students<span className="text-muted-foreground"> - {classData.name}</span>
             </DialogTitle>
             <div className="flex gap-3">
               <Button disabled={isActionButtonsDisabled} variant="outline" onClick={() => setIsStudentPickerOpen(true)}>
-                <UserPlusIcon />
+                {createEnrollmentsMutation.isPending ? <Loader2Icon className="animate-spin" /> : <UserPlusIcon />}
                 Add students
               </Button>
               <Button

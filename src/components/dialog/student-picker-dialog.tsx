@@ -69,7 +69,7 @@ export default function StudentPickerDialog({
 
   const classOptionsQuery = useQuery(
     rpcTanStack.class.getAsOptions.queryOptions({
-      input: { gradeId: grade!.id },
+      input: { gradeId: grade?.id ?? "" },
       enabled: open && activeTab === "by-class" && Boolean(year && grade),
     }),
   );
